@@ -1,0 +1,39 @@
+name: Changelog
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: changelog
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      # The deploy key is on the main ruleset's bypass list, so this job can push
+      # to main while everyone else has to go through a pull request
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.CHANGELOG_DEPLOY_KEY }}
+
+      - uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+        env:
+          OUTPUT: CHANGELOG.md
+
+      # [skip ci] keeps this commit from triggering another changelog run
+      - name: Commit CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(changelog): update CHANGELOG.md [skip ci]"
+          git push origin HEAD:main
