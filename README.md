@@ -31,7 +31,16 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `tests/` | Tests, run on every pull request |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
+| `templates/DATA-LICENCE.md` | Data attribution placed at the root of the `data` branch |
 
 ## Data source and licence
 
-_To be written in #32: attribution of Stavanger kommune's data under NLOD 2.0._
+The data is the open dataset [Stavanger parkering](https://opencom.no/dataset/stavanger-parkering), published by **Stavanger kommune** under the [Norwegian Licence for Open Government Data (NLOD) 2.0](https://data.norge.no/nlod/en/2.0). Raw snapshots are republished unchanged on the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data), and derived tables and reports are built from them.
+
+> Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune.
+
+Each source's licence is recorded in [`config/sources.json`](config/sources.json), so a source cannot be added without one.
+
+## Licence
+
+The code in this repository is licensed under the [MIT licence](LICENSE). The data is not covered by it; it remains under NLOD 2.0 as described above.
