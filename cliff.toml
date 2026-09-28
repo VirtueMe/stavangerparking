@@ -29,21 +29,20 @@ conventional_commits = true
 filter_unconventional = true
 split_commits = false
 protect_breaking_commits = true
-filter_commits = false
+# Only user-facing types reach the changelog; commits matching no parser below are dropped
+filter_commits = true
 sort_commits = "oldest"
 commit_preprocessors = [
   # Link PR numbers added by squash merge, e.g. "(#29)"
   { pattern = '\(#(\d+)\)', replace = "([#${1}](https://github.com/VirtueMe/stavangerparking/pull/${1}))" },
 ]
 commit_parsers = [
-  { message = "^chore\\(changelog\\)", skip = true },
-  { message = "^feat", group = "<!-- 0 -->Features" },
-  { message = "^fix", group = "<!-- 1 -->Bug Fixes" },
-  { message = "^perf", group = "<!-- 2 -->Performance" },
-  { message = "^refactor", group = "<!-- 3 -->Refactoring" },
+  # Breaking changes are always listed, whatever their type
+  { field = "breaking", pattern = "true", group = "<!-- 0 -->Breaking Changes" },
+  { message = "^feat", group = "<!-- 1 -->Features" },
+  { message = "^fix", group = "<!-- 2 -->Bug Fixes" },
+  { message = "^perf", group = "<!-- 3 -->Performance" },
   { message = "^docs", group = "<!-- 4 -->Documentation" },
-  { message = "^test", group = "<!-- 5 -->Tests" },
-  { message = "^(ci|build)", group = "<!-- 6 -->CI and Build" },
-  { message = "^chore", group = "<!-- 7 -->Chores" },
-  { message = "^revert", group = "<!-- 8 -->Reverts" },
+  { message = "^revert", group = "<!-- 5 -->Reverts" },
+  { message = "^(chore|ci|build|test|style|refactor)", skip = true },
 ]
