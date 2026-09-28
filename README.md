@@ -26,6 +26,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 
 | Path | Contents |
 |---|---|
+| `config/sources.json` | [Source configuration](docs/config.md): where each dataset comes from, where it lands, and its licence |
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
