@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.3.0] - 2026-09-28
+
+### Features
+
+- **bronze:** Load raw snapshots into the bronze table ([#48](https://github.com/VirtueMe/stavangerparking/pull/48))
+
 ## [0.2.2] - 2026-09-28
 
 ### Documentation
