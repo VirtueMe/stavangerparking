@@ -8,8 +8,10 @@
 
 ## Changelog
 
-`CHANGELOG.md` is generated, never edited by hand. On every push to `main`, the `Changelog` workflow runs [git-cliff](https://git-cliff.org) with `cliff.toml` and commits the result back to `main` as `chore(changelog): update CHANGELOG.md [skip ci]`.
+`CHANGELOG.md` is generated, never edited by hand. On every push to `main`, the `Changelog` workflow runs [git-cliff](https://git-cliff.org) with `cliff.toml` and commits the result back to `main` as `chore(changelog): update CHANGELOG.md`. The workflow ignores pushes that only change `CHANGELOG.md`, so its own commit does not trigger it again.
 
-To let that single workflow push to the protected `main`, it authenticates with a **deploy key** (secret `CHANGELOG_DEPLOY_KEY`) that is on the ruleset's bypass list. A deploy key is scoped to this repository only and needs no personal token. `[skip ci]` stops the changelog commit from triggering the workflow again.
+To let that single workflow push to the protected `main`, it authenticates with a **deploy key** that is on the ruleset's bypass list. The key is stored as `CHANGELOG_DEPLOY_KEY` in the `changelog` environment, which only the `main` branch may use, so workflows on other branches cannot read it. The workflow token itself stays read-only.
+
+Do not write the literal skip-CI marker (`[skip ci]` and its variants) in a PR description: the description becomes the squash commit body, and GitHub then skips every workflow for that commit, including the changelog.
 
 To preview the changelog locally: `git cliff -o CHANGELOG.md`.
