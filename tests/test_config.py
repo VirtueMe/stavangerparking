@@ -59,7 +59,7 @@ def test_second_source_needs_only_a_config_entry(config):
     assert sources[1].ckan.package_id == "sandnes-parkering"
 
 
-@pytest.mark.parametrize("field", ["id", "ckan", "raw_path", "bronze_table", "licence"])
+@pytest.mark.parametrize("field", ["id", "ckan", "raw_path", "bronze_table", "licence", "polling"])
 def test_missing_source_field_is_named(config, field):
     del config["sources"][0][field]
 
@@ -151,3 +151,56 @@ def test_invalid_json_fails_with_position(tmp_path):
 
     with pytest.raises(ConfigError, match="not valid JSON.*line 1"):
         load_sources(broken)
+
+
+def test_repository_config_has_the_adr_003_polling_policy():
+    (source,) = load_sources(REPO_CONFIG)
+
+    assert source.polling.fast_interval_minutes == 5
+    assert source.polling.slow_interval_minutes == 20
+    assert source.polling.unchanged_snapshots_for_slow == 5
+    assert source.polling.change_ignores_fields == ("Dato", "Klokkeslett")
+
+
+@pytest.mark.parametrize("value", [0, -5, "5", 2.5, True, None])
+def test_polling_intervals_must_be_positive_integers(config, value):
+    config["sources"][0]["polling"]["fast_interval_minutes"] = value
+
+    assert "polling.fast_interval_minutes is required and must be a positive integer" in (
+        problems_of(config)
+    )
+
+
+def test_slow_interval_cannot_be_shorter_than_fast(config):
+    config["sources"][0]["polling"]["slow_interval_minutes"] = 2
+
+    assert "slow_interval_minutes must not be shorter than" in problems_of(config)
+
+
+@pytest.mark.parametrize("value", ["Dato", [""], [1], None])
+def test_change_ignores_fields_must_be_a_list_of_names(config, value):
+    config["sources"][0]["polling"]["change_ignores_fields"] = value
+
+    assert "polling.change_ignores_fields is required and must be a list of names" in (
+        problems_of(config)
+    )
+
+
+def test_missing_polling_section_is_named(config):
+    del config["sources"][0]["polling"]
+
+    assert "polling is required and must be an object" in problems_of(config)
+
+
+@pytest.mark.parametrize(
+    "raw_path",
+    [
+        "bronze/{dd}/{mm}/{yyyy}/{HHmmss}.json",  # paths would not sort by time
+        "bronze/{yyyy}/{mm}/{dd}.json",  # snapshots on the same day would collide
+        "bronze/{yyyy}/{mm}/{dd}/{HHmmss}-{HHmmss}.json",
+    ],
+)
+def test_raw_path_placeholders_must_appear_once_in_time_order(config, raw_path):
+    config["sources"][0]["raw_path"] = raw_path
+
+    assert "once each and in that order, so that paths sort by time" in problems_of(config)
