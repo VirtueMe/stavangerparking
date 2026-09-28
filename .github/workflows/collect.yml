@@ -1,0 +1,67 @@
+name: Collect
+
+# Collects raw snapshots onto the data branch (ADR 007). The schedule fires every 5 minutes; the
+# collector decides per run whether to fetch (adaptive polling, ADR 003).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+permissions:
+  # Push snapshots to the data branch; main stays protected by its ruleset
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Check out the data branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data > /dev/null; then
+            git fetch --depth=1 origin data:data
+            git worktree add data data
+          else
+            # First run: the data branch starts with its own history and the NLOD 2.0
+            # attribution, before any snapshot is published (#32)
+            git worktree add --orphan -b data data
+            cp templates/DATA-LICENCE.md data/
+            cd data
+            git add DATA-LICENCE.md
+            git commit -m "data: add NLOD 2.0 attribution"
+            git push -u origin data
+          fi
+
+      - name: Collect
+        id: collect
+        run: |
+          set +e
+          uv run --no-dev python -m stavanger_parking.bronze.collect run \
+            --storage data --run-id "${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      # Snapshots from sources that succeeded are kept even if another source failed
+      - name: Commit and push snapshots
+        run: |
+          cd data
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing new to store"
+            exit 0
+          fi
+          git commit -m "data: snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ) (run ${{ github.run_id }})"
+          git push origin data
+
+      - name: Fail the run if a source failed
+        if: steps.collect.outputs.status != '0'
+        run: exit 1

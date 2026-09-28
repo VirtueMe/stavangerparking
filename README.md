@@ -6,7 +6,7 @@ Work is planned and tracked in [GitHub Issues](https://github.com/VirtueMe/stava
 
 ## Status
 
-Access to a Fabric capacity is pending. Until then, raw snapshots are collected outside the platform and the transformations are built and tested locally on the same stack (Polars and delta-rs), so they can be moved to the platform unchanged.
+Access to a Fabric capacity is pending. Until then, raw snapshots are [collected](docs/collector.md) on a GitHub Actions schedule onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data) ([ADR 007](docs/adr/007-collect-outside-the-platform.md)), and the transformations are built and tested locally on the same stack (Polars and delta-rs), so they can be moved to the platform unchanged.
 
 ## Architecture
 
@@ -29,6 +29,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `config/sources.json` | [Source configuration](docs/config.md): where each dataset comes from, where it lands, and its licence |
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
+| `.github/workflows/collect.yml` | [Collector](docs/collector.md): scheduled snapshot collection onto the `data` branch |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
 | `templates/DATA-LICENCE.md` | Data attribution placed at the root of the `data` branch |

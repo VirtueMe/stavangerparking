@@ -16,7 +16,8 @@ from pathlib import PurePosixPath
 from urllib.parse import urlparse
 
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
-RAW_PATH_PLACEHOLDERS = frozenset({"yyyy", "mm", "dd", "HHmmss"})
+# In this order, so that sorting raw paths sorts snapshots by time (the collector relies on it)
+RAW_PATH_PLACEHOLDERS = ("yyyy", "mm", "dd", "HHmmss")
 
 
 class ConfigError(ValueError):
@@ -38,12 +39,24 @@ class Licence:
 
 
 @dataclass(frozen=True)
+class Polling:
+    """Adaptive polling (ADR 003): fast while values change, slow after a run of unchanged ones."""
+
+    fast_interval_minutes: int
+    slow_interval_minutes: int
+    unchanged_snapshots_for_slow: int
+    # Fields left out when comparing snapshots, e.g. the data timestamp that advances regardless
+    change_ignores_fields: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Source:
     id: str
     ckan: CkanLocation
     raw_path: str
     bronze_table: str
     licence: Licence
+    polling: Polling
 
 
 def _field_names(cls) -> set[str]:
@@ -125,6 +138,17 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
     licence_url = _https_url(licence, "url", label, problems, section="licence")
     publisher = _text(licence, "publisher", label, problems, section="licence")
 
+    polling_section = _section(entry, "polling", Polling, label, problems)
+    fast = _positive_int(polling_section, "fast_interval_minutes", label, problems)
+    slow = _positive_int(polling_section, "slow_interval_minutes", label, problems)
+    unchanged = _positive_int(polling_section, "unchanged_snapshots_for_slow", label, problems)
+    ignored = _text_list(polling_section, "change_ignores_fields", label, problems)
+    if fast and slow and slow < fast:
+        problems.append(
+            f"{label}: polling.slow_interval_minutes must not be shorter than "
+            "polling.fast_interval_minutes"
+        )
+
     if len(problems) > before:
         return None
     return Source(
@@ -133,6 +157,12 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
         raw_path=raw_path,
         bronze_table=bronze_table,
         licence=Licence(id=licence_id, url=licence_url, publisher=publisher),
+        polling=Polling(
+            fast_interval_minutes=fast,
+            slow_interval_minutes=slow,
+            unchanged_snapshots_for_slow=unchanged,
+            change_ignores_fields=ignored,
+        ),
     )
 
 
@@ -173,6 +203,33 @@ def _https_url(
     return url
 
 
+def _positive_int(
+    obj: dict | None, key: str, label: str, problems: list[str], section: str = "polling"
+) -> int:
+    if obj is None:
+        return 0
+    value = obj.get(key)
+    # bool is an int subclass; true/false are not intervals
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        problems.append(
+            f"{label}: {_path(section, key)} is required and must be a positive integer"
+        )
+        return 0
+    return value
+
+
+def _text_list(
+    obj: dict | None, key: str, label: str, problems: list[str], section: str = "polling"
+) -> tuple[str, ...]:
+    if obj is None:
+        return ()
+    value = obj.get(key)
+    if not isinstance(value, list) or not all(isinstance(v, str) and v.strip() for v in value):
+        problems.append(f"{label}: {_path(section, key)} is required and must be a list of names")
+        return ()
+    return tuple(value)
+
+
 def _path(section: str, key: str) -> str:
     return f"{section}.{key}" if section else key
 
@@ -182,13 +239,18 @@ def _check_raw_path(raw_path: str, label: str, problems: list[str]) -> None:
     if path.is_absolute() or ".." in path.parts:
         problems.append(f"{label}: raw_path must be relative to the storage root: {raw_path!r}")
     try:
-        names = {name for _, name, _, _ in string.Formatter().parse(raw_path) if name is not None}
+        names = [name for _, name, _, _ in string.Formatter().parse(raw_path) if name is not None]
     except ValueError as e:
         problems.append(f"{label}: raw_path is not a valid template: {e}")
         return
-    unknown = names - RAW_PATH_PLACEHOLDERS
+    expected = ", ".join("{" + p + "}" for p in RAW_PATH_PLACEHOLDERS)
+    unknown = sorted(set(names) - set(RAW_PATH_PLACEHOLDERS))
     if unknown:
-        allowed = ", ".join("{" + p + "}" for p in sorted(RAW_PATH_PLACEHOLDERS))
         problems.append(
-            f"{label}: raw_path has unknown placeholders {sorted(unknown)} (allowed: {allowed})"
+            f"{label}: raw_path has unknown placeholders {unknown} (allowed: {expected})"
+        )
+    elif tuple(names) != RAW_PATH_PLACEHOLDERS:
+        problems.append(
+            f"{label}: raw_path must contain {expected} once each and in that order, "
+            "so that paths sort by time"
         )
