@@ -145,7 +145,7 @@ def find_gaps(
 
 def read_sidecars(storage: Path, source: Source, limit: int | None = None) -> list[dict]:
     """The source's sidecars in storage, oldest first (paths sort by time)."""
-    files = sorted(storage.glob(sidecar_path(_placeholders_to_wildcards(source.raw_path))))
+    files = sorted(storage.glob(sidecar_path(raw_glob(source.raw_path))))
     if limit is not None:
         files = files[-limit:]
     return [json.loads(f.read_text(encoding="utf-8")) for f in files]
@@ -211,7 +211,8 @@ def _fingerprints(sidecars: list[dict]) -> list[str | None]:
     return [s.get("values_fingerprint") for s in sidecars]
 
 
-def _placeholders_to_wildcards(template: str) -> str:
+def raw_glob(template: str) -> str:
+    """Glob pattern matching every raw file a `raw_path` template can produce."""
     return template.format(yyyy="*", mm="*", dd="*", HHmmss="*")
 
 

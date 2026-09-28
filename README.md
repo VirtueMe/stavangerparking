@@ -30,6 +30,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
 | `.github/workflows/collect.yml` | [Collector](docs/collector.md): scheduled snapshot collection onto the `data` branch |
+| `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/architecture.md` | [Architecture](docs/architecture.md): data flow, layers and star schema |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
