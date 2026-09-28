@@ -10,9 +10,13 @@ Every source is described in [`config/sources.json`](../config/sources.json). Th
 | `ckan.base_url` | Base URL of the CKAN portal (https) |
 | `ckan.package_id` | CKAN package (dataset) id or name |
 | `ckan.format` | Resource format to download. The package must have exactly one resource in this format |
-| `raw_path` | Where raw snapshots are written, relative to the storage root. Placeholders: `{yyyy}`, `{mm}`, `{dd}`, `{HHmmss}` (UTC) |
+| `raw_path` | Where raw snapshots are written, relative to the storage root. Must contain `{yyyy}`, `{mm}`, `{dd}` and `{HHmmss}` (UTC) once each and in that order, so that sorting paths sorts snapshots by time |
 | `bronze_table` | Name of the bronze table, without catalog or schema |
 | `licence.id`, `licence.url`, `licence.publisher` | Licence of the data and who publishes it, used for attribution |
+| `polling.fast_interval_minutes` | Fetch interval while values change; also the schedule of the collector ([ADR 003](adr/003-polling-interval.md)) |
+| `polling.slow_interval_minutes` | Fetch interval once values have stopped changing; not shorter than the fast interval |
+| `polling.unchanged_snapshots_for_slow` | How many consecutive snapshots with identical values switch to the slow interval |
+| `polling.change_ignores_fields` | Fields left out when comparing snapshots, such as the data timestamp that advances regardless of the values |
 
 All fields are required. Unknown fields are rejected, so a misspelt field fails instead of being silently ignored. The config is validated on load, and every problem is reported at once, naming the source and field.
 
