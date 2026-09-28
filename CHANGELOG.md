@@ -13,4 +13,5 @@ Conventional Commit messages on `main`.
 ### Documentation
 
 - Add backlog and README
+- Data licence attribution (NLOD 2.0) ([#40](https://github.com/VirtueMe/stavangerparking/pull/40))
 
