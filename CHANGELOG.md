@@ -8,6 +8,7 @@ Conventional Commit messages on `main`.
 ### Features
 
 - **bronze:** Resolve download URL through the CKAN API ([#38](https://github.com/VirtueMe/stavangerparking/pull/38))
+- **config:** Declarative source configuration ([#39](https://github.com/VirtueMe/stavangerparking/pull/39))
 
 ### Documentation
 
