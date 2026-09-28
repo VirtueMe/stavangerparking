@@ -10,7 +10,7 @@ Access to a Fabric capacity is pending. Until then, raw snapshots are [collected
 
 ## Architecture
 
-_To be written in #2: data flow, the Fabric items used for each step, and the star schema._
+The data flows from the CKAN API through raw files, bronze, silver and gold into a star schema, with a periodic snapshot fact of availability per facility and an hourly aggregate. See [`docs/architecture.md`](docs/architecture.md) for the data flow, the Fabric items used for each step, the layers and the star schema.
 
 ## Getting started
 
@@ -30,6 +30,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
 | `.github/workflows/collect.yml` | [Collector](docs/collector.md): scheduled snapshot collection onto the `data` branch |
+| `docs/architecture.md` | [Architecture](docs/architecture.md): data flow, layers and star schema |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
 | `templates/DATA-LICENCE.md` | Data attribution placed at the root of the `data` branch |
