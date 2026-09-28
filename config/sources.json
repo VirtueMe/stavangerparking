@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "id": "stavanger_parking",
+      "ckan": {
+        "base_url": "https://opencom.no",
+        "package_id": "stavanger-parkering",
+        "format": "json"
+      },
+      "raw_path": "bronze/parking/{yyyy}/{mm}/{dd}/{HHmmss}.json",
+      "bronze_table": "bronze_parking",
+      "licence": {
+        "id": "NLOD-2.0",
+        "url": "https://data.norge.no/nlod/no/2.0/",
+        "publisher": "Stavanger kommune"
+      }
+    }
+  ]
+}
