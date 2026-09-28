@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v7
 
       # Python version comes from .python-version, matching the notebook runtime
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
 
       - name: Install
         run: uv sync --locked
