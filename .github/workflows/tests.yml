@@ -1,0 +1,30 @@
+name: Tests
+
+# No path filters: this is a required check, and a check that does not run blocks the merge
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Python version comes from .python-version, matching the notebook runtime
+      - uses: astral-sh/setup-uv@v10
+
+      - name: Install
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Format
+        run: uv run ruff format --check
+
+      - name: Test
+        run: uv run pytest
