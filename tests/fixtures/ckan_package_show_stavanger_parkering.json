@@ -1,0 +1,30 @@
+{
+  "help": "https://opencom.no/api/3/action/help_show?name=package_show",
+  "success": true,
+  "result": {
+    "id": "36ceda99-bbc3-4909-bc52-b05a6d634b3f",
+    "name": "stavanger-parkering",
+    "title": "Stavanger Parkering",
+    "license_id": "NLOD-2.0",
+    "license_title": "Norsk lisens for offentlige data (NLOD)",
+    "organization": {
+      "title": "Stavanger kommune"
+    },
+    "resources": [
+      {
+        "id": "d1bdc6eb-9b49-4f24-89c2-ab9f5ce2acce",
+        "name": "Stavanger parkering json",
+        "format": "JSON",
+        "url": "https://opencom.no/dataset/36ceda99-bbc3-4909-bc52-b05a6d634b3f/resource/d1bdc6eb-9b49-4f24-89c2-ab9f5ce2acce/download/parking.json",
+        "last_modified": "2026-09-28T12:21:33.575307"
+      },
+      {
+        "id": "e3545b04-08ac-4d22-8580-23d91ccfb12f",
+        "name": "Stavanger parkering",
+        "format": "CSV",
+        "url": "https://opencom.no/dataset/36ceda99-bbc3-4909-bc52-b05a6d634b3f/resource/e3545b04-08ac-4d22-8580-23d91ccfb12f/download/parkering.csv",
+        "last_modified": "2026-09-28T12:21:33.220256"
+      }
+    ]
+  }
+}
