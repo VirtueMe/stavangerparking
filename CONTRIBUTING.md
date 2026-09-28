@@ -37,6 +37,8 @@ Significant decisions are recorded as ADRs in [`docs/adr/`](docs/adr/README.md).
 
 `CHANGELOG.md` is generated, never edited by hand. On every push to `main`, the `Changelog` workflow runs [git-cliff](https://git-cliff.org) with `cliff.toml` and commits the result back to `main` as `chore(changelog): update CHANGELOG.md`. The workflow ignores pushes that only change `CHANGELOG.md`, so its own commit does not trigger it again.
 
+Only user-facing types reach the changelog: `feat`, `fix`, `perf`, `docs` and `revert`, plus any breaking change (`!` or a `BREAKING CHANGE:` footer) whatever its type. `chore`, `ci`, `build`, `test`, `style` and `refactor` are left out. Merging one of those produces no changelog change, so no changelog commit follows and other open pull requests do not fall behind `main`.
+
 To let that single workflow push to the protected `main`, it authenticates with a **deploy key** that is on the ruleset's bypass list. The key is stored as `CHANGELOG_DEPLOY_KEY` in the `changelog` environment, which only the `main` branch may use, so workflows on other branches cannot read it. The workflow token itself stays read-only.
 
 Do not write the literal skip-CI marker (`[skip ci]` and its variants) in a PR description: the description becomes the squash commit body, and GitHub then skips every workflow for that commit, including the changelog.
