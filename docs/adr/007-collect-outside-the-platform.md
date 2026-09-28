@@ -31,3 +31,12 @@ Start collecting now, independently of the platform:
 - GitHub Actions scheduling is best effort: runs can be delayed or dropped under load, the minimum interval is 5 minutes, and scheduled workflows are disabled after 60 days without repository activity. Gaps are visible from the sidecars and are recorded in [`docs/weaknesses.md`](../weaknesses.md).
 - The raw data becomes public on the `data` branch, which NLOD 2.0 allows with attribution (#32).
 - Revisit when platform access arrives: the collector is retired once platform ingestion is verified (#18).
+
+## Addendum 2026-09-28: scheduling in practice
+
+This does not change the decision; it records evidence that sharpens its main consequence.
+
+- After the collector was merged (#6, 2026-09-28 16:32 UTC), a manual run created the `data` branch and stored the first snapshot, but **no scheduled run had started within the first hour** (checked 17:33 UTC), although every documented requirement was met: the workflow is on the default branch and active, the cron is valid, Actions is enabled, and the repository is not a fork.
+- GitHub describes scheduled workflows as best effort. Runs *"may be delayed or potentially dropped"* under load, new or inactive repositories may see delayed scheduling, and GitHub staff note that *"any commit pushed to the default branch will resync the impacted scheduled workflows"* ([community discussion #185355](https://github.com/orgs/community/discussions/185355)). Typical delays are 3–10 minutes, but can exceed an hour, and a run may be skipped for a whole day.
+- If scheduling stays unreliable, the options are staggered minutes (`2-59/5`) with a commit to `main`, or an external scheduler (for example cron-job.org or a Cloudflare Workers cron trigger) calling the workflow's `workflow_dispatch` with a token limited to this repository. The latter would be a new, small dependency and would be recorded here or in a new ADR.
+
