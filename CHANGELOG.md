@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.2.0] - 2026-09-28
+
+### Features
+
+- **bronze:** Scheduled raw snapshot collector outside Fabric ([#44](https://github.com/VirtueMe/stavangerparking/pull/44))
+
 ## [0.1.1] - 2026-09-28
 
 ### Documentation
