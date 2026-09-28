@@ -1,0 +1,81 @@
+name: Release
+
+# Every merge to main with a changelog-relevant change (see cliff.toml) becomes a version:
+# a tag, a dated CHANGELOG.md section, the package version and a GitHub Release.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    # The release commit pushed by this job must not start another release
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    # The deploy key lives in this environment, which only main may use
+    environment: changelog
+    permissions:
+      # For the GitHub Release; the token still cannot push to main (no ruleset bypass)
+      contents: write
+    steps:
+      # The deploy key is on the main ruleset's bypass list, so this job can push
+      # to main while everyone else has to go through a pull request
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          ssh-key: ${{ secrets.CHANGELOG_DEPLOY_KEY }}
+
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      # git-cliff (pinned in uv.lock, group "release") decides both whether to release and the
+      # version: only changelog-relevant commits since the last tag count (see cliff.toml)
+      - name: Next version
+        id: version
+        run: |
+          cliff() { uv run --only-group release git-cliff "$@"; }
+          unreleased=$(cliff --unreleased --context | jq '[.[] | .commits | length] | add // 0')
+          echo "unreleased changelog entries: $unreleased"
+          if [ "$unreleased" -eq 0 ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$(cliff --bumped-version)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Changelog, package version and release notes
+        if: steps.version.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          cliff() { uv run --only-group release git-cliff "$@"; }
+          cliff --tag "$TAG" -o CHANGELOG.md
+          cliff --tag "$TAG" --unreleased --strip header > "$RUNNER_TEMP/notes.md"
+          uv version "${TAG#v}" --no-sync
+
+      # Commit and tag are pushed atomically. If another merge landed meanwhile, the push is
+      # rejected and nothing is published; the queued run for that merge releases both.
+      - name: Commit, tag and push
+        if: steps.version.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md pyproject.toml uv.lock
+          git commit -m "chore(release): $TAG"
+          git tag -a "$TAG" -m "$TAG"
+          git push --atomic origin HEAD:main "$TAG"
+
+      - name: GitHub Release
+        if: steps.version.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
