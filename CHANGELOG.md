@@ -18,4 +18,5 @@ Conventional Commit messages on `main`.
 
 - Add .gitignore ([#31](https://github.com/VirtueMe/stavangerparking/pull/31))
 - Remove backlog.md ([#34](https://github.com/VirtueMe/stavangerparking/pull/34))
+- Repository scaffolding ([#35](https://github.com/VirtueMe/stavangerparking/pull/35))
 
