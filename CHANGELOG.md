@@ -9,14 +9,3 @@ Conventional Commit messages on `main`.
 
 - Add backlog and README
 
-### CI and Build
-
-- Add PR title check and changelog workflows ([#29](https://github.com/VirtueMe/stavangerparking/pull/29))
-- Restrict changelog deploy key to main and handle concurrent merges ([#30](https://github.com/VirtueMe/stavangerparking/pull/30))
-
-### Chores
-
-- Add .gitignore ([#31](https://github.com/VirtueMe/stavangerparking/pull/31))
-- Remove backlog.md ([#34](https://github.com/VirtueMe/stavangerparking/pull/34))
-- Repository scaffolding ([#35](https://github.com/VirtueMe/stavangerparking/pull/35))
-
