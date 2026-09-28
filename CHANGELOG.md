@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.2.2] - 2026-09-28
+
+### Documentation
+
+- Architecture and data model sketch ([#47](https://github.com/VirtueMe/stavangerparking/pull/47))
+
 ## [0.2.1] - 2026-09-28
 
 ### Documentation
