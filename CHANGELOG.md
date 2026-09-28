@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.1.1] - 2026-09-28
+
+### Documentation
+
+- **adr:** Initial architecture decisions ([#43](https://github.com/VirtueMe/stavangerparking/pull/43))
+
 ## [0.1.0] - 2026-09-28
 
 ### Features
