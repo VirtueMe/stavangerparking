@@ -25,10 +25,8 @@ import polars as pl
 from deltalake import DeltaTable
 
 from stavanger_parking.bronze.collector import SIDECAR_SUFFIX, raw_glob, sidecar_path
-from stavanger_parking.config import Source, load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, Source, load_sources
 from stavanger_parking.tables import table_path
-
-DEFAULT_CONFIG = Path("config/sources.json")
 
 # Metadata columns added to every bronze row; source fields keep their own names
 METADATA_SCHEMA = {

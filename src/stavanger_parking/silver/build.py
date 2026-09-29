@@ -33,8 +33,8 @@ from pathlib import Path
 import polars as pl
 from deltalake import DeltaTable
 
-from stavanger_parking.bronze.load import DEFAULT_CONFIG, bronze_path
-from stavanger_parking.config import Source, load_sources
+from stavanger_parking.bronze.load import bronze_path
+from stavanger_parking.config import DEFAULT_CONFIG, Source, load_sources
 from stavanger_parking.silver.dedup import CONFLICTING_DUPLICATE, deduplicate
 from stavanger_parking.silver.freshness import freshness
 from stavanger_parking.silver.parse import parse_readings

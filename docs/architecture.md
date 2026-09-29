@@ -155,7 +155,8 @@ erDiagram
     fact_parking_hourly {
         int facility_key FK
         int date_key FK
-        int hour
+        int hour "local Oslo hour"
+        timestamp hour_start "UTC; the grain"
         decimal avg_available_spaces "time-weighted"
         int min_available_spaces
         int max_available_spaces
