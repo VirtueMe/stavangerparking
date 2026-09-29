@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.15.0] - 2026-09-29
+
+### Features
+
+- **pricing:** Pricing rules and suggested price ([#75](https://github.com/VirtueMe/stavangerparking/pull/75))
+
 ## [0.14.2] - 2026-09-29
 
 ### Documentation
