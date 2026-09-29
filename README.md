@@ -36,6 +36,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
 | `docs/gold.md` | [Gold](docs/gold.md): the star schema's dimensions and facts |
 | `powerbi/` | [Power BI project](docs/report.md): the semantic model as TMDL and the report pages |
+| `docs/price-boards.md` | [Price boards](docs/price-boards.md): requirements for showing a dynamic price at the entrance (discussion only) |
 | `docs/pricing.md` | [Suggested prices](docs/pricing.md): tariffs, pricing rules and `fact_suggested_price` |
 | `docs/maintenance.md` | [Table maintenance](docs/maintenance.md): compacting and vacuuming the Delta tables |
 | `docs/quality.md` | [Data quality checks](docs/quality.md): what is checked, what stops a run, and the stored results |

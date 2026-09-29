@@ -53,3 +53,5 @@ One row per facility per hour of `fact_parking_hourly`.
 ## On the current data
 
 Every hour since 23 September rests on the frozen feed, so **no hour is priced**: 1,001 hours are `stale`, and the rest `no_data` (Posten and Kyrre report only "Open"). Pricing on data that is days old would be pricing on a fiction; the table says so instead.
+
+What it would take to show such prices to drivers on boards at the entrance, including the legal requirements, is discussed in [`docs/price-boards.md`](price-boards.md).
