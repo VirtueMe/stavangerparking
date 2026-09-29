@@ -35,6 +35,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
 | `docs/gold.md` | [Gold](docs/gold.md): the star schema's dimensions and facts |
 | `powerbi/` | [Power BI project](docs/report.md): the semantic model as TMDL and the report pages |
+| `docs/maintenance.md` | [Table maintenance](docs/maintenance.md): compacting and vacuuming the Delta tables |
 | `docs/quality.md` | [Data quality checks](docs/quality.md): what is checked, what stops a run, and the stored results |
 | `docs/architecture.md` | [Architecture](docs/architecture.md): data flow, layers and star schema |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |

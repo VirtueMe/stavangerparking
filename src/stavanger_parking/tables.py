@@ -31,3 +31,20 @@ HOURLY_TABLE = "fact_parking_hourly"
 
 # Quality
 QUALITY_TABLE = "quality_check_results"
+
+# Every table the pipeline writes besides the bronze tables (those are named in the source
+# configuration). Maintenance works through this list; a test checks it against a full run.
+PIPELINE_TABLES = (
+    FETCH_TABLE,
+    READING_TABLE,
+    QUARANTINE_TABLE,
+    FRESHNESS_TABLE,
+    STALE_PERIOD_TABLE,
+    AREA_TABLE,
+    DATE_TABLE,
+    TIME_TABLE,
+    FACILITY_TABLE,
+    AVAILABILITY_TABLE,
+    HOURLY_TABLE,
+    QUALITY_TABLE,
+)
