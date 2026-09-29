@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.11.0] - 2026-09-29
+
+### Features
+
+- **gold:** Hourly aggregate fact ([#61](https://github.com/VirtueMe/stavangerparking/pull/61))
+
 ## [0.10.0] - 2026-09-29
 
 ### Features
