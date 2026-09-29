@@ -26,7 +26,7 @@ import polars as pl
 from deltalake import DeltaTable
 
 from stavanger_parking.config import DEFAULT_CONFIG, load_sources
-from stavanger_parking.facilities import load_facility_mapping
+from stavanger_parking.facilities import DEFAULT_MAPPING, load_facility_mapping
 from stavanger_parking.gold.availability import availability
 from stavanger_parking.gold.calendar import FIRST_DATE, LAST_DATE, dim_date, dim_time
 from stavanger_parking.gold.facility import (
@@ -50,8 +50,6 @@ from stavanger_parking.tables import (
     TIME_TABLE,
     table_path,
 )
-
-DEFAULT_MAPPING = Path("config/facility_mapping.json")
 
 
 class BuildError(RuntimeError):

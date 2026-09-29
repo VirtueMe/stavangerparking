@@ -1,3 +1,4 @@
+import dataclasses
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -12,6 +13,7 @@ from stavanger_parking.bronze.collector import (
     SLOW,
     CollectError,
     collect,
+    content_hash,
     decide,
     find_gaps,
     mode_after,
@@ -106,10 +108,27 @@ def test_fast_mode_fetches_on_every_run():
     history = sidecars(["a", "b", "c"])
     decision = decide(T0 + timedelta(minutes=15), history, POLLING)
     assert (decision.fetch, decision.mode) == (True, FAST)
-    assert decision.reason == "3 of 5 snapshots needed to compare"
+    assert decision.reason.startswith("3 of 5 snapshots needed to compare")
 
-    changed = decide(T0 + timedelta(minutes=30), sidecars(["a", "a", "a", "a", "b"]), POLLING)
-    assert changed.reason == "values changed within the last 5 snapshots"
+    changed = decide(T0 + timedelta(minutes=25), sidecars(["a", "a", "a", "a", "b"]), POLLING)
+    assert changed.fetch
+    assert changed.reason.startswith("values changed within the last 5 snapshots")
+
+
+def test_a_run_soon_after_the_last_fetch_is_not_due_even_in_fast_mode():
+    # Two runs 2 minutes apart, e.g. a manual run right after a scheduled one
+    decision = decide(T0 + timedelta(minutes=2), sidecars(["a"]), POLLING)
+
+    assert (decision.fetch, decision.mode) == (False, FAST)
+    assert "next after 2.5 min" in decision.reason
+
+
+def test_an_hourly_source_is_due_once_its_interval_less_half_a_run_has_passed():
+    hourly = Polling(60, 60, 5, ())
+    history = sidecars(["a"])
+
+    assert not decide(T0 + timedelta(minutes=55), history, hourly).fetch
+    assert decide(T0 + timedelta(minutes=57.5), history, hourly).fetch
 
 
 def test_slow_mode_skips_until_the_slow_interval_is_nearly_over():
@@ -134,14 +153,14 @@ class FakeSource:
         self.payload, self.status, self.downloads = payload, status, 0
         self.package_show = json.loads(PACKAGE_SHOW.read_text(encoding="utf-8"))
 
-    def client(self) -> httpx.Client:
-        def handler(request: httpx.Request) -> httpx.Response:
-            if request.url.path.endswith("/package_show"):
-                return httpx.Response(200, json=self.package_show)
-            self.downloads += 1
-            return httpx.Response(self.status, content=self.payload)
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/package_show"):
+            return httpx.Response(200, json=self.package_show)
+        self.downloads += 1
+        return httpx.Response(self.status, content=self.payload)
 
-        return httpx.Client(transport=httpx.MockTransport(handler))
+    def client(self) -> httpx.Client:
+        return httpx.Client(transport=httpx.MockTransport(self.handle))
 
 
 @pytest.fixture
@@ -209,11 +228,13 @@ def test_frozen_feed_also_slows_down(source, tmp_path):
 
 
 def test_existing_files_are_never_overwritten(source, tmp_path):
-    fake = FakeSource(snapshot(QUIET))
-    run(source, tmp_path, fake, T0)
+    existing = tmp_path / render_raw_path(source.raw_path, T0)
+    existing.parent.mkdir(parents=True)
+    existing.write_bytes(b"[]")
 
     with pytest.raises(CollectError, match="Refusing to overwrite"):
-        run(source, tmp_path, fake, T0)
+        run(source, tmp_path, FakeSource(snapshot(QUIET)), T0)
+    assert existing.read_bytes() == b"[]"
 
 
 def test_download_failure_fails_the_run_and_stores_nothing(source, tmp_path):
@@ -308,10 +329,11 @@ def test_cli_gaps_lists_gaps(tmp_path, capsys):
 
 
 def test_an_unpolled_source_is_fetched_from_its_url_whenever_collected(register, tmp_path):
+    unpolled = dataclasses.replace(register, polling=None, filter=None)
     fake = FakeSource(REGISTER.read_bytes())
 
-    first = run(register, tmp_path, fake, T0, run_id="7-1")
-    second = run(register, tmp_path, fake, T0 + timedelta(minutes=1))
+    first = run(unpolled, tmp_path, fake, T0, run_id="7-1")
+    second = run(unpolled, tmp_path, fake, T0 + timedelta(minutes=1))
 
     assert first.raw_file == "bronze/parkeringsregisteret/2026/09/28/140000.json"
     assert (tmp_path / first.raw_file).read_bytes() == REGISTER.read_bytes()
@@ -328,17 +350,96 @@ def test_an_unpolled_source_is_fetched_from_its_url_whenever_collected(register,
 
 
 def test_an_unpolled_source_download_failure_fails_the_run(register, tmp_path):
+    unpolled = dataclasses.replace(register, polling=None, filter=None)
+
     with pytest.raises(CollectError, match="Download failed for parkeringsregisteret"):
-        run(register, tmp_path, FakeSource(b"", status=500), T0)
+        run(unpolled, tmp_path, FakeSource(b"", status=500), T0)
 
 
-def test_cli_run_collects_only_polled_sources_by_default(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(cli, "make_client", FakeSource(snapshot(QUIET)).client)
+# --- the register: hourly, filtered to the mapped areas (ADR 010) ------------------------------
 
-    cli.main(["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"])
+MAPPED = frozenset({"3650", "46816", "99999"})  # 99999 is mapped but not in the response
 
-    assert "parkeringsregisteret" not in capsys.readouterr().out
-    assert not (tmp_path / "bronze" / "parkeringsregisteret").exists()
+
+def test_only_the_mapped_records_are_stored_each_unchanged(register, tmp_path):
+    outcome = collect(
+        register, tmp_path, FakeSource(REGISTER.read_bytes()).client(), T0, "r", MAPPED
+    )
+
+    stored = json.loads((tmp_path / outcome.raw_file).read_bytes())
+    response = {a["id"]: a for a in json.loads(REGISTER.read_bytes())}
+    assert [a["id"] for a in stored] == [3650, 46816]
+    assert all(a == response[a["id"]] for a in stored)
+
+
+def test_the_sidecar_traces_a_filtered_file_to_the_full_response(register, tmp_path):
+    outcome = collect(
+        register, tmp_path, FakeSource(REGISTER.read_bytes()).client(), T0, "r", MAPPED
+    )
+
+    meta = json.loads((tmp_path / sidecar_path(outcome.raw_file)).read_text())
+    assert meta["filter"] == {
+        "field": "id",
+        "response_hash": content_hash(REGISTER.read_bytes()),
+        "applied": True,
+        "response_records": 10,
+        "kept_records": 2,
+        "missing": ["99999"],
+    }
+    assert meta["content_hash"] == content_hash((tmp_path / outcome.raw_file).read_bytes())
+    assert meta["content_hash"] != meta["filter"]["response_hash"]
+
+
+def test_a_response_that_cannot_be_filtered_is_stored_unchanged(register, tmp_path):
+    outcome = collect(
+        register, tmp_path, FakeSource(b"<html>down</html>").client(), T0, "r", MAPPED
+    )
+
+    assert (tmp_path / outcome.raw_file).read_bytes() == b"<html>down</html>"
+    meta = json.loads((tmp_path / sidecar_path(outcome.raw_file)).read_text())
+    assert meta["filter"]["applied"] is False
+
+
+def test_a_filtered_source_needs_the_values_to_keep(register, tmp_path):
+    with pytest.raises(CollectError, match="no values to keep"):
+        collect(register, tmp_path, FakeSource(REGISTER.read_bytes()).client(), T0, "r")
+
+
+def test_the_register_is_fetched_hourly(register, tmp_path):
+    fake = FakeSource(REGISTER.read_bytes())
+    at = T0
+    fetched = []
+    for _ in range(24):  # two hours of 5-minute runs
+        outcome = collect(register, tmp_path, fake.client(), at, "r", MAPPED)
+        fetched.append(outcome.decision.fetch)
+        at += timedelta(minutes=5)
+
+    assert fetched.count(True) == 2
+    assert fetched[0] and fetched[12]
+
+
+def test_cli_run_collects_the_register_with_the_parking_feed(monkeypatch, tmp_path, capsys):
+    parking, register = FakeSource(snapshot(QUIET)), FakeSource(REGISTER.read_bytes())
+
+    def client() -> httpx.Client:
+        def handler(request: httpx.Request) -> httpx.Response:
+            fake = register if request.url.host.startswith("parkreg") else parking
+            return fake.handle(request)
+
+        return httpx.Client(transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, "make_client", client)
+
+    code = cli.main(
+        ["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"]
+    )
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "stavanger_parking: fetched" in out
+    assert "parkeringsregisteret: fetched -> bronze/parkeringsregisteret/" in out
+    (stored,) = (tmp_path / "bronze" / "parkeringsregisteret").rglob("[0-9]*[0-9].json")
+    assert len(json.loads(stored.read_bytes())) == 9  # the mapped areas of the fixture
 
 
 def test_cli_run_collects_a_named_source(monkeypatch, tmp_path, capsys):
@@ -360,7 +461,9 @@ def test_cli_run_rejects_an_unknown_source(tmp_path, capsys):
     assert "no source 'nope'" in capsys.readouterr().err
 
 
-def test_cli_gaps_skips_unpolled_sources(tmp_path, capsys):
+def test_cli_gaps_covers_every_polled_source(tmp_path, capsys):
     cli.main(["--config", str(REPO_CONFIG), "gaps", "--storage", str(tmp_path)])
 
-    assert "parkeringsregisteret" not in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "stavanger_parking: 0 gap(s)" in out
+    assert "parkeringsregisteret: 0 gap(s)" in out

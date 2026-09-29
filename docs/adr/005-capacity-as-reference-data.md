@@ -1,6 +1,6 @@
 # ADR 005: Capacity comes from the national parking register, through a hand-maintained name mapping
 
-- **Status:** Accepted
+- **Status:** Accepted; the collection schedule (the second point of the decision) is replaced by [ADR 010](010-collect-the-register-hourly.md): hourly, with the parking feed
 - **Date:** 2026-09-29
 - **Issue:** #15
 

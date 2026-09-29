@@ -2,7 +2,8 @@ name: Collect
 
 # Collects raw snapshots onto the data branch (ADR 007). cron-job.org starts it every 5 minutes
 # through workflow_dispatch, because GitHub's own schedule barely ran (ADR 008); the collector
-# decides per run whether to fetch (adaptive polling, ADR 003).
+# decides per source whether it is due: the parking feed every run while values change (adaptive
+# polling, ADR 003), the parking register hourly (ADR 010).
 on:
   workflow_dispatch:
 
@@ -40,6 +41,14 @@ jobs:
             git commit -m "data: add NLOD 2.0 attribution"
             git push -u origin data
           fi
+
+      # The attribution covers every source on the branch; keep it in step with the template
+      - name: Update the data licence
+        run: |
+          cp templates/DATA-LICENCE.md data/
+          cd data
+          git add DATA-LICENCE.md
+          git diff --cached --quiet || git commit -m "data: update NLOD 2.0 attribution"
 
       - name: Collect
         id: collect
