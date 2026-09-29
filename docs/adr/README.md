@@ -12,5 +12,6 @@ Each significant decision is recorded as an ADR: the context, the decision, the 
 | [002](002-json-over-csv.md) | Use the JSON resource, not the CSV | Accepted |
 | [003](003-polling-interval.md) | Adaptive polling — every 5 minutes while values change, every 20 minutes while they don't | Accepted |
 | [007](007-collect-outside-the-platform.md) | Collect raw snapshots outside the data platform while access is pending | Accepted |
+| [008](008-trigger-collection-externally.md) | Trigger collection externally from cron-job.org, not from GitHub's schedule | Accepted |
 
 Numbers 004–006 are reserved for decisions already planned: data modelling (#15) and the scalability assessment (#22).

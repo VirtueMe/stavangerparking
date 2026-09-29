@@ -40,3 +40,6 @@ This does not change the decision; it records evidence that sharpens its main co
 - GitHub describes scheduled workflows as best effort. Runs *"may be delayed or potentially dropped"* under load, new or inactive repositories may see delayed scheduling, and GitHub staff note that *"any commit pushed to the default branch will resync the impacted scheduled workflows"* ([community discussion #185355](https://github.com/orgs/community/discussions/185355)). Typical delays are 3–10 minutes, but can exceed an hour, and a run may be skipped for a whole day.
 - If scheduling stays unreliable, the options are staggered minutes (`2-59/5`) with a commit to `main`, or an external scheduler (for example cron-job.org or a Cloudflare Workers cron trigger) calling the workflow's `workflow_dispatch` with a token limited to this repository. The latter would be a new, small dependency and would be recorded here or in a new ADR.
 
+## Addendum 2026-09-29: external trigger
+
+GitHub's schedule started 2 of about 145 expected runs in the first 12 hours. [ADR 008](008-trigger-collection-externally.md) replaces the workflow's `schedule` trigger with cron-job.org calling `workflow_dispatch`. The rest of this decision is unchanged.

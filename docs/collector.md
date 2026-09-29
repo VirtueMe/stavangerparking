@@ -4,7 +4,7 @@ The collector fetches raw snapshots from every configured source and stores them
 
 ## What a run does
 
-The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/collect.yml)) is scheduled every 5 minutes and can also be started by hand (*Run workflow*). Each run:
+The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/collect.yml)) is started every 5 minutes by cron-job.org ([below](#trigger)) and can also be started by hand (*Run workflow*). Each run:
 
 1. Checks out the `data` branch. On the very first run, it creates the branch with its own history, containing only [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md), before any snapshot is published.
 2. Runs `python -m stavanger_parking.bronze.collect run`, which for every source in [`config/sources.json`](../config/sources.json):
@@ -15,12 +15,54 @@ The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/c
 
 The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept.
 
+## Trigger
+
+GitHub's own schedule barely ran the workflow, so [cron-job.org](https://cron-job.org) starts it instead ([ADR 008](adr/008-trigger-collection-externally.md)). The workflow has no `schedule` trigger; cron-job.org is the only automatic trigger.
+
+The cron-job.org job, owned by the repository owner:
+
+| Setting | Value |
+|---|---|
+| Schedule | Every hour, every day, at minutes 2, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52 and 57 |
+| URL | `https://api.github.com/repos/VirtueMe/stavangerparking/actions/workflows/collect.yml/dispatches` |
+| Request method | `POST` |
+| Headers | `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28` |
+| Request body | `{"ref":"main"}` |
+| HTTP authentication | None; the token goes in the `Authorization` header |
+| Notifications | E-mail when a call fails |
+
+A successful call returns **HTTP 204**, and a run with the event `workflow_dispatch` appears under *Actions*.
+
+The token is a fine-grained personal access token with access to this repository only and the single permission *Actions: read and write*. It is stored only in cron-job.org, never in the repository.
+
+### Pausing collection
+
+Turn the job off in cron-job.org, and back on to resume. Runs can still be started by hand in the meantime. The gap shows up in `collect gaps`.
+
+### Rotating the token
+
+The token has an expiry date; the current one expires on **2026-12-28**. GitHub e-mails before it expires. To rotate it:
+
+1. On GitHub, *Settings → Developer settings → Fine-grained tokens*, regenerate the token (this keeps its settings) or create a new one with the same scope.
+2. In cron-job.org, replace the token in the `Authorization` header and use *Test run*: it should return 204.
+3. If a new token was created, delete the old one.
+
+### Troubleshooting
+
+| Response | Cause |
+|---|---|
+| 401 | The token is not accepted: expired, revoked, or the header is malformed. The value must be exactly `Bearer <token>`, with one space and no colon after `Bearer`, and nothing set under HTTP authentication |
+| 403 or 404 | The token is valid but lacks *Actions: read and write* on this repository |
+| 422 | The workflow is disabled, has no `workflow_dispatch` trigger, or the `ref` does not exist |
+
+cron-job.org may disable a job after repeated failures. After fixing the cause, check that the job is enabled again.
+
 ## Adaptive polling
 
 As decided in [ADR 003](adr/003-polling-interval.md):
 
 - **Fast mode:** fetch on every run (every 5 minutes) while values change.
-- **Slow mode:** after 5 consecutive snapshots with identical values, fetch every 20 minutes. A run in slow mode fetches once 17.5 minutes have passed since the last snapshot (20 minus half a fast step), because scheduled runs start late.
+- **Slow mode:** after 5 consecutive snapshots with identical values, fetch every 20 minutes. A run in slow mode fetches once 17.5 minutes have passed since the last snapshot (20 minus half a fast step), because runs can start late.
 - **Back to fast** as soon as a fetched snapshot's values differ.
 
 Values are compared through a fingerprint of every record with the fields in `polling.change_ignores_fields` left out (`Dato` and `Klokkeslett`, which advance even when nothing else changes). Both a quiet night and a frozen feed therefore slow down. All parameters are in the [source configuration](config.md).

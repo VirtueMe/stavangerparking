@@ -1,10 +1,9 @@
 name: Collect
 
-# Collects raw snapshots onto the data branch (ADR 007). The schedule fires every 5 minutes; the
-# collector decides per run whether to fetch (adaptive polling, ADR 003).
+# Collects raw snapshots onto the data branch (ADR 007). cron-job.org starts it every 5 minutes
+# through workflow_dispatch, because GitHub's own schedule barely ran (ADR 008); the collector
+# decides per run whether to fetch (adaptive polling, ADR 003).
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 concurrency:
