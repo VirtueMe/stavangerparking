@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.14.0] - 2026-09-29
+
+### Features
+
+- **report:** Power BI semantic model and report ([#66](https://github.com/VirtueMe/stavangerparking/pull/66))
+
 ## [0.13.0] - 2026-09-29
 
 ### Features
