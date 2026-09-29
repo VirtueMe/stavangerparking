@@ -38,6 +38,16 @@
         "id": "NLOD-2.0",
         "url": "https://data.norge.no/nlod/no/2.0/",
         "publisher": "Statens vegvesen"
+      },
+      "polling": {
+        "fast_interval_minutes": 60,
+        "slow_interval_minutes": 60,
+        "unchanged_snapshots_for_slow": 5,
+        "change_ignores_fields": []
+      },
+      "filter": {
+        "field": "id",
+        "mapping_field": "register_id"
       }
     }
   ]

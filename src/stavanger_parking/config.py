@@ -18,6 +18,8 @@ from dataclasses import dataclass, fields
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
+from stavanger_parking.facilities import FacilityMapping
+
 # Where the command line tools look for the config, relative to the repository root
 DEFAULT_CONFIG = Path("config/sources.json")
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -67,6 +69,18 @@ class Freshness:
 
 
 @dataclass(frozen=True)
+class RecordFilter:
+    """Store only the records whose `field` matches a `mapping_field` in the facility mapping.
+
+    For reference data of which only the mapped facilities are needed (ADR 010); the stored file is
+    then a filtered copy of the response, an exception to storing it unchanged (#62).
+    """
+
+    field: str
+    mapping_field: str
+
+
+@dataclass(frozen=True)
 class Source:
     id: str
     raw_path: str
@@ -77,6 +91,7 @@ class Source:
     # Only for sources collected on a schedule, and only for sources with a data timestamp
     polling: Polling | None = None
     freshness: Freshness | None = None
+    filter: RecordFilter | None = None
 
 
 def _field_names(cls) -> set[str]:
@@ -194,6 +209,20 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
             )
         )
 
+    record_filter = None
+    if "filter" in entry:
+        section = _section(entry, "filter", RecordFilter, label, problems)
+        record_filter = RecordFilter(
+            field=_text(section, "field", label, problems, section="filter"),
+            mapping_field=_text(section, "mapping_field", label, problems, section="filter"),
+        )
+        mappable = _field_names(FacilityMapping)
+        if record_filter.mapping_field and record_filter.mapping_field not in mappable:
+            problems.append(
+                f"{label}: filter.mapping_field must be one of {sorted(mappable)}, "
+                f"got {record_filter.mapping_field!r}"
+            )
+
     if len(problems) > before:
         return None
     return Source(
@@ -204,6 +233,7 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
         location=location,
         polling=polling,
         freshness=freshness,
+        filter=record_filter,
     )
 
 

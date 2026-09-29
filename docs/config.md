@@ -15,13 +15,14 @@ Every source is described in [`config/sources.json`](../config/sources.json). Th
 | `raw_path` | Where raw snapshots are written, relative to the storage root. Must contain `{yyyy}`, `{mm}`, `{dd}` and `{HHmmss}` (UTC) once each and in that order, so that sorting paths sorts snapshots by time |
 | `bronze_table` | Name of the bronze table, without catalog or schema |
 | `licence.id`, `licence.url`, `licence.publisher` | Licence of the data and who publishes it, used for attribution |
-| `polling.fast_interval_minutes` | Fetch interval while values change; must match the collector's trigger in cron-job.org ([ADR 003](adr/003-polling-interval.md), [ADR 008](adr/008-trigger-collection-externally.md)) |
+| `polling.fast_interval_minutes` | Fetch interval while values change. The Collect run starts every 5 minutes ([ADR 008](adr/008-trigger-collection-externally.md)), so 5 means every run; a longer interval, such as the register's 60, means every run once it has passed ([ADR 003](adr/003-polling-interval.md), [ADR 010](adr/010-collect-the-register-hourly.md)) |
 | `polling.slow_interval_minutes` | Fetch interval once values have stopped changing; not shorter than the fast interval |
 | `polling.unchanged_snapshots_for_slow` | How many consecutive snapshots with identical values switch to the slow interval |
 | `polling.change_ignores_fields` | Fields left out when comparing snapshots, such as the data timestamp that advances regardless of the values |
+| `filter.field`, `filter.mapping_field` | Optional: store only the records whose `field` matches a `mapping_field` (such as `register_id`) in the [facility mapping](#facility-mapping); the stored file is then a filtered copy of the response ([ADR 010](adr/010-collect-the-register-hourly.md)) |
 | `freshness.stale_after_minutes` | How old the source's newest timestamp may be when fetched before the snapshot counts as stale ([silver](silver.md#source-staleness)) |
 
-`polling` and `freshness` are optional; every other field is required. A source with `polling` is collected by the scheduled collector; a source without it is collected only when named (`collect run --source <id>`), such as reference data fetched once a month. `freshness` only applies to sources whose data carries its own timestamp. Unknown fields are rejected, so a misspelt field fails instead of being silently ignored. The config is validated on load, and every problem is reported at once, naming the source and field.
+`polling`, `freshness` and `filter` are optional; every other field is required. A source with `polling` is collected by the scheduled collector; a source without it is collected only when named (`collect run --source <id>`), such as reference data fetched once a month. `freshness` only applies to sources whose data carries its own timestamp. Unknown fields are rejected, so a misspelt field fails instead of being silently ignored. The config is validated on load, and every problem is reported at once, naming the source and field.
 
 **Relative on purpose:** the storage root (a local folder, the Lakehouse `Files/` area or a Unity Catalog volume) and the catalog or schema of the tables belong to the runtime environment, not to the source. The same config works locally and on the platform.
 

@@ -179,7 +179,7 @@ erDiagram
 
 - **`dim_date`**: one row per day from 2020 to 2035, with ISO week, weekday, weekend and Norwegian public holidays ([`docs/gold.md`](gold.md#dim_date)).
 - **`dim_time`**: one row per minute of the day, with a 15-minute bucket and part of day ([`docs/gold.md`](gold.md#dim_time)).
-- **`dim_parking_facility`**: one row per facility, maintained with MERGE (#12). The facility name is the natural key (ADR 004). Capacity comes from the national parking register (Parkeringsregisteret), collected monthly and linked to the feed's names by a hand-maintained mapping file, and may be unknown (ADR 005). Attributes are overwritten (type 1); `first_seen`, `last_seen` and `is_active` record the facility's lifetime in the feed. The unknown member (`-1`) catches facts whose facility cannot be resolved, so no fact row is lost.
+- **`dim_parking_facility`**: one row per facility, maintained with MERGE (#12). The facility name is the natural key (ADR 004). Capacity comes from the national parking register (Parkeringsregisteret), collected hourly (ADR 010) and linked to the feed's names by a hand-maintained mapping file, and may be unknown (ADR 005). Attributes are overwritten (type 1); `first_seen`, `last_seen` and `is_active` record the facility's lifetime in the feed. The unknown member (`-1`) catches facts whose facility cannot be resolved, so no fact row is lost.
 
 ## Configuration, new sources and new facilities
 

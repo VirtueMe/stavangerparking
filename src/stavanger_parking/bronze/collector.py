@@ -4,12 +4,22 @@ Each fetched snapshot is stored unchanged at the source's `raw_path`, next to a 
 (`<name>.meta.json`) describing it. The polling mode is derived from the latest sidecars, so the
 storage itself is the only state:
 
-- fast: fetch on every scheduled run (every `fast_interval_minutes`)
+- fast: fetch every `fast_interval_minutes`
 - slow: once the last `unchanged_snapshots_for_slow` snapshots have identical values, fetch only
   every `slow_interval_minutes`; the first changed snapshot switches back to fast
 
-A source without `polling`, such as monthly reference data (ADR 005), is fetched whenever it is
-collected (`on_demand`); its sidecars have no fingerprint or next due time.
+The Collect run starts every 5 minutes (ADR 008) and asks every polled source whether it is due: it
+is once its interval, less half a run, has passed since its last snapshot. The parking feed (fast
+interval 5) is therefore fetched on every run while values change, and a source with a longer
+interval, such as the hourly register (ADR 010), only when its interval has passed.
+
+A source without `polling` is fetched whenever it is collected by name (`on_demand`); its sidecars
+have no fingerprint or next due time.
+
+A source with a `filter` keeps only the records it names (the facility mapping's areas in the
+register, ADR 010): the stored file is a filtered copy of the response, each record unchanged, and
+the sidecar's `filter` records the full response's hash and record count, so the file stays
+traceable to what the source returned (#62).
 """
 
 import hashlib
@@ -95,10 +105,15 @@ def mode_after(fingerprints: list[str | None], polling: Polling) -> str:
     return SLOW if unchanged and window[0] is not None else FAST
 
 
-def slow_fetch_due_after(polling: Polling) -> timedelta:
-    # Scheduled runs start late; fetching from half a fast step early keeps the effective
-    # slow interval close to slow_interval_minutes instead of drifting a full step beyond it
-    return timedelta(minutes=polling.slow_interval_minutes - polling.fast_interval_minutes / 2)
+# The Collect run's cadence (ADR 008). Runs start late, so a source is due from half a run before
+# its interval has passed; otherwise its effective interval would drift a full run beyond it
+RUN_INTERVAL = timedelta(minutes=5)
+
+
+def fetch_due_after(polling: Polling, mode: str) -> timedelta:
+    """How long after its last snapshot a source in `mode` is due again."""
+    minutes = polling.slow_interval_minutes if mode == SLOW else polling.fast_interval_minutes
+    return timedelta(minutes=minutes) - RUN_INTERVAL / 2
 
 
 def decide(now: datetime, sidecars: list[dict], polling: Polling) -> Decision:
@@ -107,17 +122,19 @@ def decide(now: datetime, sidecars: list[dict], polling: Polling) -> Decision:
         return Decision(True, FAST, "no earlier snapshot")
     needed = polling.unchanged_snapshots_for_slow
     if len(sidecars) < needed:
-        return Decision(True, FAST, f"{len(sidecars)} of {needed} snapshots needed to compare")
-    if mode_after(_fingerprints(sidecars), polling) == FAST:
-        return Decision(True, FAST, f"values changed within the last {needed} snapshots")
-    last = datetime.fromisoformat(sidecars[-1]["ingested_at"])
-    elapsed = now - last
-    unchanged = f"values unchanged for {polling.unchanged_snapshots_for_slow} snapshots"
-    if elapsed >= slow_fetch_due_after(polling):
-        return Decision(True, SLOW, f"{unchanged}; {_minutes(elapsed)} since the last fetch")
-    due = _minutes(slow_fetch_due_after(polling))
+        mode, reason = FAST, f"{len(sidecars)} of {needed} snapshots needed to compare"
+    elif mode_after(_fingerprints(sidecars), polling) == FAST:
+        mode, reason = FAST, f"values changed within the last {needed} snapshots"
+    else:
+        mode, reason = SLOW, f"values unchanged for {needed} snapshots"
+    elapsed = now - datetime.fromisoformat(sidecars[-1]["ingested_at"])
+    due_after = fetch_due_after(polling, mode)
+    if elapsed >= due_after:
+        return Decision(True, mode, f"{reason}; {_minutes(elapsed)} since the last fetch")
     return Decision(
-        False, SLOW, f"{unchanged}; last fetch {_minutes(elapsed)} ago, next after {due}"
+        False,
+        mode,
+        f"{reason}; last fetch {_minutes(elapsed)} ago, next after {_minutes(due_after)}",
     )
 
 
@@ -155,12 +172,37 @@ def read_sidecars(storage: Path, source: Source, limit: int | None = None) -> li
     return [json.loads(f.read_text(encoding="utf-8")) for f in files]
 
 
+def filter_records(payload: bytes, field: str, keep: frozenset[str]) -> tuple[bytes, dict]:
+    """The records whose `field` is in `keep`, as JSON, and what the filter did.
+
+    Values are compared as text, so an id of 3650 matches "3650". A payload that is not a JSON
+    list of objects is returned unchanged, with `applied: false`, so it is still stored.
+    """
+    info = {"field": field, "response_hash": content_hash(payload)}
+    try:
+        records = json.loads(payload)
+    except ValueError:
+        records = None
+    if not isinstance(records, list) or not all(isinstance(r, dict) for r in records):
+        return payload, {**info, "applied": False}
+    kept = [r for r in records if str(r.get(field)) in keep]
+    found = {str(r.get(field)) for r in kept}
+    info |= {
+        "applied": True,
+        "response_records": len(records),
+        "kept_records": len(kept),
+        "missing": sorted(keep - found),
+    }
+    return (json.dumps(kept, ensure_ascii=False, indent=1) + "\n").encode("utf-8"), info
+
+
 def collect(
     source: Source,
     storage: Path,
     client: httpx.Client,
     now: datetime,
     run_id: str,
+    keep: frozenset[str] | None = None,
 ) -> Outcome:
     """Collect a source once: decide (if it is polled), and fetch and store if due."""
     polling = source.polling
@@ -185,6 +227,11 @@ def collect(
     except httpx.HTTPError as e:
         raise CollectError(f"Download failed for {source.id}: {url}: {e}") from e
     payload = response.content
+    filtered = None
+    if source.filter is not None:
+        if keep is None:
+            raise CollectError(f"{source.id} has a filter, but no values to keep were given")
+        payload, filtered = filter_records(payload, source.filter.field, keep)
 
     raw_file = render_raw_path(source.raw_path, now)
     fingerprint = mode = due = None
@@ -205,6 +252,8 @@ def collect(
         "polling_mode": mode,
         "next_due": due,
     }
+    if filtered is not None:
+        sidecar["filter"] = filtered
 
     _write_new(storage / raw_file, payload)
     _write_new(

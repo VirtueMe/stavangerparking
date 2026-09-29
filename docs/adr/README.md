@@ -12,9 +12,10 @@ Each significant decision is recorded as an ADR: the context, the decision, the 
 | [002](002-json-over-csv.md) | Use the JSON resource, not the CSV | Accepted |
 | [003](003-polling-interval.md) | Adaptive polling — every 5 minutes while values change, every 20 minutes while they don't | Accepted |
 | [004](004-facility-name-as-natural-key.md) | The facility name in the feed is the natural key of a facility | Accepted |
-| [005](005-capacity-as-reference-data.md) | Capacity comes from the national parking register, through a hand-maintained name mapping | Accepted |
+| [005](005-capacity-as-reference-data.md) | Capacity comes from the national parking register, through a hand-maintained name mapping | Accepted; collection replaced by 010 |
 | [007](007-collect-outside-the-platform.md) | Collect raw snapshots outside the data platform while access is pending | Accepted |
 | [008](008-trigger-collection-externally.md) | Trigger collection externally from cron-job.org, not from GitHub's schedule | Accepted |
 | [009](009-silver-model.md) | Silver keeps every fetch and derives readings, conflicts and staleness from them | Accepted |
+| [010](010-collect-the-register-hourly.md) | Collect the parking register hourly with the parking feed, keeping only the mapped areas | Accepted |
 
 Number 006 is reserved for the scalability assessment (#22).

@@ -209,14 +209,25 @@ def test_a_polling_section_must_be_an_object(config):
     assert "polling is required and must be an object" in problems_of(config)
 
 
-def test_repository_register_source_is_fetched_by_url_and_not_polled():
+def test_repository_register_source_is_fetched_hourly_by_url_and_filtered():
     register = next(s for s in load_sources(REPO_CONFIG) if s.id == "parkeringsregisteret")
 
     assert isinstance(register.location, HttpLocation)
     assert register.location.url.startswith("https://parkreg-open.atlas.vegvesen.no/")
     assert "orgnr=974782766" in register.location.url
-    assert (register.polling, register.freshness) == (None, None)
+    assert (register.polling.fast_interval_minutes, register.polling.slow_interval_minutes) == (
+        60,
+        60,
+    )
+    assert (register.filter.field, register.filter.mapping_field) == ("id", "register_id")
+    assert register.freshness is None
     assert register.licence.publisher == "Statens vegvesen"
+
+
+def test_a_filter_names_a_field_of_the_facility_mapping(config):
+    config["sources"][1]["filter"]["mapping_field"] = "capacity"
+
+    assert "filter.mapping_field must be one of" in problems_of(config)
 
 
 @pytest.mark.parametrize("sections", [(), ("ckan", "http")])
