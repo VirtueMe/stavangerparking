@@ -171,13 +171,13 @@ erDiagram
 
 - **`dim_date`**: one row per day, with ISO week, weekday, weekend and Norwegian public holidays (#11).
 - **`dim_time`**: one row per minute of the day, with a 15-minute bucket and part of day (#11).
-- **`dim_parking_facility`**: one row per facility, maintained with MERGE (#12). The facility name is the natural key (ADR 004, #15). Capacity comes from a manually maintained reference file and may be unknown (ADR 005, #15). Attributes are overwritten (type 1); `first_seen`, `last_seen` and `is_active` record the facility's lifetime in the feed. The unknown member (`-1`) catches facts whose facility cannot be resolved, so no fact row is lost.
+- **`dim_parking_facility`**: one row per facility, maintained with MERGE (#12). The facility name is the natural key (ADR 004). Capacity comes from the national parking register (Parkeringsregisteret), collected monthly and linked to the feed's names by a hand-maintained mapping file, and may be unknown (ADR 005). Attributes are overwritten (type 1); `first_seen`, `last_seen` and `is_active` record the facility's lifetime in the feed. The unknown member (`-1`) catches facts whose facility cannot be resolved, so no fact row is lost.
 
 ## Configuration, new sources and new facilities
 
 - **Configuration** lives in [`config/sources.json`](../config/sources.json): per source, the CKAN location, the raw path template, the bronze table, the licence and the polling parameters ([`docs/config.md`](config.md)). Paths and table names are relative; the storage root and schema belong to the runtime, so the same config works locally and on the platform.
 - **A new source** is a new config entry; no code changes. The collector, bronze loading and the tests pick it up.
-- **A new facility** needs nothing at all. It appears in the next snapshot, flows through bronze and silver unchanged, and the facility MERGE inserts it into `dim_parking_facility` with a new surrogate key and `first_seen` (tested with a synthetic 10th facility in #12). Its capacity is unknown until the reference file is updated.
+- **A new facility** needs nothing at all. It appears in the next snapshot, flows through bronze and silver unchanged, and the facility MERGE inserts it into `dim_parking_facility` with a new surrogate key and `first_seen` (tested with a synthetic 10th facility in #12). Its capacity is unknown until it is added to the mapping file.
 - **A facility that disappears** from the feed is marked `is_active = false`, never deleted, so its history keeps its dimension row.
 - **A renamed facility** would appear as a new facility, because the name is the natural key: a known weakness, discussed in ADR 004 (#15).
 
