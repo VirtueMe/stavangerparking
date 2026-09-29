@@ -10,8 +10,10 @@ Under `--tables-root`:
   and a facility no longer in silver is marked inactive, never deleted. It needs silver's fetch
   table; capacities come from `silver_parking_area` through the facility mapping, and are unknown
   until the register has been collected.
+- `fact_parking_availability` is rebuilt from silver's readings and the dimensions
+  (`gold.availability`); a reading whose date is outside `dim_date` stops the build.
 
-The facts come later (#13, #14).
+The hourly fact comes later (#14).
 """
 
 import argparse
@@ -22,7 +24,8 @@ import polars as pl
 from deltalake import DeltaTable
 
 from stavanger_parking.facilities import load_facility_mapping
-from stavanger_parking.gold.calendar import dim_date, dim_time
+from stavanger_parking.gold.availability import availability
+from stavanger_parking.gold.calendar import FIRST_DATE, LAST_DATE, dim_date, dim_time
 from stavanger_parking.gold.facility import (
     ATTRIBUTES,
     FACILITY_SCHEMA,
@@ -33,9 +36,12 @@ from stavanger_parking.gold.facility import (
 from stavanger_parking.silver.register import AREA_SCHEMA
 from stavanger_parking.tables import (
     AREA_TABLE,
+    AVAILABILITY_TABLE,
     DATE_TABLE,
     FACILITY_TABLE,
     FETCH_TABLE,
+    READING_TABLE,
+    STALE_PERIOD_TABLE,
     TIME_TABLE,
     table_path,
 )
@@ -54,7 +60,28 @@ def build(tables_root: str, mapping_path=DEFAULT_MAPPING, storage_options=None) 
         _overwrite(frame, table_path(tables_root, name), storage_options)
         written[name] = frame.height
     written[FACILITY_TABLE] = build_facilities(tables_root, mapping_path, storage_options)
+    written[AVAILABILITY_TABLE] = build_availability(tables_root, storage_options)
     return written
+
+
+def build_availability(tables_root: str, storage_options=None) -> int:
+    """Replace `fact_parking_availability`; returns its number of rows."""
+
+    def read(name: str) -> pl.DataFrame:
+        return pl.read_delta(table_path(tables_root, name), storage_options=storage_options)
+
+    fact = availability(
+        read(READING_TABLE), read(FETCH_TABLE), read(FACILITY_TABLE), read(STALE_PERIOD_TABLE)
+    )
+    first, last = (int(d.strftime("%Y%m%d")) for d in (FIRST_DATE, LAST_DATE))
+    outside = fact.filter(~pl.col("date_key").is_between(first, last))
+    if outside.height:
+        raise BuildError(
+            f"{outside.height} reading(s) fall outside dim_date ({FIRST_DATE} to {LAST_DATE}), "
+            f"e.g. date_key {outside['date_key'][0]}; extend the range in gold/calendar.py"
+        )
+    _overwrite(fact, table_path(tables_root, AVAILABILITY_TABLE), storage_options)
+    return fact.height
 
 
 def build_facilities(tables_root: str, mapping_path, storage_options=None) -> int:
