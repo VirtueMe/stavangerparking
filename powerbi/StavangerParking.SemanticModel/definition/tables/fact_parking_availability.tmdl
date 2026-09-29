@@ -1,0 +1,135 @@
+/// One row per facility per source reading. available_spaces is semi-additive: sum across facilities at one time, never over time (docs/gold.md#fact_parking_availability).
+table fact_parking_availability
+
+	/// Facility
+	column facility_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: facility_key
+
+	/// Local Oslo date of the reading
+	column date_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: date_key
+
+	/// Local Oslo time of the reading, hhmm
+	column time_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: time_key
+
+	/// The source's timestamp (UTC)
+	column valid_from
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: valid_from
+
+	/// The facility's next reading (UTC); blank for the current one
+	column valid_to
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: valid_to
+
+	/// valid_to - valid_from; weight time averages by it
+	column duration_minutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: duration_minutes
+
+	/// Free spaces; blank when status is open or unknown
+	column available_spaces
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: available_spaces
+
+	/// numeric, open or unknown
+	column status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	/// Capacity minus free spaces; negative means the capacity is wrong
+	column occupied_spaces
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: occupied_spaces
+
+	/// The source was seen stale while this was its newest reading
+	column is_stale
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: is_stale
+
+	/// First fetch that saw the reading (UTC)
+	column first_ingested_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: first_ingested_at
+
+	/// Last fetch that saw the reading (UTC): where the evidence ends
+	column last_fetched_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: last_fetched_at
+
+	/// Free spaces in each facility's latest reading within the selection, summed across facilities.
+	/// Semi-additive: it adds up across facilities at one time, never over time. Blank while a facility reports "Open".
+	measure 'Free spaces (latest)' =
+			SUMX (
+				VALUES ( fact_parking_availability[facility_key] ),
+				VAR latest = CALCULATE ( MAX ( fact_parking_availability[valid_from] ) )
+				RETURN
+					CALCULATE (
+						MAX ( fact_parking_availability[available_spaces] ),
+						fact_parking_availability[valid_from] = latest
+					)
+			)
+		formatString: #,0
+		displayFolder: Availability
+
+	/// Number of source readings. Readings are irregular (ADR 003): never average over them unweighted.
+	measure Readings = COUNTROWS ( fact_parking_availability )
+		formatString: #,0
+		displayFolder: Freshness
+
+	/// How old the newest reading was at the last fetch that saw it, in minutes.
+	measure 'Data age (minutes)' =
+			DATEDIFF (
+				MAX ( fact_parking_availability[valid_from] ),
+				MAX ( fact_parking_availability[last_fetched_at] ),
+				MINUTE
+			)
+		formatString: #,0
+		displayFolder: Freshness
+
+	/// "Stale" if a current reading (no next reading yet) was seen stale, otherwise "Fresh".
+	measure 'Source status' =
+			IF (
+				CALCULATE (
+					COUNTROWS ( fact_parking_availability ),
+					ISBLANK ( fact_parking_availability[valid_to] ),
+					fact_parking_availability[is_stale] = TRUE ()
+				) > 0,
+				"Stale",
+				"Fresh"
+			)
+		displayFolder: Freshness
+
+	/// NLOD 2.0 attribution for both sources, for a card or text box on the report (required by the licences, #32).
+	measure Attribution =
+			"Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune "
+				& "(Stavanger parkering, https://opencom.no/dataset/stavanger-parkering) and by Statens vegvesen "
+				& "(Parkeringsregisteret). Licence: https://data.norge.no/nlod/en/2.0"
+		displayFolder: About
+
+	partition fact_parking_availability = m
+		mode: import
+		source = DeltaTable("fact_parking_availability")

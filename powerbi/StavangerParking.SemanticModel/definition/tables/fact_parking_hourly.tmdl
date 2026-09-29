@@ -1,0 +1,135 @@
+/// One row per facility per UTC hour, with time-weighted measures (docs/gold.md#fact_parking_hourly).
+table fact_parking_hourly
+
+	/// Facility
+	column facility_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: facility_key
+
+	/// Local Oslo date of the hour
+	column date_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: date_key
+
+	/// Local Oslo hour; the autumn DST day has hour 2 twice
+	column hour
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: hour
+
+	/// Start of the hour (UTC): the grain
+	column hour_start
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: hour_start
+
+	/// Time-weighted average free spaces over the covered minutes with a count
+	column avg_available_spaces
+		dataType: double
+		summarizeBy: none
+		sourceColumn: avg_available_spaces
+
+	/// Lowest reading in the hour
+	column min_available_spaces
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: min_available_spaces
+
+	/// Highest reading in the hour
+	column max_available_spaces
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: max_available_spaces
+
+	/// Readings overlapping the hour
+	column observation_count
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: observation_count
+
+	/// Minutes of the hour covered by readings (0 to 60)
+	column covered_minutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: covered_minutes
+
+	/// Covered minutes with a count (not open or unknown): the weight of avg_available_spaces
+	column counted_minutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: counted_minutes
+
+	/// Covered minutes resting on stale data
+	column stale_minutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: stale_minutes
+
+	/// Time-weighted average free spaces per facility, summed across facilities (semi-additive).
+	/// Each hour is weighted by its counted minutes, so partly covered or partly open hours count for less.
+	measure 'Free spaces (avg)' =
+			SUMX (
+				VALUES ( fact_parking_hourly[facility_key] ),
+				CALCULATE (
+					DIVIDE (
+						SUMX (
+							fact_parking_hourly,
+							fact_parking_hourly[avg_available_spaces] * fact_parking_hourly[counted_minutes]
+						),
+						SUM ( fact_parking_hourly[counted_minutes] )
+					)
+				)
+			)
+		formatString: #,0
+		displayFolder: Availability
+
+	/// The lowest single reading in the selection.
+	measure 'Free spaces (min)' = MIN ( fact_parking_hourly[min_available_spaces] )
+		formatString: #,0
+		displayFolder: Availability
+
+	/// The highest single reading in the selection.
+	measure 'Free spaces (max)' = MAX ( fact_parking_hourly[max_available_spaces] )
+		formatString: #,0
+		displayFolder: Availability
+
+	/// Share of capacity in use, time-weighted, over the facilities with a known capacity.
+	/// Above 100 % or below 0 % means the capacity is wrong (docs/gold.md#occupancy).
+	measure Occupancy =
+			VAR facilities =
+				FILTER (
+					ADDCOLUMNS (
+						VALUES ( dim_parking_facility[facility_key] ),
+						"@capacity", CALCULATE ( MAX ( dim_parking_facility[capacity] ) ),
+						"@free", [Free spaces (avg)]
+					),
+					NOT ISBLANK ( [@capacity] ) && NOT ISBLANK ( [@free] )
+				)
+			RETURN
+				DIVIDE ( SUMX ( facilities, [@capacity] - [@free] ), SUMX ( facilities, [@capacity] ) )
+		formatString: 0.0 %
+		displayFolder: Availability
+
+	/// Minutes covered by readings. Low coverage means "not known", not "nothing changed".
+	measure 'Covered minutes' = SUM ( fact_parking_hourly[covered_minutes] )
+		formatString: #,0
+		displayFolder: Freshness
+
+	/// Covered minutes resting on stale data.
+	measure 'Stale minutes' = SUM ( fact_parking_hourly[stale_minutes] )
+		formatString: #,0
+		displayFolder: Freshness
+
+	/// Share of the covered time that rests on stale data: exclude or flag hours where it is high.
+	measure 'Stale share' = DIVIDE ( [Stale minutes], [Covered minutes] )
+		formatString: 0.0 %
+		displayFolder: Freshness
+
+	partition fact_parking_hourly = m
+		mode: import
+		source = DeltaTable("fact_parking_hourly")

@@ -109,10 +109,11 @@ Availability **per facility per hour**, aggregated from `fact_parking_availabili
 | `facility_key` | As in the availability fact |
 | `hour_start` | The start of the hour in UTC: the grain, with `facility_key` |
 | `date_key`, `hour` | The hour's local Oslo date and hour, for the date dimension and reports |
-| `avg_available_spaces` | Time-weighted average over the covered minutes that have a count; null if the hour only has `open` or `unknown` time |
+| `avg_available_spaces` | Time-weighted average over the counted minutes; null if the hour only has `open` or `unknown` time |
 | `min_available_spaces`, `max_available_spaces` | Over the readings with a count in the hour |
 | `observation_count` | Readings overlapping the hour |
 | `covered_minutes` | How much of the hour the readings cover (0 to 60) |
+| `counted_minutes` | The covered minutes with a count, not `open` or `unknown`: the weight of `avg_available_spaces` when hours are combined |
 | `stale_minutes` | How much of the covered time rests on stale data |
 
 ### Coverage

@@ -1,0 +1,11 @@
+/// The folder that holds the Delta tables: the --tables-root of the bronze, silver and gold builds.
+expression TablesRoot = "C:\stavangerparking\tables" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+/// Reads one Delta table under TablesRoot. The one place that knows where the data is: on Fabric,
+/// replace it (or switch the partitions to Direct Lake) instead of editing every table (#16).
+expression DeltaTable =
+		(name as text) as table =>
+		let
+			Source = DeltaLake.Table(Folder.Contents(TablesRoot & "\" & name))
+		in
+			Source

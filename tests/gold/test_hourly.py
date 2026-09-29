@@ -102,7 +102,7 @@ def test_open_time_is_covered_but_has_no_count():
         run(reading(m(0), m(30), m(28), 100), reading(m(30), m(60), m(58), None, status="open"))
     )
 
-    assert row["covered_minutes"] == 60.0
+    assert (row["covered_minutes"], row["counted_minutes"]) == (60.0, 30.0)
     assert row["avg_available_spaces"] == 100.0
     assert (row["min_available_spaces"], row["max_available_spaces"]) == (100, 100)
 
@@ -111,7 +111,7 @@ def test_an_hour_with_only_open_time_has_no_average():
     row = only(run(reading(m(0), m(60), m(58), None, status="open")))
 
     assert row["avg_available_spaces"] is None
-    assert row["covered_minutes"] == 60.0
+    assert (row["covered_minutes"], row["counted_minutes"]) == (60.0, 0.0)
 
 
 def test_stale_minutes_are_the_covered_minutes_inside_a_stale_period():

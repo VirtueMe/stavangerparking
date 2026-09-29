@@ -1,0 +1,19 @@
+relationship availability_facility
+	fromColumn: fact_parking_availability.facility_key
+	toColumn: dim_parking_facility.facility_key
+
+relationship availability_date
+	fromColumn: fact_parking_availability.date_key
+	toColumn: dim_date.date_key
+
+relationship availability_time
+	fromColumn: fact_parking_availability.time_key
+	toColumn: dim_time.time_key
+
+relationship hourly_facility
+	fromColumn: fact_parking_hourly.facility_key
+	toColumn: dim_parking_facility.facility_key
+
+relationship hourly_date
+	fromColumn: fact_parking_hourly.date_key
+	toColumn: dim_date.date_key
