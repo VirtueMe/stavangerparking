@@ -17,7 +17,7 @@ The roots describe the environment, not the source, so they are parameters and n
 
 For every source, raw files not yet handled are appended to bronze in **one Delta commit**:
 
-- **One row per record.** Every source field is stored as a string, exactly as delivered (`"285"`, `"Open"`); typing happens in silver (#8).
+- **One row per record.** Every source field is stored as a string, exactly as delivered (`"285"`, `"Open"`); typing happens in [silver](silver.md).
 - **Metadata columns** from the sidecar: `source_id`, `raw_file`, `record_index`, `ingested_at` (UTC), `source_url`, `resource_id`, `content_hash`, `values_fingerprint`, `run_id`, and `loaded_at`. `raw_file` and `record_index` trace every row back to its file and position; `run_id` traces it to the collection run.
 - **New source fields become new columns** (schema merge), with earlier rows null, instead of failing the load. Detecting such drift is the job of the quality checks (#21).
 
