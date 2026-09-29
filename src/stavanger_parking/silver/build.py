@@ -7,12 +7,15 @@ Next to the source's bronze table under `--tables-root`:
 - `silver_parking_fetch`: every parsed bronze row, one per facility per fetch; append-only
 - `silver_parking_reading`: one row per facility per source reading, the first fetch of each
 - `silver_quarantine`: values that could not be parsed, and values of conflicting duplicates
+- `silver_snapshot_freshness` and `silver_stale_period`: how old the source's data was at each
+  fetch, and the periods it was stale (`silver.freshness`)
 
 By default a run parses only the bronze rows not yet handled: rows already in the fetch table, or
 left out and recorded in quarantine. Parse quarantine rows are inserted before the fetches are
 appended, and inserted only if not already there, so a run that stops halfway is completed by the
 next one without losing or repeating anything. Readings and conflicts are then derived from all
-fetches, which makes the result of any sequence of incremental runs the same as a rebuild.
+fetches, and so are the freshness tables, which makes the result of any sequence of incremental
+runs the same as a rebuild.
 
 `--rebuild` replaces all three tables from all of bronze, for example after a change to the parsing.
 """
@@ -20,6 +23,7 @@ fetches, which makes the result of any sequence of incremental runs the same as 
 import argparse
 import sys
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 
 import polars as pl
@@ -28,12 +32,15 @@ from deltalake import DeltaTable
 from stavanger_parking.bronze.load import DEFAULT_CONFIG, bronze_path
 from stavanger_parking.config import Source, load_sources
 from stavanger_parking.silver.dedup import CONFLICTING_DUPLICATE, deduplicate
+from stavanger_parking.silver.freshness import freshness
 from stavanger_parking.silver.parse import parse_readings
 
 SOURCE_ID = "stavanger_parking"
 FETCH_TABLE = "silver_parking_fetch"
 READING_TABLE = "silver_parking_reading"
 QUARANTINE_TABLE = "silver_quarantine"
+FRESHNESS_TABLE = "silver_snapshot_freshness"
+STALE_PERIOD_TABLE = "silver_stale_period"
 
 ROW = ["raw_file", "record_index"]
 QUARANTINE_KEY = [*ROW, "field", "reason"]
@@ -51,6 +58,8 @@ class BuildResult:
     excluded: int
     readings: int
     conflicts: int
+    stale_snapshots: int
+    stale_periods: int
 
 
 def table_path(tables_root: str, name: str) -> str:
@@ -94,8 +103,13 @@ def build(
         _insert_new(parse_quarantine, quarantine, QUARANTINE_KEY, storage_options)
         _append(fetches, fetch, storage_options)
 
-    readings, conflicts = deduplicate(pl.read_delta(fetch, storage_options=storage_options))
+    all_fetches = pl.read_delta(fetch, storage_options=storage_options)
+    readings, conflicts = deduplicate(all_fetches)
     _overwrite(readings, reading, storage_options)
+    stale_after = timedelta(minutes=source.freshness.stale_after_minutes)
+    snapshots, periods = freshness(all_fetches, stale_after)
+    _overwrite(snapshots, table_path(tables_root, FRESHNESS_TABLE), storage_options)
+    _overwrite(periods, table_path(tables_root, STALE_PERIOD_TABLE), storage_options)
     conflicts.write_delta(
         quarantine,
         mode="overwrite",
@@ -111,6 +125,8 @@ def build(
         excluded=excluded,
         readings=readings.height,
         conflicts=conflicts.height,
+        stale_snapshots=snapshots.filter("is_stale").height,
+        stale_periods=periods.height,
     )
 
 
@@ -168,7 +184,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{source.id}: {'rebuilt from' if args.rebuild else 'parsed'} {r.new_rows} bronze row(s) "
         f"→ {r.fetches} fetch(es), {r.quarantined} value(s) quarantined, "
         f"{r.excluded} reading(s) left out; {r.readings} reading(s) after deduplication, "
-        f"{r.conflicts} conflicting value(s)"
+        f"{r.conflicts} conflicting value(s); {r.stale_snapshots} stale snapshot(s) "
+        f"in {r.stale_periods} stale period(s)"
     )
     return 0
 

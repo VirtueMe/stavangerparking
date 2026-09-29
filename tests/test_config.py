@@ -59,7 +59,9 @@ def test_second_source_needs_only_a_config_entry(config):
     assert sources[1].ckan.package_id == "sandnes-parkering"
 
 
-@pytest.mark.parametrize("field", ["id", "ckan", "raw_path", "bronze_table", "licence", "polling"])
+@pytest.mark.parametrize(
+    "field", ["id", "ckan", "raw_path", "bronze_table", "licence", "polling", "freshness"]
+)
 def test_missing_source_field_is_named(config, field):
     del config["sources"][0][field]
 
@@ -190,6 +192,27 @@ def test_missing_polling_section_is_named(config):
     del config["sources"][0]["polling"]
 
     assert "polling is required and must be an object" in problems_of(config)
+
+
+def test_repository_config_has_a_staleness_threshold():
+    (source,) = load_sources(REPO_CONFIG)
+
+    assert source.freshness.stale_after_minutes == 15
+
+
+@pytest.mark.parametrize("value", [0, -1, "15", 1.5, False, None])
+def test_stale_after_minutes_must_be_a_positive_integer(config, value):
+    config["sources"][0]["freshness"]["stale_after_minutes"] = value
+
+    assert "freshness.stale_after_minutes is required and must be a positive integer" in (
+        problems_of(config)
+    )
+
+
+def test_unknown_freshness_field_is_named(config):
+    config["sources"][0]["freshness"]["stale_after"] = 15
+
+    assert "unknown field 'freshness.stale_after'" in problems_of(config)
 
 
 @pytest.mark.parametrize(

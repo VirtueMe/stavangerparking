@@ -12,15 +12,17 @@ from stavanger_parking.config import load_sources
 from stavanger_parking.silver import build
 from stavanger_parking.silver.build import (
     FETCH_TABLE,
+    FRESHNESS_TABLE,
     QUARANTINE_TABLE,
     READING_TABLE,
+    STALE_PERIOD_TABLE,
     BuildError,
     table_path,
 )
 
 REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
 T0 = datetime(2026, 9, 28, 12, 3, tzinfo=UTC)
-TABLES = (FETCH_TABLE, READING_TABLE, QUARANTINE_TABLE)
+TABLES = (FETCH_TABLE, READING_TABLE, QUARANTINE_TABLE, FRESHNESS_TABLE, STALE_PERIOD_TABLE)
 
 
 def record(sted="Jernbanen", klokkeslett="14:00", spaces="285", latitude="58.966341") -> dict:
@@ -64,7 +66,9 @@ def load_and_build(source, roots, **kwargs) -> build.BuildResult:
 def read(tables_root: str, name: str) -> pl.DataFrame:
     """A table in a fixed order, so tables built in different ways can be compared."""
     frame = pl.read_delta(table_path(tables_root, name))
-    order = [c for c in ("raw_file", "record_index", "field") if c in frame.columns]
+    order = [
+        c for c in ("raw_file", "record_index", "field", "source_reading_at") if c in frame.columns
+    ]
     return frame.sort(order)
 
 
@@ -89,7 +93,14 @@ def test_a_first_build_writes_all_tables(source, roots):
         ("Sted", "missing_value", True)
     ]
     assert result == build.BuildResult(
-        new_rows=3, fetches=2, quarantined=1, excluded=1, readings=2, conflicts=0
+        new_rows=3,
+        fetches=2,
+        quarantined=1,
+        excluded=1,
+        readings=2,
+        conflicts=0,
+        stale_snapshots=0,
+        stale_periods=0,
     )
 
 
@@ -208,6 +219,23 @@ def test_a_first_run_with_only_left_out_readings_creates_the_tables(source, root
     assert read(roots[1], FETCH_TABLE).is_empty()
     assert read(roots[1], READING_TABLE).is_empty()
     assert result.excluded == 1
+
+
+def test_a_frozen_source_shows_as_a_stale_period(source, roots):
+    # 14:00 Oslo is 12:00 UTC; the threshold in the repository config is 15 minutes
+    for minutes in (0, 10, 20, 40):
+        collect(source, roots[0], T0 + timedelta(minutes=minutes), SNAPSHOT)
+
+    result = load_and_build(source, roots)
+
+    snapshots = read(roots[1], FRESHNESS_TABLE).sort("ingested_at")
+    assert snapshots["source_age_minutes"].to_list() == [3.0, 13.0, 23.0, 43.0]
+    assert snapshots["is_stale"].to_list() == [False, False, True, True]
+    period = read(roots[1], STALE_PERIOD_TABLE).row(0, named=True)
+    assert period["stale_from"] == datetime(2026, 9, 28, 12, 15, tzinfo=UTC)
+    assert period["last_stale_fetch_at"] == T0 + timedelta(minutes=40)
+    assert period["ongoing"] is True
+    assert (result.stale_snapshots, result.stale_periods) == (2, 1)
 
 
 def test_build_without_bronze_fails_clearly(source, tmp_path):

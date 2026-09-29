@@ -22,6 +22,9 @@
           "Dato",
           "Klokkeslett"
         ]
+      },
+      "freshness": {
+        "stale_after_minutes": 15
       }
     }
   ]

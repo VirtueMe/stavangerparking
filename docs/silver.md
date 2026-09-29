@@ -1,6 +1,6 @@
 # Silver: typed readings
 
-Bronze keeps every source field as the string it was delivered as ([`docs/bronze.md`](bronze.md)). Silver gives the readings types, collapses repeated fetches of the same reading, and quarantines every value that cannot be parsed.
+Bronze keeps every source field as the string it was delivered as ([`docs/bronze.md`](bronze.md)). Silver gives the readings types, collapses repeated fetches of the same reading, quarantines every value that cannot be parsed, and records when the source was stale.
 
 ```sh
 uv run python -m stavanger_parking.silver.build --tables-root <tables>             # incremental
@@ -14,14 +14,16 @@ uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild
 | `silver_parking_fetch` | One row per facility per fetch: every parsed bronze row, unless it was left out | Appended |
 | `silver_parking_reading` | One row per facility per source reading: the first fetch of each | Derived from the fetches on every run |
 | `silver_quarantine` | One row per rejected value | Parse problems inserted; conflicts derived on every run |
+| `silver_snapshot_freshness` | One row per fetched snapshot: how old the source's data was | Derived from the fetches on every run |
+| `silver_stale_period` | One row per period the source was stale | Derived from the fetches on every run |
 
 ## Runs and rebuilds
 
 **Incremental (the default).** A run parses only the bronze rows not yet handled, that is, rows that are neither in `silver_parking_fetch` nor left out and recorded in `silver_quarantine`. Their quarantine rows are inserted first, and only if not already there; then their fetches are appended. A run that stops halfway is therefore completed by the next one, without losing or repeating anything, and re-running the same batch changes nothing.
 
-`silver_parking_reading` and the conflicts are then derived from all fetches, so the tables after any sequence of incremental runs, in any order and with files arriving late, are the same as after a rebuild. The tests check exactly that.
+`silver_parking_reading`, the conflicts and the freshness tables are then derived from all fetches, so the tables after any sequence of incremental runs, in any order and with files arriving late, are the same as after a rebuild. The tests check exactly that.
 
-**Rebuild (`--rebuild`).** Replaces all three tables from all of bronze. Use it after a change to the parsing or deduplication, or if a silver table is lost; bronze, and the raw files behind it, are the source of truth.
+**Rebuild (`--rebuild`).** Replaces all silver tables from all of bronze. Use it after a change to the parsing or deduplication, or if a silver table is lost; bronze, and the raw files behind it, are the source of truth.
 
 ## Deduplication
 
@@ -81,3 +83,34 @@ One row per value that could not be parsed. Nothing is dropped silently.
 | `conflicting_duplicate` | A later fetch of the same reading has a different value; `raw_value` is the value as parsed (null if it could not be parsed) |
 
 A fetch with a bad value stays in silver with that value null. Only a reading that has lost its identity, with no valid time or no facility, is left out; all of its bad values are still quarantined.
+
+## Source staleness
+
+The source re-publishes its file every 2 minutes whether or not its data changed, and every metadata date moves with the re-upload ([weaknesses](weaknesses.md)). Only the data's own timestamp shows how old the data is, so staleness is judged per fetched snapshot, against `freshness.stale_after_minutes` in the [source configuration](config.md) (15 minutes: the data used to be 2–4 minutes old).
+
+### `silver_snapshot_freshness`
+
+| Column | Meaning |
+|---|---|
+| `source_id`, `raw_file`, `ingested_at` | The fetched snapshot and when it was fetched |
+| `source_reading_at` | The newest source timestamp in the snapshot (UTC) |
+| `source_age_minutes` | `ingested_at` minus `source_reading_at`; negative if the source's clock is ahead |
+| `is_stale` | The age exceeds `stale_after_minutes` |
+
+A snapshot whose readings were all left out (no valid time or facility) has no fetches, and therefore no row.
+
+### `silver_stale_period`
+
+A period is a run of consecutive stale snapshots, in fetch order, that repeat one source timestamp. It is a run in time: if the source serves an old file again after recovering, that is a new period, and the fresh time in between is not counted as stale.
+
+| Column | Meaning |
+|---|---|
+| `source_id`, `source_reading_at` | The source and its frozen timestamp |
+| `stale_from` | `source_reading_at` plus `stale_after_minutes`: when the data became too old |
+| `first_stale_fetch_at`, `last_stale_fetch_at` | The first and last fetch that saw it stale |
+| `stale_fetches` | How many fetches saw it stale |
+| `ongoing` | The latest fetch still sees the period |
+
+A period is **evidence-based**. It runs from `stale_from` to `last_stale_fetch_at`: a fetch that sees a timestamp as the source's newest proves that nothing newer was published before it, so `stale_from` may lie before our first fetch (the current outage started on 23 September; collection began on 28 September). After the last stale fetch there is no evidence either way, so a gap in collection does not extend a period.
+
+Gold uses these to mark readings as stale and to count `stale_minutes` per hour (#13, #14): the minutes of the hour inside [`stale_from`, `last_stale_fetch_at`].
