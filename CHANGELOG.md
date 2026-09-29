@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.13.0] - 2026-09-29
+
+### Features
+
+- **quality:** Data quality and schema drift checks ([#65](https://github.com/VirtueMe/stavangerparking/pull/65))
+
 ## [0.12.1] - 2026-09-29
 
 ### Documentation
