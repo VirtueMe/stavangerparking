@@ -7,7 +7,7 @@ The collector fetches raw snapshots from every configured source and stores them
 The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/collect.yml)) is started every 5 minutes by cron-job.org ([below](#trigger)) and can also be started by hand (*Run workflow*). Each run:
 
 1. Checks out the `data` branch. On the very first run, it creates the branch with its own history, containing only [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md), before any snapshot is published.
-2. Runs `python -m stavanger_parking.bronze.collect run`, which for every source in [`config/sources.json`](../config/sources.json):
+2. Runs `python -m stavanger_parking.bronze.collect run`, which for every source with `polling` in [`config/sources.json`](../config/sources.json) (the register is collected separately, [below](#parkeringsregisteret)):
    - decides whether to fetch, from the latest sidecars (adaptive polling, below);
    - resolves the download URL through CKAN and downloads the snapshot;
    - stores the response unchanged at the source's `raw_path` and writes a sidecar next to it.
@@ -101,3 +101,17 @@ uv run python -m stavanger_parking.bronze.collect gaps --storage ../stavangerpar
 ```
 
 `--tolerance-minutes` (default 10) sets how late a snapshot may be before it counts as a gap.
+
+## Parkeringsregisteret
+
+Facility capacities come from the national parking register ([ADR 005](adr/005-capacity-as-reference-data.md)), which is collected as a second source (`parkeringsregisteret` in the [source configuration](config.md)). It has a fixed URL, `http.url`: Stavanger Parkering's areas, by organisation number, with all fields. It has no `polling`, so the 5-minute Collect run skips it; it is fetched whenever it is collected by name, and its sidecars have no fingerprint or next due time.
+
+The `Collect register` workflow ([`.github/workflows/collect-register.yml`](../.github/workflows/collect-register.yml)) collects it onto the `data` branch under `bronze/parkeringsregisteret/`. It shares Collect's concurrency group, so the two never push at the same time, and it keeps [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md) on the branch in step with the template, which credits both publishers.
+
+Capacities change rarely, so the intended trigger is a **monthly** cron-job.org job, set up like the [Collect job](#trigger) with its own schedule (for example the 1st of every month at 03:02) and the URL `…/actions/workflows/collect-register.yml/dispatches`; the same token works. During the case the job is not set up, since capacities are not expected to change before the meeting, and the workflow is started by hand (*Run workflow*).
+
+Locally:
+
+```sh
+uv run python -m stavanger_parking.bronze.collect run --storage <data> --source parkeringsregisteret --run-id local
+```

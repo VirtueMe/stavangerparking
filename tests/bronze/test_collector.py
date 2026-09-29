@@ -8,6 +8,7 @@ import pytest
 from stavanger_parking.bronze import collect as cli
 from stavanger_parking.bronze.collector import (
     FAST,
+    ON_DEMAND,
     SLOW,
     CollectError,
     collect,
@@ -24,6 +25,9 @@ from stavanger_parking.config import Polling, load_sources
 REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
 PACKAGE_SHOW = (
     Path(__file__).parent.parent / "fixtures" / "ckan_package_show_stavanger_parkering.json"
+)
+REGISTER = (
+    Path(__file__).parent.parent / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
 )
 T0 = datetime(2026, 9, 28, 14, 0, 0, tzinfo=UTC)
 POLLING = Polling(5, 20, 5, ("Dato", "Klokkeslett"))
@@ -143,6 +147,11 @@ class FakeSource:
 @pytest.fixture
 def source():
     return load_sources(REPO_CONFIG)[0]
+
+
+@pytest.fixture
+def register():
+    return next(s for s in load_sources(REPO_CONFIG) if s.id == "parkeringsregisteret")
 
 
 def run(source, storage, fake, at, run_id="r"):
@@ -293,3 +302,65 @@ def test_cli_gaps_lists_gaps(tmp_path, capsys):
 
     assert code == 0
     assert "stavanger_parking: 0 gap(s)" in capsys.readouterr().out
+
+
+# --- sources without polling (reference data, ADR 005) -----------------------------------------
+
+
+def test_an_unpolled_source_is_fetched_from_its_url_whenever_collected(register, tmp_path):
+    fake = FakeSource(REGISTER.read_bytes())
+
+    first = run(register, tmp_path, fake, T0, run_id="7-1")
+    second = run(register, tmp_path, fake, T0 + timedelta(minutes=1))
+
+    assert first.raw_file == "bronze/parkeringsregisteret/2026/09/28/140000.json"
+    assert (tmp_path / first.raw_file).read_bytes() == REGISTER.read_bytes()
+    assert (first.decision.mode, second.decision.fetch) == (ON_DEMAND, True)
+    meta = json.loads((tmp_path / sidecar_path(first.raw_file)).read_text())
+    assert meta["source_url"] == register.location.url
+    assert meta["resource_id"] is None
+    assert meta["content_hash"].startswith("sha256:")
+    assert (meta["values_fingerprint"], meta["polling_mode"], meta["next_due"]) == (
+        None,
+        ON_DEMAND,
+        None,
+    )
+
+
+def test_an_unpolled_source_download_failure_fails_the_run(register, tmp_path):
+    with pytest.raises(CollectError, match="Download failed for parkeringsregisteret"):
+        run(register, tmp_path, FakeSource(b"", status=500), T0)
+
+
+def test_cli_run_collects_only_polled_sources_by_default(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(cli, "make_client", FakeSource(snapshot(QUIET)).client)
+
+    cli.main(["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"])
+
+    assert "parkeringsregisteret" not in capsys.readouterr().out
+    assert not (tmp_path / "bronze" / "parkeringsregisteret").exists()
+
+
+def test_cli_run_collects_a_named_source(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(cli, "make_client", FakeSource(REGISTER.read_bytes()).client)
+    args = ["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"]
+
+    code = cli.main([*args, "--source", "parkeringsregisteret"])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "parkeringsregisteret: fetched -> bronze/parkeringsregisteret/" in out
+    assert "stavanger_parking" not in out
+
+
+def test_cli_run_rejects_an_unknown_source(tmp_path, capsys):
+    args = ["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"]
+
+    assert cli.main([*args, "--source", "nope"]) == 1
+    assert "no source 'nope'" in capsys.readouterr().err
+
+
+def test_cli_gaps_skips_unpolled_sources(tmp_path, capsys):
+    cli.main(["--config", str(REPO_CONFIG), "gaps", "--storage", str(tmp_path)])
+
+    assert "parkeringsregisteret" not in capsys.readouterr().out

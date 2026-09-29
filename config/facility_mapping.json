@@ -1,0 +1,60 @@
+{
+  "facilities": [
+    {
+      "facility": "Jernbanen",
+      "register_id": 3650,
+      "register_name": "P- Jernbanen",
+      "operator_name": "P-Jernbanen",
+      "note": "Capacity differs: register 390 paid spaces (changed 2024-02-16), operator website 500 (checked 2026-09-29)"
+    },
+    {
+      "facility": "Valberget",
+      "register_id": 44894,
+      "register_name": "P - Valberget",
+      "operator_name": "P-Valberghallen"
+    },
+    {
+      "facility": "Posten",
+      "register_id": 3754,
+      "register_name": "P- Posten",
+      "operator_name": "P-Posten"
+    },
+    {
+      "facility": "Jorenholmen",
+      "register_id": 3749,
+      "register_name": "P- Jorenholmen",
+      "operator_name": "P-Jorenholmen"
+    },
+    {
+      "facility": "St Olav",
+      "register_id": 3756,
+      "register_name": "P- St. Olav",
+      "operator_name": "P-St. Olav"
+    },
+    {
+      "facility": "Siddis",
+      "register_id": 30372,
+      "register_name": "P-Siddis",
+      "operator_name": "P-Siddis"
+    },
+    {
+      "facility": "Forum",
+      "register_id": 46816,
+      "register_name": "P - Forum",
+      "operator_name": "P-Forum",
+      "note": "Capacity differs: register 289 paid spaces (changed 2023-03-24), operator website 325 (checked 2026-09-29)"
+    },
+    {
+      "facility": "Kyrre",
+      "register_id": 3740,
+      "register_name": "P- Kyrre",
+      "operator_name": "P-Kyrre"
+    },
+    {
+      "facility": "Parketten",
+      "register_id": 44934,
+      "register_name": "P - Parketten",
+      "operator_name": "P-Arketten"
+    }
+  ]
+}

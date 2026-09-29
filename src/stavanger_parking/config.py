@@ -1,7 +1,10 @@
 """Declarative source configuration (`config/sources.json`).
 
 Everything source-specific lives in the config: where the data comes from, where raw files and the
-bronze table go, and under which licence the data is published. Paths and table names are relative;
+bronze table go, and under which licence the data is published. A source is fetched either through
+CKAN (`ckan`, resolved on every run) or from a fixed URL (`http`). A source with `polling` is
+collected by the scheduled collector; one without is collected only when named, such as reference
+data fetched once a month (ADR 005). Paths and table names are relative;
 the storage root and the catalog or schema belong to the runtime environment, not to the source.
 
 The config is validated on load, and every problem is reported at once with the source and field
@@ -32,6 +35,11 @@ class CkanLocation:
 
 
 @dataclass(frozen=True)
+class HttpLocation:
+    url: str
+
+
+@dataclass(frozen=True)
 class Licence:
     id: str
     url: str
@@ -59,12 +67,14 @@ class Freshness:
 @dataclass(frozen=True)
 class Source:
     id: str
-    ckan: CkanLocation
     raw_path: str
     bronze_table: str
     licence: Licence
-    polling: Polling
-    freshness: Freshness
+    # Where the data comes from: the config's `ckan` or `http` section
+    location: CkanLocation | HttpLocation
+    # Only for sources collected on a schedule, and only for sources with a data timestamp
+    polling: Polling | None = None
+    freshness: Freshness | None = None
 
 
 def _field_names(cls) -> set[str]:
@@ -122,16 +132,25 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
         problems.append(f"{label}: must be an object")
         return None
     before = len(problems)
-    _check_keys(entry, _field_names(Source), label, problems)
+    _check_keys(entry, (_field_names(Source) - {"location"}) | {"ckan", "http"}, label, problems)
 
     source_id = _text(entry, "id", label, problems)
     if source_id and not IDENTIFIER.match(source_id):
         problems.append(f"{label}: id must be lowercase letters, digits and underscores")
 
-    ckan = _section(entry, "ckan", CkanLocation, label, problems)
-    base_url = _https_url(ckan, "base_url", label, problems, section="ckan")
-    package_id = _text(ckan, "package_id", label, problems, section="ckan")
-    fmt = _text(ckan, "format", label, problems, section="ckan")
+    location: CkanLocation | HttpLocation | None = None
+    if ("ckan" in entry) == ("http" in entry):
+        problems.append(f"{label}: exactly one of ckan and http is required")
+    elif "ckan" in entry:
+        section = _section(entry, "ckan", CkanLocation, label, problems)
+        location = CkanLocation(
+            base_url=_https_url(section, "base_url", label, problems, section="ckan"),
+            package_id=_text(section, "package_id", label, problems, section="ckan"),
+            format=_text(section, "format", label, problems, section="ckan"),
+        )
+    else:
+        section = _section(entry, "http", HttpLocation, label, problems)
+        location = HttpLocation(url=_https_url(section, "url", label, problems, section="http"))
 
     raw_path = _text(entry, "raw_path", label, problems)
     if raw_path:
@@ -146,37 +165,43 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
     licence_url = _https_url(licence, "url", label, problems, section="licence")
     publisher = _text(licence, "publisher", label, problems, section="licence")
 
-    polling_section = _section(entry, "polling", Polling, label, problems)
-    fast = _positive_int(polling_section, "fast_interval_minutes", label, problems)
-    slow = _positive_int(polling_section, "slow_interval_minutes", label, problems)
-    unchanged = _positive_int(polling_section, "unchanged_snapshots_for_slow", label, problems)
-    ignored = _text_list(polling_section, "change_ignores_fields", label, problems)
-    if fast and slow and slow < fast:
-        problems.append(
-            f"{label}: polling.slow_interval_minutes must not be shorter than "
-            "polling.fast_interval_minutes"
+    polling = None
+    if "polling" in entry:
+        section = _section(entry, "polling", Polling, label, problems)
+        polling = Polling(
+            fast_interval_minutes=_positive_int(section, "fast_interval_minutes", label, problems),
+            slow_interval_minutes=_positive_int(section, "slow_interval_minutes", label, problems),
+            unchanged_snapshots_for_slow=_positive_int(
+                section, "unchanged_snapshots_for_slow", label, problems
+            ),
+            change_ignores_fields=_text_list(section, "change_ignores_fields", label, problems),
         )
+        fast, slow = polling.fast_interval_minutes, polling.slow_interval_minutes
+        if fast and slow and slow < fast:
+            problems.append(
+                f"{label}: polling.slow_interval_minutes must not be shorter than "
+                "polling.fast_interval_minutes"
+            )
 
-    freshness_section = _section(entry, "freshness", Freshness, label, problems)
-    stale_after = _positive_int(
-        freshness_section, "stale_after_minutes", label, problems, section="freshness"
-    )
+    freshness = None
+    if "freshness" in entry:
+        section = _section(entry, "freshness", Freshness, label, problems)
+        freshness = Freshness(
+            stale_after_minutes=_positive_int(
+                section, "stale_after_minutes", label, problems, section="freshness"
+            )
+        )
 
     if len(problems) > before:
         return None
     return Source(
         id=source_id,
-        ckan=CkanLocation(base_url=base_url, package_id=package_id, format=fmt),
         raw_path=raw_path,
         bronze_table=bronze_table,
         licence=Licence(id=licence_id, url=licence_url, publisher=publisher),
-        polling=Polling(
-            fast_interval_minutes=fast,
-            slow_interval_minutes=slow,
-            unchanged_snapshots_for_slow=unchanged,
-            change_ignores_fields=ignored,
-        ),
-        freshness=Freshness(stale_after_minutes=stale_after),
+        location=location,
+        polling=polling,
+        freshness=freshness,
     )
 
 
