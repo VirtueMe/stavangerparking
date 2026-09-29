@@ -17,6 +17,7 @@ from stavanger_parking.tables import (
     AVAILABILITY_TABLE,
     DATE_TABLE,
     FACILITY_TABLE,
+    HOURLY_TABLE,
     TIME_TABLE,
     table_path,
 )
@@ -64,7 +65,7 @@ class Pipeline:
             load_source(source, self.raw_root, self.tables, datetime.now(UTC))
         silver.build(self.parking, self.tables)
         silver.build_register(self.register, self.tables)
-        return build.build(self.tables, mapping)
+        return build.build(self.tables, mapping, REPO_CONFIG)
 
     def facilities(self) -> pl.DataFrame:
         return pl.read_delta(table_path(self.tables, FACILITY_TABLE)).sort("facility_key")
@@ -93,6 +94,7 @@ def test_build_writes_the_date_and_time_dimensions(pipeline):
         TIME_TABLE: 1440,
         FACILITY_TABLE: 10,
         AVAILABILITY_TABLE: 9,
+        HOURLY_TABLE: 9,
     }
 
 

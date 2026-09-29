@@ -6,7 +6,7 @@ Gold holds the dimensions and facts of the star schema described in [`docs/archi
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
 ```
 
-`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions and the availability fact; the hourly fact follows (#14).
+`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions, the availability fact and the hourly fact.
 
 ## Date and time dimensions
 
@@ -99,3 +99,36 @@ In Power BI, the measures should aggregate over time with a time-weighted averag
 ### Occupancy
 
 `occupied_spaces` uses the facility's current capacity from the dimension (type 1), for all of history. A **negative** value is shown, not hidden: it means more spaces are free than the register says exist, so the capacity is wrong. It already happens: on 23 September 2026 Forum reported 292 free spaces against the register's 289 (the operator's website says 325), noted in the [facility mapping](config.md#facility-mapping).
+
+## `fact_parking_hourly`
+
+Availability **per facility per hour**, aggregated from `fact_parking_availability` and silver's stale periods ([`gold/hourly.py`](../src/stavanger_parking/gold/hourly.py)). Rebuilt on every run.
+
+| Column | Meaning |
+|---|---|
+| `facility_key` | As in the availability fact |
+| `hour_start` | The start of the hour in UTC: the grain, with `facility_key` |
+| `date_key`, `hour` | The hour's local Oslo date and hour, for the date dimension and reports |
+| `avg_available_spaces` | Time-weighted average over the covered minutes that have a count; null if the hour only has `open` or `unknown` time |
+| `min_available_spaces`, `max_available_spaces` | Over the readings with a count in the hour |
+| `observation_count` | Readings overlapping the hour |
+| `covered_minutes` | How much of the hour the readings cover (0 to 60) |
+| `stale_minutes` | How much of the covered time rests on stale data |
+
+### Coverage
+
+A reading **covers** the time from its source timestamp until the facility's next reading, but **never more than one slow polling interval (20 minutes, `polling.slow_interval_minutes`) past the last fetch that saw it**: the collector never waits longer than that between fetches, so beyond it, nobody looked. The current reading, which has no next one, covers until its last fetch.
+
+- In normal operation, readings follow each other within a polling interval, and the whole hour is covered.
+- A **gap in collection** shows as missing coverage, instead of the last value stretched across it. Low `covered_minutes` means "we don't know", not "nothing changed".
+- A reading can cover time before collection began: a fetch that sees a timestamp as the source's newest proves that nothing newer was published in between. The current outage is covered from 23 September, although collection started on 28 September; that time is all stale.
+
+The average, minimum and maximum are taken over the covered time only.
+
+### Stale minutes
+
+The covered minutes inside a stale period of the source ([stale periods](silver.md#source-staleness)): from the time the reading became older than the threshold until the last fetch that saw it stale. `stale_minutes` close to `covered_minutes` means the hour's numbers describe an old state of the facility, not that hour; reports should exclude or flag such hours.
+
+### Daylight saving time
+
+The grain is the **UTC** hour. At the autumn change, the local hour 02 happens twice, so a day has 25 hourly rows per facility, two of them with the same `date_key` and `hour` but different `hour_start`; in spring, 02 does not exist and the day has 23. Grouping by `date_key` and `hour` in a report merges the two 02 hours of the autumn day, which is what a local-time report expects.

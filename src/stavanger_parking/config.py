@@ -15,9 +15,11 @@ import json
 import re
 import string
 from dataclasses import dataclass, fields
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
+# Where the command line tools look for the config, relative to the repository root
+DEFAULT_CONFIG = Path("config/sources.json")
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
 # In this order, so that sorting raw paths sorts snapshots by time (the collector relies on it)
 RAW_PATH_PLACEHOLDERS = ("yyyy", "mm", "dd", "HHmmss")
