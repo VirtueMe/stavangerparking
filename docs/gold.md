@@ -6,7 +6,7 @@ Gold holds the dimensions and facts of the star schema described in [`docs/archi
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
 ```
 
-`--tables-root` is the same folder or URI as for bronze and silver. So far the build writes the date and time dimensions; the facility dimension and the facts follow (#12, #13, #14).
+`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. So far the build writes the date, time and facility dimensions; the facts follow (#13, #14).
 
 ## Date and time dimensions
 
@@ -42,3 +42,25 @@ One row per minute of the day.
 | `day_part` | `night` (00–06), `morning` (06–10), `midday` (10–14), `afternoon` (14–18), `evening` (18–24) |
 
 The day parts are a convention for reporting, not a property of the data; change `DAY_PARTS` in `gold/calendar.py` if the analyses need other boundaries.
+
+## `dim_parking_facility`
+
+One row per facility the feed has ever named, plus the unknown member. Maintained with **MERGE**, not rebuilt ([`gold/facility.py`](../src/stavanger_parking/gold/facility.py)).
+
+| Column | Meaning |
+|---|---|
+| `facility_key` | Surrogate key used by the facts; `-1` is the unknown member, so a fact whose facility cannot be resolved still has a row |
+| `facility_name` | The feed's `Sted`, exactly as delivered: the natural key ([ADR 004](adr/004-facility-name-as-natural-key.md)) |
+| `latitude`, `longitude` | From the facility's latest fetch that had them |
+| `register_id` | The facility's area in the national parking register, from the [facility mapping](config.md#facility-mapping) |
+| `capacity` | The area's paid spaces in the latest register snapshot ([ADR 005](adr/005-capacity-as-reference-data.md)); null (unknown) if the facility is not in the mapping, the register has not been collected, or the area is missing or deactivated |
+| `capacity_changed_at` | When the register last changed the area |
+| `first_seen`, `last_seen` | The first and last fetch that included the facility; fetch time, since the source's own timestamp can be frozen for days |
+| `is_active` | The facility is in the latest fetched snapshot |
+
+**How a run changes it:**
+
+- The attributes are recomputed from silver (`silver_parking_fetch`, `silver_parking_area`) and the mapping, and **overwrite** the old ones (type 1).
+- A facility **keeps its key** for as long as the dimension exists. A **new facility** needs no work: it is inserted on the next run with the next free key and unknown capacity until it is added to the mapping.
+- A facility that **disappears** from the feed becomes inactive (`is_active = false`), and active again with the same key if it returns. A facility that is gone from silver altogether is kept and marked inactive: rows are **never deleted**.
+- Facilities first seen in the same run are numbered in the order they were first seen, then by name. Because the keys are kept rather than recomputed, a dimension built from scratch can number facilities differently from one built up run by run; the facts are built from the same dimension, so the model stays consistent.

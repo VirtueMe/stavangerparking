@@ -250,9 +250,12 @@ def test_main_reports_counts(source, roots, capsys):
     assert build.main(["--config", str(REPO_CONFIG), "--tables-root", roots[1]]) == 0
     assert build.main(["--config", str(REPO_CONFIG), "--tables-root", roots[1], "--rebuild"]) == 0
 
-    first, second = capsys.readouterr().out.splitlines()
-    assert first.startswith("stavanger_parking: parsed 3 bronze row(s) → 2 fetch(es)")
-    assert second.startswith("stavanger_parking: rebuilt from 3 bronze row(s)")
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0].startswith("stavanger_parking: parsed 3 bronze row(s) → 2 fetch(es)")
+    assert (
+        lines[1] == "parkeringsregisteret: no bronze table yet; collect and load the register first"
+    )
+    assert lines[2].startswith("stavanger_parking: rebuilt from 3 bronze row(s)")
 
 
 def test_main_without_bronze_exits_with_an_error(tmp_path, capsys):

@@ -9,6 +9,9 @@ Next to the source's bronze table under `--tables-root`:
 - `silver_quarantine`: values that could not be parsed, and values of conflicting duplicates
 - `silver_snapshot_freshness` and `silver_stale_period`: how old the source's data was at each
   fetch, and the periods it was stale (`silver.freshness`)
+- `silver_parking_area`: the parking areas in the national parking register, one typed row per area
+  per register snapshot (`silver.register`), rebuilt from the register's bronze table on every run;
+  skipped until the register has been collected
 
 By default a run parses only the bronze rows not yet handled: rows already in the fetch table, or
 left out and recorded in quarantine. Parse quarantine rows are inserted before the fetches are
@@ -17,7 +20,8 @@ next one without losing or repeating anything. Readings and conflicts are then d
 fetches, and so are the freshness tables, which makes the result of any sequence of incremental
 runs the same as a rebuild.
 
-`--rebuild` replaces all three tables from all of bronze, for example after a change to the parsing.
+`--rebuild` replaces all the parking tables from all of bronze, for example after a change to the
+parsing.
 """
 
 import argparse
@@ -34,14 +38,19 @@ from stavanger_parking.config import Source, load_sources
 from stavanger_parking.silver.dedup import CONFLICTING_DUPLICATE, deduplicate
 from stavanger_parking.silver.freshness import freshness
 from stavanger_parking.silver.parse import parse_readings
-from stavanger_parking.tables import table_path
+from stavanger_parking.silver.register import parse_areas
+from stavanger_parking.tables import (
+    AREA_TABLE,
+    FETCH_TABLE,
+    FRESHNESS_TABLE,
+    QUARANTINE_TABLE,
+    READING_TABLE,
+    STALE_PERIOD_TABLE,
+    table_path,
+)
 
 SOURCE_ID = "stavanger_parking"
-FETCH_TABLE = "silver_parking_fetch"
-READING_TABLE = "silver_parking_reading"
-QUARANTINE_TABLE = "silver_quarantine"
-FRESHNESS_TABLE = "silver_snapshot_freshness"
-STALE_PERIOD_TABLE = "silver_stale_period"
+REGISTER_SOURCE_ID = "parkeringsregisteret"
 
 ROW = ["raw_file", "record_index"]
 QUARANTINE_KEY = [*ROW, "field", "reason"]
@@ -127,6 +136,36 @@ def build(
     )
 
 
+@dataclass(frozen=True)
+class RegisterResult:
+    bronze_rows: int
+    areas: int
+    quarantined: int
+
+
+def build_register(source: Source, tables_root: str, storage_options=None) -> RegisterResult | None:
+    """Replace `silver_parking_area` from the register's bronze table; None if it has none yet."""
+    bronze = bronze_path(tables_root, source)
+    if not DeltaTable.is_deltatable(bronze, storage_options=storage_options):
+        return None
+    rows = pl.read_delta(bronze, storage_options=storage_options)
+    areas, quarantine = parse_areas(rows)
+    _overwrite(areas, table_path(tables_root, AREA_TABLE), storage_options)
+
+    # The register's quarantine rows are derived like its areas: replace them, and only them
+    path = table_path(tables_root, QUARANTINE_TABLE)
+    if DeltaTable.is_deltatable(path, storage_options=storage_options):
+        quarantine.write_delta(
+            path,
+            mode="overwrite",
+            storage_options=storage_options,
+            delta_write_options={"predicate": f"source_id = '{source.id}'"},
+        )
+    else:
+        quarantine.write_delta(path, storage_options=storage_options)
+    return RegisterResult(rows.height, areas.height, quarantine.height)
+
+
 def _overwrite(frame: pl.DataFrame, path: str, storage_options) -> None:
     frame.write_delta(
         path,
@@ -168,7 +207,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    source = next((s for s in load_sources(args.config) if s.id == SOURCE_ID), None)
+    sources = {s.id: s for s in load_sources(args.config)}
+    source = sources.get(SOURCE_ID)
     if source is None:
         print(f"no source {SOURCE_ID!r} in {args.config}", file=sys.stderr)
         return 1
@@ -184,6 +224,15 @@ def main(argv: list[str] | None = None) -> int:
         f"{r.conflicts} conflicting value(s); {r.stale_snapshots} stale snapshot(s) "
         f"in {r.stale_periods} stale period(s)"
     )
+    if REGISTER_SOURCE_ID in sources:
+        register = build_register(sources[REGISTER_SOURCE_ID], args.tables_root)
+        if register is None:
+            print(f"{REGISTER_SOURCE_ID}: no bronze table yet; collect and load the register first")
+        else:
+            print(
+                f"{REGISTER_SOURCE_ID}: {register.bronze_rows} bronze row(s) → "
+                f"{register.areas} area(s), {register.quarantined} value(s) quarantined"
+            )
     return 0
 
 
