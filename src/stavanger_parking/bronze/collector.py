@@ -19,7 +19,7 @@ have no fingerprint or next due time.
 A source with a `filter` keeps only the records it names (the facility mapping's areas in the
 register, ADR 010): the stored file is a filtered copy of the response, each record unchanged, and
 the sidecar's `filter` records the full response's hash and record count, so the file stays
-traceable to what the source returned (#62).
+traceable to what the source returned (ADR 007, addendum).
 """
 
 import hashlib
