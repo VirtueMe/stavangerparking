@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.12.0] - 2026-09-29
+
+### Features
+
+- **bronze:** Collect Parkeringsregisteret hourly with the parking feed ([#63](https://github.com/VirtueMe/stavangerparking/pull/63))
+
 ## [0.11.0] - 2026-09-29
 
 ### Features
