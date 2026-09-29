@@ -1,11 +1,12 @@
 """Command line for the collector.
 
-    python -m stavanger_parking.bronze.collect run --storage DIR --run-id ID
+    python -m stavanger_parking.bronze.collect run --storage DIR --run-id ID [--source ID]
     python -m stavanger_parking.bronze.collect gaps --storage DIR
 
-`run` performs one scheduled collection for every configured source and prints what it did,
-including skips and their reason. `gaps` lists periods where no snapshot arrived by the time the
-previous one said the next was due. Both exit non-zero on failure.
+`run` performs one scheduled collection for every polled source and prints what it did, including
+skips and their reason. With `--source`, it collects only that source, which is how sources without
+polling (reference data, ADR 005) are collected. `gaps` lists periods where no snapshot of a polled
+source arrived by the time the previous one said the next was due. `run` exits non-zero on failure.
 """
 
 import argparse
@@ -31,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         "--storage", type=Path, required=True, help="storage root, e.g. the data branch"
     )
     run.add_argument("--run-id", required=True)
+    run.add_argument("--source", help="collect only this source (default: every polled source)")
 
     gaps = commands.add_parser("gaps", help="list gaps in collection")
     gaps.add_argument("--storage", type=Path, required=True)
@@ -38,9 +40,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     sources = load_sources(args.config)
-    if args.command == "run":
-        return _run(sources, args.storage, args.run_id)
-    return _gaps(sources, args.storage, timedelta(minutes=args.tolerance_minutes))
+    polled = [s for s in sources if s.polling is not None]
+    if args.command == "gaps":
+        return _gaps(polled, args.storage, timedelta(minutes=args.tolerance_minutes))
+    if args.source is None:
+        return _run(polled, args.storage, args.run_id)
+    named = [s for s in sources if s.id == args.source]
+    if not named:
+        print(f"no source {args.source!r} in {args.config}", file=sys.stderr)
+        return 1
+    return _run(named, args.storage, args.run_id)
 
 
 def _run(sources, storage: Path, run_id: str) -> int:

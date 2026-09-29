@@ -21,6 +21,9 @@ from stavanger_parking.bronze.load import (
 from stavanger_parking.config import load_sources
 
 REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
+REGISTER = (
+    Path(__file__).parent.parent / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
+)
 T0 = datetime(2026, 9, 28, 14, 0, tzinfo=UTC)
 RECORDS = [
     {
@@ -101,6 +104,32 @@ def test_source_fields_are_stored_as_strings(source, roots):
     assert rows.schema["Antall"] == pl.String
     assert rows["Antall"].to_list() == ["12"]
     assert rows["X"].to_list() == [None]
+
+
+def test_nested_values_are_stored_as_json_text(source, roots):
+    raw_root, tables_root = roots
+    payload = b'[{"id": 3650, "aktiv": true, "versjon": {"navn": "P- Jernbanen", "plasser": 390}}]'
+    write_snapshot(source, raw_root, T0, payload=payload)
+
+    load_source(source, raw_root, tables_root, T0)
+
+    row = bronze(source, tables_root).row(0, named=True)
+    assert (row["id"], row["aktiv"]) == ("3650", "true")
+    assert json.loads(row["versjon"]) == {"navn": "P- Jernbanen", "plasser": 390}
+
+
+def test_register_snapshots_load_into_their_own_table(roots):
+    raw_root, tables_root = roots
+    register = next(s for s in load_sources(REPO_CONFIG) if s.id == "parkeringsregisteret")
+    write_snapshot(register, raw_root, T0, payload=REGISTER.read_bytes())
+
+    result = load_source(register, raw_root, tables_root, T0)
+
+    rows = pl.read_delta(bronze_path(tables_root, register))
+    assert bronze_path(tables_root, register).endswith("/bronze_parkeringsregisteret")
+    assert result.rows == rows.height == 10
+    jernbanen = rows.filter(pl.col("id") == "3650").row(0, named=True)
+    assert json.loads(jernbanen["aktivVersjon"])["antallAvgiftsbelagtePlasser"] == 390
 
 
 def test_loading_is_idempotent(source, roots):

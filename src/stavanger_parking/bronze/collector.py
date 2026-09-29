@@ -7,6 +7,9 @@ storage itself is the only state:
 - fast: fetch on every scheduled run (every `fast_interval_minutes`)
 - slow: once the last `unchanged_snapshots_for_slow` snapshots have identical values, fetch only
   every `slow_interval_minutes`; the first changed snapshot switches back to fast
+
+A source without `polling`, such as monthly reference data (ADR 005), is fetched whenever it is
+collected (`on_demand`); its sidecars have no fingerprint or next due time.
 """
 
 import hashlib
@@ -20,11 +23,12 @@ from pathlib import Path, PurePosixPath
 import httpx
 
 from stavanger_parking.bronze.ckan import resolve_resource
-from stavanger_parking.config import Polling, Source
+from stavanger_parking.config import CkanLocation, HttpLocation, Polling, Source
 
 SIDECAR_SUFFIX = ".meta.json"
 FAST = "fast"
 SLOW = "slow"
+ON_DEMAND = "on_demand"
 
 
 class CollectError(RuntimeError):
@@ -158,35 +162,48 @@ def collect(
     now: datetime,
     run_id: str,
 ) -> Outcome:
-    """Run one scheduled collection for a source: decide, and fetch and store if due."""
-    recent = read_sidecars(storage, source, limit=source.polling.unchanged_snapshots_for_slow)
-    decision = decide(now, recent, source.polling)
+    """Collect a source once: decide (if it is polled), and fetch and store if due."""
+    polling = source.polling
+    if polling is None:
+        recent = []
+        decision = Decision(True, ON_DEMAND, "not polled; fetched whenever collected")
+    else:
+        recent = read_sidecars(storage, source, limit=polling.unchanged_snapshots_for_slow)
+        decision = decide(now, recent, polling)
     if not decision.fetch:
         return Outcome(source.id, decision)
 
-    resource = resolve_resource(
-        source.ckan.base_url, source.ckan.package_id, source.ckan.format, client
-    )
+    match source.location:
+        case CkanLocation(base_url, package_id, fmt):
+            resource = resolve_resource(base_url, package_id, fmt, client)
+            url, resource_id = resource.url, resource.id
+        case HttpLocation(url):
+            resource_id = None
     try:
-        response = client.get(resource.url)
+        response = client.get(url)
         response.raise_for_status()
     except httpx.HTTPError as e:
-        raise CollectError(f"Download failed for {source.id}: {resource.url}: {e}") from e
+        raise CollectError(f"Download failed for {source.id}: {url}: {e}") from e
     payload = response.content
 
     raw_file = render_raw_path(source.raw_path, now)
-    fingerprint = values_fingerprint(payload, source.polling.change_ignores_fields)
-    mode = mode_after([*_fingerprints(recent), fingerprint], source.polling)
+    fingerprint = mode = due = None
+    if polling is None:
+        mode = ON_DEMAND
+    else:
+        fingerprint = values_fingerprint(payload, polling.change_ignores_fields)
+        mode = mode_after([*_fingerprints(recent), fingerprint], polling)
+        due = next_due(now, mode, polling).isoformat()
     sidecar = {
         "source_id": source.id,
         "ingested_at": now.isoformat(),
-        "source_url": resource.url,
-        "resource_id": resource.id,
+        "source_url": url,
+        "resource_id": resource_id,
         "run_id": run_id,
         "content_hash": content_hash(payload),
         "values_fingerprint": fingerprint,
         "polling_mode": mode,
-        "next_due": next_due(now, mode, source.polling).isoformat(),
+        "next_due": due,
     }
 
     _write_new(storage / raw_file, payload)

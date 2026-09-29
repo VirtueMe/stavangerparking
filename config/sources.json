@@ -26,6 +26,19 @@
       "freshness": {
         "stale_after_minutes": 15
       }
+    },
+    {
+      "id": "parkeringsregisteret",
+      "http": {
+        "url": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade?orgnr=974782766&datafelter=alle"
+      },
+      "raw_path": "bronze/parkeringsregisteret/{yyyy}/{mm}/{dd}/{HHmmss}.json",
+      "bronze_table": "bronze_parkeringsregisteret",
+      "licence": {
+        "id": "NLOD-2.0",
+        "url": "https://data.norge.no/nlod/no/2.0/",
+        "publisher": "Statens vegvesen"
+      }
     }
   ]
 }
