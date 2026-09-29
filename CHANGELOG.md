@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.10.0] - 2026-09-29
+
+### Features
+
+- **gold:** Availability snapshot fact ([#59](https://github.com/VirtueMe/stavangerparking/pull/59))
+
 ## [0.9.0] - 2026-09-29
 
 ### Features
