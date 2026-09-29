@@ -55,3 +55,7 @@ Until the platform is chosen, the collector running outside the platform reads t
 | `note` | Optional: anything a reader should know, such as sources that disagree about the capacity |
 
 When a facility is added to the feed or renamed, add or change its entry; until then its capacity is unknown. The tests check that the mapping covers every facility seen in the feed and that every `register_id` is an active area with the recorded name.
+
+## Tariffs and pricing rules
+
+[`config/tariffs.json`](../config/tariffs.json) (the operator's prices per facility) and [`config/pricing_rules.json`](../config/pricing_rules.json) (occupancy bands, rush hours, limits) drive the suggested prices. Both are validated on load; see [`docs/pricing.md`](pricing.md).

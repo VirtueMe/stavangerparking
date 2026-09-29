@@ -1,0 +1,57 @@
+{
+  "note": "An example policy for the analysis, not Stavanger Parkering's: setting real thresholds and multipliers is the operator's decision (#27)",
+  "occupancy_bands": [
+    {
+      "name": "low",
+      "below": 0.5,
+      "multiplier": 0.8
+    },
+    {
+      "name": "normal",
+      "below": 0.85,
+      "multiplier": 1.0
+    },
+    {
+      "name": "high",
+      "below": null,
+      "multiplier": 1.25
+    }
+  ],
+  "rush_hours": [
+    {
+      "name": "morning",
+      "weekdays": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri"
+      ],
+      "from": "07:00",
+      "to": "09:00",
+      "multiplier": 1.1
+    },
+    {
+      "name": "afternoon",
+      "weekdays": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri"
+      ],
+      "from": "15:00",
+      "to": "17:00",
+      "multiplier": 1.1
+    }
+  ],
+  "limits": {
+    "min_multiplier": 0.5,
+    "max_multiplier": 1.5,
+    "facilities": {}
+  },
+  "data": {
+    "max_stale_share": 0.5,
+    "min_covered_minutes": 30
+  }
+}
