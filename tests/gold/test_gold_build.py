@@ -9,11 +9,17 @@ from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
 from stavanger_parking.bronze.load import load_source
 from stavanger_parking.config import load_sources
 from stavanger_parking.gold import build
-from stavanger_parking.gold.build import DATE_TABLE, FACILITY_TABLE, TIME_TABLE, BuildError
+from stavanger_parking.gold.build import BuildError
 from stavanger_parking.gold.calendar import dim_date, dim_time
 from stavanger_parking.gold.facility import UNKNOWN_KEY
 from stavanger_parking.silver import build as silver
-from stavanger_parking.tables import table_path
+from stavanger_parking.tables import (
+    AVAILABILITY_TABLE,
+    DATE_TABLE,
+    FACILITY_TABLE,
+    TIME_TABLE,
+    table_path,
+)
 
 ROOT = Path(__file__).parent.parent.parent
 REPO_CONFIG = ROOT / "config" / "sources.json"
@@ -82,7 +88,12 @@ def test_build_writes_the_date_and_time_dimensions(pipeline):
 
     assert pl.read_delta(table_path(pipeline.tables, DATE_TABLE)).equals(dim_date())
     assert pl.read_delta(table_path(pipeline.tables, TIME_TABLE)).equals(dim_time())
-    assert written == {DATE_TABLE: dim_date().height, TIME_TABLE: 1440, FACILITY_TABLE: 10}
+    assert written == {
+        DATE_TABLE: dim_date().height,
+        TIME_TABLE: 1440,
+        FACILITY_TABLE: 10,
+        AVAILABILITY_TABLE: 9,
+    }
 
 
 def test_every_facility_in_the_feed_gets_a_key_and_its_capacity(pipeline):
@@ -189,6 +200,40 @@ def test_without_a_register_snapshot_capacity_is_unknown(tmp_path):
     p.run()
 
     assert p.facilities()["capacity"].null_count() == 10
+
+
+def test_the_availability_fact_has_one_row_per_reading(pipeline):
+    # Three fetches of one frozen reading, then a new reading: 2 readings per facility
+    for m in (0, 20, 40):
+        pipeline.snapshot(T0 + timedelta(minutes=m), NINE)
+    later = T0 + timedelta(minutes=45)
+    pipeline.collect(
+        pipeline.parking, later, json.dumps([record(f, "14:44") for f in NINE]).encode()
+    )
+
+    pipeline.run()
+
+    fact = pl.read_delta(table_path(pipeline.tables, AVAILABILITY_TABLE))
+    jernbanen = fact.filter(
+        pl.col("facility_key") == by_name(pipeline.facilities())["Jernbanen"]["facility_key"]
+    ).sort("valid_from")
+    assert fact.height == 18
+    assert jernbanen["time_key"].to_list() == [1400, 1444]
+    assert jernbanen["duration_minutes"].to_list() == [44.0, None]
+    assert jernbanen["last_fetched_at"].to_list() == [T0 + timedelta(minutes=40), later]
+    # 14:00 was 43 minutes old when fetched at 12:43 UTC: the source was stale
+    assert jernbanen["is_stale"].to_list() == [True, False]
+    assert jernbanen["occupied_spaces"].to_list() == [290, 290]
+
+
+def test_a_reading_outside_dim_date_stops_the_build(pipeline):
+    frozen = [dict(record(f), Dato="01.01.2036") for f in NINE]
+    pipeline.collect(
+        pipeline.parking, datetime(2036, 1, 1, 0, 5, tzinfo=UTC), json.dumps(frozen).encode()
+    )
+
+    with pytest.raises(BuildError, match="outside dim_date"):
+        pipeline.run()
 
 
 def test_build_without_silver_fails_clearly(tmp_path):

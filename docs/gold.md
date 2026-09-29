@@ -6,7 +6,7 @@ Gold holds the dimensions and facts of the star schema described in [`docs/archi
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
 ```
 
-`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. So far the build writes the date, time and facility dimensions; the facts follow (#13, #14).
+`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions and the availability fact; the hourly fact follows (#14).
 
 ## Date and time dimensions
 
@@ -64,3 +64,38 @@ One row per facility the feed has ever named, plus the unknown member. Maintaine
 - A facility **keeps its key** for as long as the dimension exists. A **new facility** needs no work: it is inserted on the next run with the next free key and unknown capacity until it is added to the mapping.
 - A facility that **disappears** from the feed becomes inactive (`is_active = false`), and active again with the same key if it returns. A facility that is gone from silver altogether is kept and marked inactive: rows are **never deleted**.
 - Facilities first seen in the same run are numbered in the order they were first seen, then by name. Because the keys are kept rather than recomputed, a dimension built from scratch can number facilities differently from one built up run by run; the facts are built from the same dimension, so the model stays consistent.
+
+## `fact_parking_availability`
+
+A periodic snapshot fact: **one row per facility per source reading**, from silver's deduplicated readings ([ADR 009](adr/009-silver-model.md)). A reading fetched many times, as during an outage, is one row; how often it was fetched stays in silver. The fact is rebuilt on every run.
+
+| Column | Meaning |
+|---|---|
+| `facility_key` | From `dim_parking_facility` by name; `-1` (unknown member) if the name is not there, so no reading is lost |
+| `date_key`, `time_key` | The reading's local Oslo date (`yyyymmdd`) and minute (`hhmm`): when the parking situation occurred, not when it was fetched. A reading outside `dim_date`'s range stops the build |
+| `valid_from` | The source's timestamp (UTC) |
+| `valid_to` | The facility's next reading (UTC); null for the current one |
+| `duration_minutes` | `valid_to − valid_from`; null for the current reading |
+| `available_spaces`, `status` | As in silver: a count, or null with `status` `open` or `unknown` |
+| `occupied_spaces` | The facility's capacity minus its free spaces, when both are known |
+| `is_stale` | The source was seen stale while this was its newest reading ([stale periods](silver.md#source-staleness)) |
+| `first_ingested_at`, `last_fetched_at` | The first and last fetch that saw the reading |
+
+### Time-weighting
+
+Collection is adaptive, every 5 or 20 minutes ([ADR 003](adr/003-polling-interval.md)), so readings are irregular. Each reading holds **from `valid_from` until `valid_to`**, and any average over time must be **weighted by `duration_minutes`**: a plain average of rows over-weights short readings. Readings of 100 free spaces for 20 minutes and 50 for 5 minutes average 90, not 75.
+
+`valid_to` assumes a value held until the next reading, also across a gap in collection. `last_fetched_at` is where the evidence ends, so coverage (`covered_minutes` in the hourly fact, #14) can be counted from evidence rather than assumption.
+
+### Semi-additive measures
+
+`available_spaces` and `occupied_spaces` are **semi-additive**:
+
+- **Across facilities, at one point in time, they add up:** the free spaces in the city centre right now are the sum over the facilities' current readings.
+- **Across time, they do not:** summing a facility's readings over a day counts the same cars many times. Use time-weighted averages, minimum and maximum instead, and only then sum the averages across facilities.
+
+In Power BI, the measures should aggregate over time with a time-weighted average (or `LASTNONBLANK` for "now"), never with `SUM` over the date or time dimension.
+
+### Occupancy
+
+`occupied_spaces` uses the facility's current capacity from the dimension (type 1), for all of history. A **negative** value is shown, not hidden: it means more spaces are free than the register says exist, so the capacity is wrong. It already happens: on 23 September 2026 Forum reported 292 free spaces against the register's 289 (the operator's website says 325), noted in the [facility mapping](config.md#facility-mapping).

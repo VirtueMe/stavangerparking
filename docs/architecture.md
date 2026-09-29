@@ -149,6 +149,7 @@ erDiagram
         int occupied_spaces "nullable; needs capacity"
         boolean is_stale
         timestamp first_ingested_at
+        timestamp last_fetched_at "evidence ends here"
     }
 
     fact_parking_hourly {
