@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.6.0] - 2026-09-29
+
+### Features
+
+- **silver:** Source staleness detection ([#53](https://github.com/VirtueMe/stavangerparking/pull/53))
+
 ## [0.5.0] - 2026-09-29
 
 ### Features
