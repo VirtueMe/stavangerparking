@@ -45,6 +45,7 @@ from stavanger_parking.tables import (
     FACILITY_TABLE,
     FETCH_TABLE,
     HOURLY_TABLE,
+    PARKING_SOURCE_ID,
     READING_TABLE,
     STALE_PERIOD_TABLE,
     TIME_TABLE,
@@ -54,9 +55,6 @@ from stavanger_parking.tables import (
 
 class BuildError(RuntimeError):
     """The gold tables could not be built."""
-
-
-PARKING_SOURCE_ID = "stavanger_parking"
 
 
 def build(

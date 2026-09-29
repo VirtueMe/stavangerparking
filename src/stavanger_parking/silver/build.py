@@ -43,13 +43,13 @@ from stavanger_parking.tables import (
     AREA_TABLE,
     FETCH_TABLE,
     FRESHNESS_TABLE,
+    PARKING_SOURCE_ID,
     QUARANTINE_TABLE,
     READING_TABLE,
     STALE_PERIOD_TABLE,
     table_path,
 )
 
-SOURCE_ID = "stavanger_parking"
 REGISTER_SOURCE_ID = "parkeringsregisteret"
 
 ROW = ["raw_file", "record_index"]
@@ -208,9 +208,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     sources = {s.id: s for s in load_sources(args.config)}
-    source = sources.get(SOURCE_ID)
+    source = sources.get(PARKING_SOURCE_ID)
     if source is None:
-        print(f"no source {SOURCE_ID!r} in {args.config}", file=sys.stderr)
+        print(f"no source {PARKING_SOURCE_ID!r} in {args.config}", file=sys.stderr)
         return 1
     try:
         r = build(source, args.tables_root, rebuild=args.rebuild)

@@ -51,7 +51,7 @@ The notebooks (rectangles) run in one Data pipeline; the yellow cylinders are th
 | Gold | Notebook (Python) | Maintains the dimensions (MERGE) and builds the facts | #11–#14 |
 | Storage | Lakehouse | `Files/` for raw files, `Tables/` for Delta tables of every layer | #16 |
 | Maintenance | Data pipeline + notebook | `OPTIMIZE` and `VACUUM` against small-file growth | #20 |
-| Quality | Notebook step | Data quality and schema drift checks; a critical failure stops the pipeline | #21 |
+| Quality | Notebook step | Data quality and schema drift checks after silver and gold; results stored in `quality_check_results`; a critical failure stops the pipeline, never collection ([`docs/quality.md`](quality.md)) | #21 |
 | Reporting | Semantic model + report | On the gold tables (optional) | #24 |
 
 ## Interim flow (until platform access)
