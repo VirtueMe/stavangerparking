@@ -103,9 +103,11 @@ erDiagram
     dim_date {
         int date_key PK "yyyymmdd"
         date date
+        int year
+        int quarter
+        int month
         int iso_year
         int iso_week
-        int month
         string weekday
         boolean is_weekend
         boolean is_public_holiday
@@ -114,6 +116,7 @@ erDiagram
 
     dim_time {
         int time_key PK "hhmm"
+        int minute_of_day "silver's reading_minute_of_day"
         int hour
         int minute
         string quarter_hour "e.g. 14:15"
@@ -169,8 +172,8 @@ erDiagram
 
 ### Dimensions
 
-- **`dim_date`**: one row per day, with ISO week, weekday, weekend and Norwegian public holidays (#11).
-- **`dim_time`**: one row per minute of the day, with a 15-minute bucket and part of day (#11).
+- **`dim_date`**: one row per day from 2020 to 2035, with ISO week, weekday, weekend and Norwegian public holidays ([`docs/gold.md`](gold.md#dim_date)).
+- **`dim_time`**: one row per minute of the day, with a 15-minute bucket and part of day ([`docs/gold.md`](gold.md#dim_time)).
 - **`dim_parking_facility`**: one row per facility, maintained with MERGE (#12). The facility name is the natural key (ADR 004). Capacity comes from the national parking register (Parkeringsregisteret), collected monthly and linked to the feed's names by a hand-maintained mapping file, and may be unknown (ADR 005). Attributes are overwritten (type 1); `first_seen`, `last_seen` and `is_active` record the facility's lifetime in the feed. The unknown member (`-1`) catches facts whose facility cannot be resolved, so no fact row is lost.
 
 ## Configuration, new sources and new facilities

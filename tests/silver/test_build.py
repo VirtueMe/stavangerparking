@@ -17,8 +17,8 @@ from stavanger_parking.silver.build import (
     READING_TABLE,
     STALE_PERIOD_TABLE,
     BuildError,
-    table_path,
 )
+from stavanger_parking.tables import table_path
 
 REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
 T0 = datetime(2026, 9, 28, 12, 3, tzinfo=UTC)
