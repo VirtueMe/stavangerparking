@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.12.1] - 2026-09-29
+
+### Documentation
+
+- **adr:** Record filtered raw files for reference data in ADR 007 ([#64](https://github.com/VirtueMe/stavangerparking/pull/64))
+
 ## [0.12.0] - 2026-09-29
 
 ### Features
