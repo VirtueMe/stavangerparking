@@ -17,6 +17,7 @@ Every source is described in [`config/sources.json`](../config/sources.json). Th
 | `polling.slow_interval_minutes` | Fetch interval once values have stopped changing; not shorter than the fast interval |
 | `polling.unchanged_snapshots_for_slow` | How many consecutive snapshots with identical values switch to the slow interval |
 | `polling.change_ignores_fields` | Fields left out when comparing snapshots, such as the data timestamp that advances regardless of the values |
+| `freshness.stale_after_minutes` | How old the source's newest timestamp may be when fetched before the snapshot counts as stale ([silver](silver.md#source-staleness)) |
 
 All fields are required. Unknown fields are rejected, so a misspelt field fails instead of being silently ignored. The config is validated on load, and every problem is reported at once, naming the source and field.
 

@@ -50,6 +50,13 @@ class Polling:
 
 
 @dataclass(frozen=True)
+class Freshness:
+    """When the source counts as stale: its newest timestamp is older than this when fetched."""
+
+    stale_after_minutes: int
+
+
+@dataclass(frozen=True)
 class Source:
     id: str
     ckan: CkanLocation
@@ -57,6 +64,7 @@ class Source:
     bronze_table: str
     licence: Licence
     polling: Polling
+    freshness: Freshness
 
 
 def _field_names(cls) -> set[str]:
@@ -149,6 +157,11 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
             "polling.fast_interval_minutes"
         )
 
+    freshness_section = _section(entry, "freshness", Freshness, label, problems)
+    stale_after = _positive_int(
+        freshness_section, "stale_after_minutes", label, problems, section="freshness"
+    )
+
     if len(problems) > before:
         return None
     return Source(
@@ -163,6 +176,7 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
             unchanged_snapshots_for_slow=unchanged,
             change_ignores_fields=ignored,
         ),
+        freshness=Freshness(stale_after_minutes=stale_after),
     )
 
 
