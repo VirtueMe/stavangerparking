@@ -10,6 +10,10 @@ The mapping is validated on load, and every problem is reported at once.
 
 import json
 from dataclasses import dataclass, fields
+from pathlib import Path
+
+# Where the command line tools look for the mapping, relative to the repository root
+DEFAULT_MAPPING = Path("config/facility_mapping.json")
 
 
 class MappingError(ValueError):

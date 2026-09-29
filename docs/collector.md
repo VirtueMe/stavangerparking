@@ -61,8 +61,9 @@ cron-job.org may disable a job after repeated failures. After fixing the cause, 
 
 As decided in [ADR 003](adr/003-polling-interval.md):
 
-- **Fast mode:** fetch on every run (every 5 minutes) while values change.
-- **Slow mode:** after 5 consecutive snapshots with identical values, fetch every 20 minutes. A run in slow mode fetches once 17.5 minutes have passed since the last snapshot (20 minus half a fast step), because runs can start late.
+- **Fast mode:** fetch every 5 minutes, that is, on every run, while values change.
+- **Slow mode:** after 5 consecutive snapshots with identical values, fetch every 20 minutes.
+- **When a source is due:** runs start late, so a source is due once its interval, **less half a run** (2.5 minutes), has passed since its last snapshot: after 2.5 minutes in fast mode, 17.5 in slow mode, and 57.5 for the hourly register. A run started right after another, such as a manual one, therefore skips a source it has just fetched.
 - **Back to fast** as soon as a fetched snapshot's values differ.
 
 Values are compared through a fingerprint of every record with the fields in `polling.change_ignores_fields` left out (`Dato` and `Klokkeslett`, which advance even when nothing else changes). Both a quiet night and a frozen feed therefore slow down. All parameters are in the [source configuration](config.md).
@@ -104,13 +105,14 @@ uv run python -m stavanger_parking.bronze.collect gaps --storage ../stavangerpar
 
 ## Parkeringsregisteret
 
-Facility capacities come from the national parking register ([ADR 005](adr/005-capacity-as-reference-data.md)), which is collected as a second source (`parkeringsregisteret` in the [source configuration](config.md)). It has a fixed URL, `http.url`: Stavanger Parkering's areas, by organisation number, with all fields. It has no `polling`, so the 5-minute Collect run skips it; it is fetched whenever it is collected by name, and its sidecars have no fingerprint or next due time.
+Facility capacities come from the national parking register ([ADR 005](adr/005-capacity-as-reference-data.md)), collected as a second source (`parkeringsregisteret` in the [source configuration](config.md)) **hourly, by the same Collect run as the parking feed** ([ADR 010](adr/010-collect-the-register-hourly.md)). It has a fixed URL, `http.url`: Stavanger Parkering's areas, by organisation number, with all fields.
 
-The `Collect register` workflow ([`.github/workflows/collect-register.yml`](../.github/workflows/collect-register.yml)) collects it onto the `data` branch under `bronze/parkeringsregisteret/`. It shares Collect's concurrency group, so the two never push at the same time, and it keeps [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md) on the branch in step with the template, which credits both publishers.
+- **Hourly:** its `polling` interval is 60 minutes, so a run fetches it once 57.5 minutes have passed since its last snapshot (below).
+- **Only the mapped areas are stored.** The response holds about 178 areas, 540 KB with their version histories; the source's `filter` keeps the records whose `id` is a `register_id` in the [facility mapping](config.md#facility-mapping), about 40 KB. Each kept record is unchanged. The sidecar's `filter` traces the file to the full response: its `response_hash` and `response_records`, `kept_records`, and any mapped id `missing` from the response. A response that is not a JSON list of records is stored unchanged, with `applied: false`. This is an exception to storing raw responses unchanged ([ADR 007](adr/007-collect-outside-the-platform.md), #62): areas that are not mapped are never stored.
 
-Capacities change rarely, so the intended trigger is a **monthly** cron-job.org job, set up like the [Collect job](#trigger) with its own schedule (for example the 1st of every month at 03:02) and the URL `…/actions/workflows/collect-register.yml/dispatches`; the same token works. During the case the job is not set up, since capacities are not expected to change before the meeting, and the workflow is started by hand (*Run workflow*).
+Collect also keeps [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md) on the `data` branch in step with the template, which credits both publishers.
 
-Locally:
+To collect it alone, locally:
 
 ```sh
 uv run python -m stavanger_parking.bronze.collect run --storage <data> --source parkeringsregisteret --run-id local

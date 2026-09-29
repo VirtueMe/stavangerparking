@@ -1,11 +1,13 @@
 """Command line for the collector.
 
     python -m stavanger_parking.bronze.collect run --storage DIR --run-id ID [--source ID]
+        [--mapping FILE]
     python -m stavanger_parking.bronze.collect gaps --storage DIR
 
 `run` performs one scheduled collection for every polled source and prints what it did, including
 skips and their reason. With `--source`, it collects only that source, which is how sources without
-polling (reference data, ADR 005) are collected. `gaps` lists periods where no snapshot of a polled
+polling are collected. A source with a `filter` keeps only the records of the facility mapping
+(`--mapping`, ADR 010). `gaps` lists periods where no snapshot of a polled
 source arrived by the time the previous one said the next was due. `run` exits non-zero on failure.
 """
 
@@ -18,6 +20,7 @@ from pathlib import Path
 from stavanger_parking.bronze.ckan import CkanError, make_client
 from stavanger_parking.bronze.collector import CollectError, collect, find_gaps, read_sidecars
 from stavanger_parking.config import DEFAULT_CONFIG, load_sources
+from stavanger_parking.facilities import DEFAULT_MAPPING, MappingError, load_facility_mapping
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument("--run-id", required=True)
     run.add_argument("--source", help="collect only this source (default: every polled source)")
+    run.add_argument("--mapping", type=Path, default=DEFAULT_MAPPING)
 
     gaps = commands.add_parser("gaps", help="list gaps in collection")
     gaps.add_argument("--storage", type=Path, required=True)
@@ -42,21 +46,22 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "gaps":
         return _gaps(polled, args.storage, timedelta(minutes=args.tolerance_minutes))
     if args.source is None:
-        return _run(polled, args.storage, args.run_id)
+        return _run(polled, args.storage, args.run_id, args.mapping)
     named = [s for s in sources if s.id == args.source]
     if not named:
         print(f"no source {args.source!r} in {args.config}", file=sys.stderr)
         return 1
-    return _run(named, args.storage, args.run_id)
+    return _run(named, args.storage, args.run_id, args.mapping)
 
 
-def _run(sources, storage: Path, run_id: str) -> int:
+def _run(sources, storage: Path, run_id: str, mapping_path: Path) -> int:
     lines, failed = [], False
     with make_client() as client:
         for source in sources:
             try:
-                outcome = collect(source, storage, client, datetime.now(UTC), run_id)
-            except (CkanError, CollectError) as e:
+                keep = _keep(source, mapping_path)
+                outcome = collect(source, storage, client, datetime.now(UTC), run_id, keep)
+            except (CkanError, CollectError, MappingError) as e:
                 failed = True
                 lines.append(f"{source.id}: FAILED: {e}")
                 continue
@@ -65,6 +70,14 @@ def _run(sources, storage: Path, run_id: str) -> int:
             lines.append(f"{source.id}: {action} ({d.mode} mode: {d.reason})")
     _report(lines)
     return 1 if failed else 0
+
+
+def _keep(source, mapping_path: Path) -> frozenset[str] | None:
+    """The values a source's filter keeps, from the facility mapping; None without a filter."""
+    if source.filter is None:
+        return None
+    mapping = load_facility_mapping(mapping_path)
+    return frozenset(str(getattr(m, source.filter.mapping_field)) for m in mapping)
 
 
 def _gaps(sources, storage: Path, tolerance: timedelta) -> int:
