@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.4.0] - 2026-09-29
+
+### Features
+
+- **silver:** Typed parsing of parking readings ([#51](https://github.com/VirtueMe/stavangerparking/pull/51))
+
 ## [0.3.0] - 2026-09-28
 
 ### Features
