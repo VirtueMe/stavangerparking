@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.14.1] - 2026-09-29
+
+### Performance
+
+- **pipeline:** Delta table maintenance ([#73](https://github.com/VirtueMe/stavangerparking/pull/73))
+
 ## [0.14.0] - 2026-09-29
 
 ### Features
