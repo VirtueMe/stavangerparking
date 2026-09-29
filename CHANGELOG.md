@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.7.0] - 2026-09-29
+
+### Features
+
+- **bronze:** Collect Parkeringsregisteret for facility capacities ([#56](https://github.com/VirtueMe/stavangerparking/pull/56))
+
 ## [0.6.1] - 2026-09-29
 
 ### Documentation
