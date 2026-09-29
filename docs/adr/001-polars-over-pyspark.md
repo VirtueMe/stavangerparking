@@ -35,4 +35,4 @@ Use **Polars with delta-rs** in pure Python notebooks. The transformation logic 
   - many sources need to be processed in parallel within one run;
   - streaming ingestion (for example Eventstream or Structured Streaming) replaces polling;
   - platform features that assume Spark become important, such as Auto Loader or declarative pipelines on Databricks.
-- **Revisit if the platform becomes Databricks:** its managed features (Auto Loader, Lakeflow declarative pipelines, Unity Catalog managed tables) assume Spark, which shifts the balance even at this volume. The scalability assessment (#22) records where the limits are.
+- **Revisit if the platform becomes Databricks:** its managed features (Auto Loader, Lakeflow declarative pipelines, Unity Catalog managed tables) assume Spark, which shifts the balance even at this volume. The scalability assessment ([ADR 006](006-scalability-assessment.md)) measures where the limits are.

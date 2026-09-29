@@ -29,6 +29,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `config/sources.json` | [Source configuration](docs/config.md): where each dataset comes from, where it lands, and its licence |
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
+| `benchmarks/scaling.py` | How the transformations scale with facilities and years ([ADR 006](docs/adr/006-scalability-assessment.md)) |
 | `.github/workflows/collect.yml` | [Collector](docs/collector.md): snapshot collection of the parking feed and the parking register onto the `data` branch, started by cron-job.org |
 | `config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
