@@ -1,6 +1,6 @@
 """Build the gold tables.
 
-    python -m stavanger_parking.gold.build --tables-root DIR [--mapping FILE]
+    python -m stavanger_parking.gold.build --tables-root DIR [--mapping FILE] [--config FILE]
 
 Under `--tables-root`:
 
@@ -12,17 +12,20 @@ Under `--tables-root`:
   until the register has been collected.
 - `fact_parking_availability` is rebuilt from silver's readings and the dimensions
   (`gold.availability`); a reading whose date is outside `dim_date` stops the build.
-
-The hourly fact comes later (#14).
+- `fact_parking_hourly` is rebuilt from the availability fact and silver's stale periods
+  (`gold.hourly`); a reading covers at most the parking source's slow polling interval past its
+  last fetch.
 """
 
 import argparse
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 import polars as pl
 from deltalake import DeltaTable
 
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 from stavanger_parking.facilities import load_facility_mapping
 from stavanger_parking.gold.availability import availability
 from stavanger_parking.gold.calendar import FIRST_DATE, LAST_DATE, dim_date, dim_time
@@ -33,6 +36,7 @@ from stavanger_parking.gold.facility import (
     assign_keys,
     facility_attributes,
 )
+from stavanger_parking.gold.hourly import hourly
 from stavanger_parking.silver.register import AREA_SCHEMA
 from stavanger_parking.tables import (
     AREA_TABLE,
@@ -40,6 +44,7 @@ from stavanger_parking.tables import (
     DATE_TABLE,
     FACILITY_TABLE,
     FETCH_TABLE,
+    HOURLY_TABLE,
     READING_TABLE,
     STALE_PERIOD_TABLE,
     TIME_TABLE,
@@ -53,7 +58,15 @@ class BuildError(RuntimeError):
     """The gold tables could not be built."""
 
 
-def build(tables_root: str, mapping_path=DEFAULT_MAPPING, storage_options=None) -> dict[str, int]:
+PARKING_SOURCE_ID = "stavanger_parking"
+
+
+def build(
+    tables_root: str,
+    mapping_path=DEFAULT_MAPPING,
+    config_path=DEFAULT_CONFIG,
+    storage_options=None,
+) -> dict[str, int]:
     """Write the gold tables; returns the number of rows per table."""
     written = {}
     for name, frame in ((DATE_TABLE, dim_date()), (TIME_TABLE, dim_time())):
@@ -61,7 +74,23 @@ def build(tables_root: str, mapping_path=DEFAULT_MAPPING, storage_options=None) 
         written[name] = frame.height
     written[FACILITY_TABLE] = build_facilities(tables_root, mapping_path, storage_options)
     written[AVAILABILITY_TABLE] = build_availability(tables_root, storage_options)
+    parking = next(s for s in load_sources(config_path) if s.id == PARKING_SOURCE_ID)
+    max_gap = timedelta(minutes=parking.polling.slow_interval_minutes)
+    written[HOURLY_TABLE] = build_hourly(tables_root, max_gap, storage_options)
     return written
+
+
+def build_hourly(tables_root: str, max_gap: timedelta, storage_options=None) -> int:
+    """Replace `fact_parking_hourly`; returns its number of rows."""
+    fact = pl.read_delta(
+        table_path(tables_root, AVAILABILITY_TABLE), storage_options=storage_options
+    )
+    periods = pl.read_delta(
+        table_path(tables_root, STALE_PERIOD_TABLE), storage_options=storage_options
+    ).filter(pl.col("source_id") == PARKING_SOURCE_ID)
+    rows = hourly(fact, periods, max_gap)
+    _overwrite(rows, table_path(tables_root, HOURLY_TABLE), storage_options)
+    return rows.height
 
 
 def build_availability(tables_root: str, storage_options=None) -> int:
@@ -140,10 +169,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m stavanger_parking.gold.build")
     parser.add_argument("--tables-root", required=True, help="folder or URI of the tables")
     parser.add_argument("--mapping", type=Path, default=DEFAULT_MAPPING)
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     args = parser.parse_args(argv)
 
     try:
-        written = build(args.tables_root, args.mapping)
+        written = build(args.tables_root, args.mapping, args.config)
     except BuildError as e:
         print(e, file=sys.stderr)
         return 1

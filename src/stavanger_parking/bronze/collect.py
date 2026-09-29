@@ -17,9 +17,7 @@ from pathlib import Path
 
 from stavanger_parking.bronze.ckan import CkanError, make_client
 from stavanger_parking.bronze.collector import CollectError, collect, find_gaps, read_sidecars
-from stavanger_parking.config import load_sources
-
-DEFAULT_CONFIG = Path("config/sources.json")
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 
 
 def main(argv: list[str] | None = None) -> int:
