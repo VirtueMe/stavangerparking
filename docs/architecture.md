@@ -81,9 +81,9 @@ See [`docs/collector.md`](collector.md) for how a collection run works.
 | Raw (bronze) | `Files/bronze/parking/yyyy/mm/dd/HHmmss.json` | One file per fetched snapshot | The response byte for byte, plus a sidecar (`.meta.json`) with `ingested_at`, source, run, `content_hash`, `values_fingerprint`, polling mode and next due time |
 | Bronze | `bronze_parking` | One row per record per fetched snapshot | All source fields as strings, plus the sidecar metadata (`ingested_at`, `source_url`, `content_hash`, `values_fingerprint`, `run_id`, …) and `raw_file` + `record_index`. Append-only, loaded once per raw file ([`docs/bronze.md`](bronze.md)) |
 | Bronze | `bronze_parking_load_issues` | One row per raw file that cannot be loaded | Missing or unreadable sidecar, unreadable or empty payload, with the reason |
-| Silver | `silver_parking_reading` | One row per facility per source reading | Typed: timestamp in Europe/Oslo and UTC, coordinates as decimals, `available_spaces` as a nullable integer and `status` (`numeric`, `open`, `unknown`). Deduplicated on (facility, source timestamp) |
+| Silver | `silver_parking_reading` | One row per facility per source reading | Typed ([`docs/silver.md`](silver.md)): timestamp in UTC with the Oslo local date, minute of day and UTC offset, coordinates as decimals, `available_spaces` as a nullable integer and `status` (`numeric`, `open`, `unknown`). Deduplicated on (facility, source timestamp) |
 | Silver | `silver_snapshot_freshness` | One row per fetched snapshot | Source timestamp vs. `ingested_at`, and whether the source was stale at that fetch |
-| Silver | `silver_quarantine` | One row per rejected value | The raw value and the reason; nothing is dropped silently |
+| Silver | `silver_quarantine` | One row per rejected value | The raw value, the field and the reason; nothing is dropped silently |
 | Gold | dimensions and facts | See below | The star schema |
 
 Silver can always be rebuilt from bronze, and bronze from the raw files, with the same result as incremental runs (#9).
