@@ -1,5 +1,6 @@
 import json
-from datetime import UTC, datetime
+import shutil
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import polars as pl
@@ -10,6 +11,7 @@ from stavanger_parking.bronze.load import load_source
 from stavanger_parking.config import load_sources
 from stavanger_parking.silver import build
 from stavanger_parking.silver.build import (
+    FETCH_TABLE,
     QUARANTINE_TABLE,
     READING_TABLE,
     BuildError,
@@ -18,32 +20,21 @@ from stavanger_parking.silver.build import (
 
 REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
 T0 = datetime(2026, 9, 28, 12, 3, tzinfo=UTC)
-RECORDS = [
-    {
+TABLES = (FETCH_TABLE, READING_TABLE, QUARANTINE_TABLE)
+
+
+def record(sted="Jernbanen", klokkeslett="14:00", spaces="285", latitude="58.966341") -> dict:
+    return {
         "Dato": "28.09.2026",
-        "Klokkeslett": "14:00",
-        "Sted": "Jernbanen",
-        "Latitude": "58.966341",
+        "Klokkeslett": klokkeslett,
+        "Sted": sted,
+        "Latitude": latitude,
         "Longitude": "5.732047",
-        "Antall_ledige_plasser": "285",
-    },
-    {
-        "Dato": "28.09.2026",
-        "Klokkeslett": "14:00",
-        "Sted": "Posten",
-        "Latitude": "58.969721",
-        "Longitude": "5.729923",
-        "Antall_ledige_plasser": "Open",
-    },
-    {
-        "Dato": "28.09.2026",
-        "Klokkeslett": "14:00",
-        "Sted": "",
-        "Latitude": "58.975601",
-        "Longitude": "5.721537",
-        "Antall_ledige_plasser": "144",
-    },
-]
+        "Antall_ledige_plasser": spaces,
+    }
+
+
+SNAPSHOT = [record(), record(sted="Posten", spaces="Open"), record(sted="", spaces="144")]
 
 
 @pytest.fixture
@@ -52,51 +43,171 @@ def source():
 
 
 @pytest.fixture
-def tables(tmp_path, source):
-    """A bronze table loaded from one raw snapshot, the way the collector stores it."""
-    raw_root, tables_root = tmp_path / "raw", str(tmp_path / "tables")
-    raw_file = render_raw_path(source.raw_path, T0)
-    (raw_root / raw_file).parent.mkdir(parents=True)
-    (raw_root / raw_file).write_text(json.dumps(RECORDS))
-    (raw_root / sidecar_path(raw_file)).write_text(json.dumps({"ingested_at": T0.isoformat()}))
-    load_source(source, raw_root, tables_root, T0)
-    return tables_root
+def roots(tmp_path):
+    return tmp_path / "raw", str(tmp_path / "tables")
 
 
-def test_build_writes_readings_and_quarantine(source, tables):
-    result = build.build(source, tables)
+def collect(source, raw_root, at: datetime, records: list[dict]) -> None:
+    """Store a raw snapshot and its sidecar the way the collector does."""
+    raw_file = render_raw_path(source.raw_path, at)
+    (raw_root / raw_file).parent.mkdir(parents=True, exist_ok=True)
+    (raw_root / raw_file).write_text(json.dumps(records))
+    (raw_root / sidecar_path(raw_file)).write_text(json.dumps({"ingested_at": at.isoformat()}))
 
-    readings = pl.read_delta(table_path(tables, READING_TABLE))
-    quarantine = pl.read_delta(table_path(tables, QUARANTINE_TABLE))
-    assert readings["facility"].to_list() == ["Jernbanen", "Posten"]
-    assert readings["status"].to_list() == ["numeric", "open"]
-    assert quarantine.select("field", "reason", "reading_excluded").rows() == [
+
+def load_and_build(source, roots, **kwargs) -> build.BuildResult:
+    raw_root, tables_root = roots
+    load_source(source, raw_root, tables_root, datetime.now(UTC))
+    return build.build(source, tables_root, **kwargs)
+
+
+def read(tables_root: str, name: str) -> pl.DataFrame:
+    """A table in a fixed order, so tables built in different ways can be compared."""
+    frame = pl.read_delta(table_path(tables_root, name))
+    order = [c for c in ("raw_file", "record_index", "field") if c in frame.columns]
+    return frame.sort(order)
+
+
+def snapshot_of(tables_root: str) -> dict[str, pl.DataFrame]:
+    return {name: read(tables_root, name) for name in TABLES}
+
+
+def assert_same_tables(left: dict[str, pl.DataFrame], right: dict[str, pl.DataFrame]) -> None:
+    for name in TABLES:
+        assert left[name].equals(right[name]), name
+
+
+def test_a_first_build_writes_all_tables(source, roots):
+    collect(source, roots[0], T0, SNAPSHOT)
+
+    result = load_and_build(source, roots)
+
+    tables = snapshot_of(roots[1])
+    assert tables[FETCH_TABLE]["facility"].to_list() == ["Jernbanen", "Posten"]
+    assert tables[READING_TABLE]["status"].to_list() == ["numeric", "open"]
+    assert tables[QUARANTINE_TABLE].select("field", "reason", "reading_excluded").rows() == [
         ("Sted", "missing_value", True)
     ]
-    assert result == build.BuildResult(bronze_rows=3, readings=2, quarantined=1, excluded=1)
+    assert result == build.BuildResult(
+        new_rows=3, fetches=2, quarantined=1, excluded=1, readings=2, conflicts=0
+    )
 
 
-def test_a_rebuild_gives_the_same_tables(source, tables):
-    build.build(source, tables)
-    first = pl.read_delta(table_path(tables, READING_TABLE))
+def test_repeated_fetches_become_one_reading(source, roots):
+    for minutes in (0, 5, 10):
+        collect(source, roots[0], T0 + timedelta(minutes=minutes), SNAPSHOT)
 
-    build.build(source, tables)
+    result = load_and_build(source, roots)
 
-    assert pl.read_delta(table_path(tables, READING_TABLE)).equals(first)
-    assert pl.read_delta(table_path(tables, QUARANTINE_TABLE)).height == 1
+    assert read(roots[1], FETCH_TABLE).height == 6
+    assert read(roots[1], READING_TABLE)["ingested_at"].unique().to_list() == [T0]
+    assert result.readings == 2
 
 
-def test_an_empty_quarantine_is_still_a_table(source, tmp_path):
-    raw_root, tables_root = tmp_path / "raw", str(tmp_path / "tables")
-    raw_file = render_raw_path(source.raw_path, T0)
-    (raw_root / raw_file).parent.mkdir(parents=True)
-    (raw_root / raw_file).write_text(json.dumps(RECORDS[:1]))
-    (raw_root / sidecar_path(raw_file)).write_text(json.dumps({"ingested_at": T0.isoformat()}))
-    load_source(source, raw_root, tables_root, T0)
+def test_rerunning_the_same_batch_changes_nothing(source, roots):
+    collect(source, roots[0], T0, SNAPSHOT)
+    load_and_build(source, roots)
+    before = snapshot_of(roots[1])
 
-    build.build(source, tables_root)
+    result = build.build(source, roots[1])
 
-    assert pl.read_delta(table_path(tables_root, QUARANTINE_TABLE)).is_empty()
+    assert_same_tables(snapshot_of(roots[1]), before)
+    assert (result.new_rows, result.fetches, result.quarantined) == (0, 0, 0)
+
+
+def test_a_run_only_parses_new_bronze_rows(source, roots):
+    collect(source, roots[0], T0, SNAPSHOT)
+    load_and_build(source, roots)
+    collect(source, roots[0], T0 + timedelta(minutes=5), [record(klokkeslett="14:04")])
+
+    result = load_and_build(source, roots)
+
+    assert (result.new_rows, result.fetches, result.readings) == (1, 1, 3)
+
+
+def test_a_late_earlier_fetch_takes_over_the_reading(source, roots):
+    collect(source, roots[0], T0 + timedelta(minutes=5), [record(spaces="280")])
+    load_and_build(source, roots)
+    collect(source, roots[0], T0, [record()])
+
+    result = load_and_build(source, roots)
+
+    readings = read(roots[1], READING_TABLE)
+    assert readings.select("ingested_at", "available_spaces").rows() == [(T0, 285)]
+    conflicts = read(roots[1], QUARANTINE_TABLE)
+    assert conflicts.select("ingested_at", "raw_value", "reason").rows() == [
+        (T0 + timedelta(minutes=5), "280", "conflicting_duplicate")
+    ]
+    assert result.conflicts == 1
+
+
+def test_incremental_runs_give_the_same_tables_as_a_rebuild(source, roots, tmp_path):
+    batches = [
+        (T0 + timedelta(minutes=10), [record(klokkeslett="14:08"), record(sted="Posten")]),
+        (T0, SNAPSHOT),
+        (T0 + timedelta(minutes=20), [record(klokkeslett="14:08", spaces="270")]),
+        (T0 + timedelta(minutes=5), [record(spaces="999"), record(sted="Posten", spaces="x")]),
+        (T0 + timedelta(minutes=30), [record(klokkeslett="31:00")]),
+    ]
+    for at, records in batches:
+        collect(source, roots[0], at, records)
+        load_and_build(source, roots)
+    incremental = snapshot_of(roots[1])
+
+    rebuilt_root = str(tmp_path / "rebuilt")
+    shutil.copytree(roots[1], rebuilt_root)
+    build.build(source, rebuilt_root, rebuild=True)
+
+    assert_same_tables(snapshot_of(rebuilt_root), incremental)
+    # Conflicts: Jernbanen 14:00 (999 vs 285) and 14:08 (270 vs 285); Posten 14:00 (285, and "x",
+    # vs the winning "Open"). "x" is also quarantined as not a count
+    assert read(roots[1], QUARANTINE_TABLE)["reason"].value_counts().sort("reason").rows() == [
+        ("conflicting_duplicate", 4),
+        ("invalid_date_time", 1),
+        ("missing_value", 1),
+        ("not_a_count", 1),
+    ]
+
+
+def test_a_run_that_stops_after_the_quarantine_is_completed_by_the_next(source, roots, monkeypatch):
+    collect(source, roots[0], T0, [record(), record(sted="Posten", latitude="x")])
+    load_source(source, roots[0], roots[1], T0)
+
+    def stop(*args):
+        raise RuntimeError("stopped")
+
+    with monkeypatch.context() as m:
+        m.setattr(build, "_append", stop)
+        with pytest.raises(RuntimeError):
+            build.build(source, roots[1])
+    result = build.build(source, roots[1])
+
+    assert read(roots[1], FETCH_TABLE).height == 2
+    assert read(roots[1], QUARANTINE_TABLE).select("field", "reason").rows() == [
+        ("Latitude", "not_a_decimal")
+    ]
+    assert result.new_rows == 2
+
+
+def test_rebuild_replaces_the_tables(source, roots):
+    collect(source, roots[0], T0, SNAPSHOT)
+    load_and_build(source, roots)
+    before = snapshot_of(roots[1])
+
+    result = build.build(source, roots[1], rebuild=True)
+
+    assert_same_tables(snapshot_of(roots[1]), before)
+    assert result.new_rows == 3
+
+
+def test_a_first_run_with_only_left_out_readings_creates_the_tables(source, roots):
+    collect(source, roots[0], T0, [record(sted="")])
+
+    result = load_and_build(source, roots)
+
+    assert read(roots[1], FETCH_TABLE).is_empty()
+    assert read(roots[1], READING_TABLE).is_empty()
+    assert result.excluded == 1
 
 
 def test_build_without_bronze_fails_clearly(source, tmp_path):
@@ -104,11 +215,16 @@ def test_build_without_bronze_fails_clearly(source, tmp_path):
         build.build(source, str(tmp_path / "tables"))
 
 
-def test_main_reports_counts(tables, capsys):
-    assert build.main(["--config", str(REPO_CONFIG), "--tables-root", tables]) == 0
+def test_main_reports_counts(source, roots, capsys):
+    collect(source, roots[0], T0, SNAPSHOT)
+    load_source(source, roots[0], roots[1], T0)
 
-    out = capsys.readouterr().out
-    assert "3 bronze row(s) → 2 reading(s); 1 value(s) quarantined, 1 reading(s) left out" in out
+    assert build.main(["--config", str(REPO_CONFIG), "--tables-root", roots[1]]) == 0
+    assert build.main(["--config", str(REPO_CONFIG), "--tables-root", roots[1], "--rebuild"]) == 0
+
+    first, second = capsys.readouterr().out.splitlines()
+    assert first.startswith("stavanger_parking: parsed 3 bronze row(s) → 2 fetch(es)")
+    assert second.startswith("stavanger_parking: rebuilt from 3 bronze row(s)")
 
 
 def test_main_without_bronze_exits_with_an_error(tmp_path, capsys):

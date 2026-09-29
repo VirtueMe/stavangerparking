@@ -1,16 +1,37 @@
 # Silver: typed readings
 
-Bronze keeps every source field as the string it was delivered as ([`docs/bronze.md`](bronze.md)). Silver gives the readings types and quarantines every value that cannot be parsed.
+Bronze keeps every source field as the string it was delivered as ([`docs/bronze.md`](bronze.md)). Silver gives the readings types, collapses repeated fetches of the same reading, and quarantines every value that cannot be parsed.
 
 ```sh
-uv run python -m stavanger_parking.silver.build --tables-root <tables>
+uv run python -m stavanger_parking.silver.build --tables-root <tables>             # incremental
+uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild   # from scratch
 ```
 
-`--tables-root` is the same folder or URI as for bronze loading. Each run rebuilds `silver_parking_reading` and `silver_quarantine` from all of bronze, so the result depends on bronze alone. Incremental runs and deduplication of repeated readings come in #9.
+`--tables-root` is the same folder or URI as for bronze loading.
 
-## `silver_parking_reading`
+| Table | Grain | Written |
+|---|---|---|
+| `silver_parking_fetch` | One row per facility per fetch: every parsed bronze row, unless it was left out | Appended |
+| `silver_parking_reading` | One row per facility per source reading: the first fetch of each | Derived from the fetches on every run |
+| `silver_quarantine` | One row per rejected value | Parse problems inserted; conflicts derived on every run |
 
-One row per bronze row, that is, per facility per fetched snapshot, unless the reading was left out (below).
+## Runs and rebuilds
+
+**Incremental (the default).** A run parses only the bronze rows not yet handled, that is, rows that are neither in `silver_parking_fetch` nor left out and recorded in `silver_quarantine`. Their quarantine rows are inserted first, and only if not already there; then their fetches are appended. A run that stops halfway is therefore completed by the next one, without losing or repeating anything, and re-running the same batch changes nothing.
+
+`silver_parking_reading` and the conflicts are then derived from all fetches, so the tables after any sequence of incremental runs, in any order and with files arriving late, are the same as after a rebuild. The tests check exactly that.
+
+**Rebuild (`--rebuild`).** Replaces all three tables from all of bronze. Use it after a change to the parsing or deduplication, or if a silver table is lost; bronze, and the raw files behind it, are the source of truth.
+
+## Deduplication
+
+The source is re-published every 2 minutes but fetched every 5 or 20 ([ADR 003](adr/003-polling-interval.md)), and a frozen feed repeats the same reading for days, so one source reading is usually fetched many times. Readings are keyed on **(`facility`, `reading_at`)**, and the **first fetch wins**: the earliest `ingested_at`, then `raw_file` and `record_index`. The winner therefore does not depend on the order the files were processed in, and an earlier fetch that arrives late (for example in a backfill) takes over. How often a reading was fetched stays visible in `silver_parking_fetch`.
+
+Normally the repeats are identical. A fetch whose coordinates or count differ from the winner's, because the source changed a value without advancing its timestamp or listed a facility twice, is a **conflict**: every differing value is quarantined as `conflicting_duplicate`, with the value as parsed.
+
+## `silver_parking_fetch` and `silver_parking_reading`
+
+Both tables have the same columns. A fetch row is one facility in one fetched snapshot; a reading row is the first fetch of a source reading.
 
 | Column | Type | From | Meaning |
 |---|---|---|---|
@@ -48,7 +69,7 @@ One row per value that could not be parsed. Nothing is dropped silently.
 | `field` | The source field, or `Dato, Klokkeslett` for the timestamp |
 | `raw_value` | The value as delivered (null if the field was missing) |
 | `reason` | See below |
-| `reading_excluded` | Whether the reading was left out of `silver_parking_reading` |
+| `reading_excluded` | Whether the fetch was left out of silver because its identity was lost (no valid time or no facility) |
 
 | `reason` | Meaning |
 |---|---|
@@ -57,5 +78,6 @@ One row per value that could not be parsed. Nothing is dropped silently.
 | `nonexistent_local_time` | The local time was skipped by the spring DST change |
 | `not_a_decimal` | A coordinate is not a decimal number |
 | `not_a_count` | `Antall_ledige_plasser` is neither a whole number nor `"Open"` |
+| `conflicting_duplicate` | A later fetch of the same reading has a different value; `raw_value` is the value as parsed (null if it could not be parsed) |
 
-A reading with a bad value stays in silver with that value null. Only a reading that has lost its identity, with no valid time or no facility, is left out; all of its bad values are still quarantined.
+A fetch with a bad value stays in silver with that value null. Only a reading that has lost its identity, with no valid time or no facility, is left out; all of its bad values are still quarantined.
