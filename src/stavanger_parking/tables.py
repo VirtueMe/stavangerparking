@@ -11,7 +11,10 @@ def table_path(tables_root: str, name: str) -> str:
     return f"{str(tables_root).rstrip('/')}/{name}"
 
 
-# Silver (bronze tables are named in the source configuration)
+# The source the model is built on; its bronze table is named in the source configuration
+PARKING_SOURCE_ID = "stavanger_parking"
+
+# Silver
 FETCH_TABLE = "silver_parking_fetch"
 READING_TABLE = "silver_parking_reading"
 QUARANTINE_TABLE = "silver_quarantine"
@@ -25,3 +28,6 @@ TIME_TABLE = "dim_time"
 FACILITY_TABLE = "dim_parking_facility"
 AVAILABILITY_TABLE = "fact_parking_availability"
 HOURLY_TABLE = "fact_parking_hourly"
+
+# Quality
+QUALITY_TABLE = "quality_check_results"
