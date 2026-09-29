@@ -34,6 +34,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
+| `docs/gold.md` | [Gold](docs/gold.md): the star schema's dimensions and facts |
 | `docs/architecture.md` | [Architecture](docs/architecture.md): data flow, layers and star schema |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
