@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.5.0] - 2026-09-29
+
+### Features
+
+- **silver:** Deduplication and replayable incremental builds ([#52](https://github.com/VirtueMe/stavangerparking/pull/52))
+
 ## [0.4.0] - 2026-09-29
 
 ### Features
