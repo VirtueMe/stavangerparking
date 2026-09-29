@@ -16,6 +16,7 @@ uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild
 | `silver_quarantine` | One row per rejected value | Parse problems inserted; conflicts derived on every run |
 | `silver_snapshot_freshness` | One row per fetched snapshot: how old the source's data was | Derived from the fetches on every run |
 | `silver_stale_period` | One row per period the source was stale | Derived from the fetches on every run |
+| `silver_parking_area` | One row per area in the national parking register per register snapshot | Rebuilt from the register's bronze table on every run |
 
 ## Runs and rebuilds
 
@@ -114,3 +115,18 @@ A period is a run of consecutive stale snapshots, in fetch order, that repeat on
 A period is **evidence-based**. It runs from `stale_from` to `last_stale_fetch_at`: a fetch that sees a timestamp as the source's newest proves that nothing newer was published before it, so `stale_from` may lie before our first fetch (the current outage started on 23 September; collection began on 28 September). After the last stale fetch there is no evidence either way, so a gap in collection does not extend a period.
 
 Gold uses these to mark readings as stale and to count `stale_minutes` per hour (#13, #14): the minutes of the hour inside [`stale_from`, `last_stale_fetch_at`].
+
+## `silver_parking_area`
+
+The parking areas of the national parking register ([ADR 005](adr/005-capacity-as-reference-data.md)), typed from bronze, where the register's nested values are JSON text. One row per area per register snapshot; the facility dimension takes capacities from the latest snapshot. The register is small and fetched about once a month, so the table is rebuilt on every run, and rows are parsed one at a time, so that every bad value is quarantined on its own.
+
+| Column | From | Meaning |
+|---|---|---|
+| `source_id`, `raw_file`, `record_index`, `ingested_at` | bronze | Lineage |
+| `register_id` | `id` | The area's id in the register |
+| `register_name` | `aktivVersjon.navn` | The register's name for the area |
+| `paid_spaces`, `free_spaces`, `charging_spaces`, `accessible_spaces` | `aktivVersjon.antall…` | Spaces; null if the register leaves the count out |
+| `changed_at` | `aktivVersjon.sistEndret` | When the register last changed the area |
+| `deactivated_at` | `deaktivert.deaktivertTidspunkt` | When the provider deactivated the area; null if active |
+
+Its quarantine rows are in `silver_quarantine` with `source_id = parkeringsregisteret` and are replaced on every run: `missing_value` and `invalid_value` for the id or a timestamp, `invalid_json` for a nested value that is not a JSON object, and `not_a_count` for a count that is not a whole number of zero or more. An area without a valid id is left out.
