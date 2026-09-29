@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.14.2] - 2026-09-29
+
+### Documentation
+
+- **adr:** Scalability assessment ([#74](https://github.com/VirtueMe/stavangerparking/pull/74))
+
 ## [0.14.1] - 2026-09-29
 
 ### Performance
