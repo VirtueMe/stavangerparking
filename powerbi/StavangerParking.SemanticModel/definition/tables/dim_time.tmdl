@@ -1,0 +1,49 @@
+/// One row per minute of the day (docs/gold.md#dim_time).
+table dim_time
+
+	/// hhmm
+	column time_key
+		dataType: int64
+		isKey
+		summarizeBy: none
+		sourceColumn: time_key
+
+	/// 0 to 1439
+	column minute_of_day
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: minute_of_day
+
+	/// Hour
+	column hour
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: hour
+
+	/// Minute
+	column minute
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: minute
+
+	/// HH:MM
+	column time
+		dataType: string
+		summarizeBy: none
+		sourceColumn: time
+
+	/// Start of the 15-minute bucket, HH:MM
+	column quarter_hour
+		dataType: string
+		summarizeBy: none
+		sourceColumn: quarter_hour
+
+	/// night, morning, midday, afternoon or evening
+	column day_part
+		dataType: string
+		summarizeBy: none
+		sourceColumn: day_part
+
+	partition dim_time = m
+		mode: import
+		source = DeltaTable("dim_time")
