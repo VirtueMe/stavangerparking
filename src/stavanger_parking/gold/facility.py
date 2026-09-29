@@ -52,7 +52,8 @@ def facility_attributes(
         pl.col("longitude").drop_nulls().last(),
         pl.col("ingested_at").min().alias("first_seen"),
         pl.col("ingested_at").max().alias("last_seen"),
-        (pl.col("raw_file") == latest_snapshot).any().alias("is_active"),
+        # Without fetches there are no facilities to mark, and no snapshot to compare with
+        (pl.col("raw_file") == pl.lit(latest_snapshot or "", pl.String)).any().alias("is_active"),
     )
 
     links = pl.DataFrame(
