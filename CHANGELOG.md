@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.9.0] - 2026-09-29
+
+### Features
+
+- **gold:** Facility dimension with MERGE ([#58](https://github.com/VirtueMe/stavangerparking/pull/58))
+
 ## [0.8.0] - 2026-09-29
 
 ### Features
