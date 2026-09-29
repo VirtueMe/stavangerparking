@@ -73,7 +73,7 @@ class RecordFilter:
     """Store only the records whose `field` matches a `mapping_field` in the facility mapping.
 
     For reference data of which only the mapped facilities are needed (ADR 010); the stored file is
-    then a filtered copy of the response, an exception to storing it unchanged (#62).
+    then a filtered copy of the response, an exception to storing it unchanged (ADR 007, addendum).
     """
 
     field: str
