@@ -162,6 +162,7 @@ erDiagram
         int max_available_spaces
         int observation_count
         decimal covered_minutes "of 60"
+        decimal counted_minutes "with a count; weight of the average"
         decimal stale_minutes
     }
 ```

@@ -1,0 +1,75 @@
+/// One row per facility the feed has named, plus the unknown member (-1). Maintained with MERGE (docs/gold.md#dim_parking_facility).
+table dim_parking_facility
+
+	/// Surrogate key; -1 is the unknown member
+	column facility_key
+		dataType: int64
+		isKey
+		summarizeBy: none
+		sourceColumn: facility_key
+
+	/// The feed's name for the facility: the natural key (ADR 004)
+	column facility_name
+		dataType: string
+		dataCategory: Place
+		summarizeBy: none
+		sourceColumn: facility_name
+
+	/// Latitude, from the facility's latest fetch
+	column latitude
+		dataType: decimal
+		formatString: 0.0000000
+		dataCategory: Latitude
+		summarizeBy: none
+		sourceColumn: latitude
+
+	/// Longitude, from the facility's latest fetch
+	column longitude
+		dataType: decimal
+		formatString: 0.0000000
+		dataCategory: Longitude
+		summarizeBy: none
+		sourceColumn: longitude
+
+	/// The facility's area in the national parking register
+	column register_id
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: register_id
+
+	/// Paid spaces in the latest register snapshot; blank if unknown (ADR 005)
+	column capacity
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: capacity
+
+	/// When the register last changed the area (UTC)
+	column capacity_changed_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: capacity_changed_at
+
+	/// First fetch that included the facility (UTC)
+	column first_seen
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: first_seen
+
+	/// Last fetch that included the facility (UTC)
+	column last_seen
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: last_seen
+
+	/// In the latest fetched snapshot
+	column is_active
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: is_active
+
+	partition dim_parking_facility = m
+		mode: import
+		source = DeltaTable("dim_parking_facility")

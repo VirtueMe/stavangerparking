@@ -1,0 +1,94 @@
+/// One row per day, 2020 to 2035 (docs/gold.md#dim_date).
+table dim_date
+
+	/// yyyymmdd
+	column date_key
+		dataType: int64
+		isKey
+		summarizeBy: none
+		sourceColumn: date_key
+
+	/// The date
+	column date
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: date
+
+	/// Calendar year
+	column year
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: year
+
+	/// Calendar quarter
+	column quarter
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: quarter
+
+	/// Month number
+	column month
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: month
+
+	/// Month name, in English
+	column month_name
+		dataType: string
+		sortByColumn: month
+		summarizeBy: none
+		sourceColumn: month_name
+
+	/// Day of the month
+	column day_of_month
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: day_of_month
+
+	/// ISO 8601 year
+	column iso_year
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: iso_year
+
+	/// ISO 8601 week, as used in Norway
+	column iso_week
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: iso_week
+
+	/// 1 (Monday) to 7 (Sunday)
+	column weekday_number
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: weekday_number
+
+	/// Weekday name, in English
+	column weekday
+		dataType: string
+		sortByColumn: weekday_number
+		summarizeBy: none
+		sourceColumn: weekday
+
+	/// Saturday or Sunday
+	column is_weekend
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: is_weekend
+
+	/// One of Norway's 13 public holidays
+	column is_public_holiday
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: is_public_holiday
+
+	/// The holiday's official Norwegian name
+	column holiday_name
+		dataType: string
+		summarizeBy: none
+		sourceColumn: holiday_name
+
+	partition dim_date = m
+		mode: import
+		source = DeltaTable("dim_date")
