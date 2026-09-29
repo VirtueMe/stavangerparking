@@ -34,6 +34,7 @@ from stavanger_parking.config import Source, load_sources
 from stavanger_parking.silver.dedup import CONFLICTING_DUPLICATE, deduplicate
 from stavanger_parking.silver.freshness import freshness
 from stavanger_parking.silver.parse import parse_readings
+from stavanger_parking.tables import table_path
 
 SOURCE_ID = "stavanger_parking"
 FETCH_TABLE = "silver_parking_fetch"
@@ -60,10 +61,6 @@ class BuildResult:
     conflicts: int
     stale_snapshots: int
     stale_periods: int
-
-
-def table_path(tables_root: str, name: str) -> str:
-    return f"{str(tables_root).rstrip('/')}/{name}"
 
 
 def handled_rows(fetch: str, quarantine: str, storage_options=None) -> pl.DataFrame:

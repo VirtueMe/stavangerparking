@@ -26,6 +26,7 @@ from deltalake import DeltaTable
 
 from stavanger_parking.bronze.collector import SIDECAR_SUFFIX, raw_glob, sidecar_path
 from stavanger_parking.config import Source, load_sources
+from stavanger_parking.tables import table_path
 
 DEFAULT_CONFIG = Path("config/sources.json")
 
@@ -78,7 +79,7 @@ class LoadResult:
 
 
 def bronze_path(tables_root: str, source: Source) -> str:
-    return f"{str(tables_root).rstrip('/')}/{source.bronze_table}"
+    return table_path(tables_root, source.bronze_table)
 
 
 def issues_path(tables_root: str, source: Source) -> str:
