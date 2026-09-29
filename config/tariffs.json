@@ -1,0 +1,195 @@
+{
+  "source": "https://stavanger-parkering.no/en/parkering/p-hus/",
+  "checked": "2026-09-29",
+  "currency": "NOK",
+  "unit": "half_hour",
+  "note": "As published by Stavanger Parkering; a period with weekdays overrides the general period at the same time on those days",
+  "facilities": [
+    {
+      "facility": "Jernbanen",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 20
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 10
+        },
+        {
+          "weekdays": [
+            "fri",
+            "sat"
+          ],
+          "from": "11:00",
+          "to": "21:00",
+          "price": 30
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Valberget",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "11:00",
+          "price": 23
+        },
+        {
+          "from": "11:00",
+          "to": "21:00",
+          "price": 30
+        },
+        {
+          "from": "21:00",
+          "to": "24:00",
+          "price": 23
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 10
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Posten",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 18
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 9
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Jorenholmen",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 23
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 10
+        },
+        {
+          "weekdays": [
+            "fri",
+            "sat"
+          ],
+          "from": "11:00",
+          "to": "18:00",
+          "price": 30
+        }
+      ],
+      "max_daily": null
+    },
+    {
+      "facility": "St Olav",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 18
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 9
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Siddis",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 13
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 8
+        }
+      ],
+      "max_daily": 161
+    },
+    {
+      "facility": "Forum",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 13
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 8
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Kyrre",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "24:00",
+          "price": 16
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 8
+        },
+        {
+          "weekdays": [
+            "sat",
+            "sun"
+          ],
+          "from": "11:00",
+          "to": "18:00",
+          "price": 8
+        }
+      ],
+      "max_daily": 310
+    },
+    {
+      "facility": "Parketten",
+      "periods": [
+        {
+          "from": "07:00",
+          "to": "16:00",
+          "price": 13
+        },
+        {
+          "from": "16:00",
+          "to": "24:00",
+          "price": 20
+        },
+        {
+          "from": "00:00",
+          "to": "07:00",
+          "price": 8
+        }
+      ],
+      "max_daily": 310
+    }
+  ]
+}

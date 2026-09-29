@@ -12,6 +12,8 @@ Under `--tables-root`:
   until the register has been collected.
 - `fact_parking_availability` is rebuilt from silver's readings and the dimensions
   (`gold.availability`); a reading whose date is outside `dim_date` stops the build.
+- `fact_suggested_price` is rebuilt from the hourly fact, the tariffs and the pricing rules
+  (`gold.pricing`).
 - `fact_parking_hourly` is rebuilt from the availability fact and silver's stale periods
   (`gold.hourly`); a reading covers at most the parking source's slow polling interval past its
   last fetch.
@@ -37,6 +39,13 @@ from stavanger_parking.gold.facility import (
     facility_attributes,
 )
 from stavanger_parking.gold.hourly import hourly
+from stavanger_parking.gold.pricing import (
+    DEFAULT_RULES,
+    DEFAULT_TARIFFS,
+    load_rules,
+    load_tariffs,
+    suggested_prices,
+)
 from stavanger_parking.silver.register import AREA_SCHEMA
 from stavanger_parking.tables import (
     AREA_TABLE,
@@ -48,6 +57,7 @@ from stavanger_parking.tables import (
     PARKING_SOURCE_ID,
     READING_TABLE,
     STALE_PERIOD_TABLE,
+    SUGGESTED_PRICE_TABLE,
     TIME_TABLE,
     table_path,
 )
@@ -61,6 +71,8 @@ def build(
     tables_root: str,
     mapping_path=DEFAULT_MAPPING,
     config_path=DEFAULT_CONFIG,
+    tariffs_path=DEFAULT_TARIFFS,
+    rules_path=DEFAULT_RULES,
     storage_options=None,
 ) -> dict[str, int]:
     """Write the gold tables; returns the number of rows per table."""
@@ -73,7 +85,22 @@ def build(
     parking = next(s for s in load_sources(config_path) if s.id == PARKING_SOURCE_ID)
     max_gap = timedelta(minutes=parking.polling.slow_interval_minutes)
     written[HOURLY_TABLE] = build_hourly(tables_root, max_gap, storage_options)
+    written[SUGGESTED_PRICE_TABLE] = build_prices(
+        tables_root, tariffs_path, rules_path, storage_options
+    )
     return written
+
+
+def build_prices(tables_root: str, tariffs_path, rules_path, storage_options=None) -> int:
+    """Replace `fact_suggested_price`; returns its number of rows."""
+    rows = suggested_prices(
+        pl.read_delta(table_path(tables_root, HOURLY_TABLE), storage_options=storage_options),
+        pl.read_delta(table_path(tables_root, FACILITY_TABLE), storage_options=storage_options),
+        load_tariffs(tariffs_path),
+        load_rules(rules_path),
+    )
+    _overwrite(rows, table_path(tables_root, SUGGESTED_PRICE_TABLE), storage_options)
+    return rows.height
 
 
 def build_hourly(tables_root: str, max_gap: timedelta, storage_options=None) -> int:
@@ -166,10 +193,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tables-root", required=True, help="folder or URI of the tables")
     parser.add_argument("--mapping", type=Path, default=DEFAULT_MAPPING)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--tariffs", type=Path, default=DEFAULT_TARIFFS)
+    parser.add_argument("--rules", type=Path, default=DEFAULT_RULES)
     args = parser.parse_args(argv)
 
     try:
-        written = build(args.tables_root, args.mapping, args.config)
+        written = build(args.tables_root, args.mapping, args.config, args.tariffs, args.rules)
     except BuildError as e:
         print(e, file=sys.stderr)
         return 1
