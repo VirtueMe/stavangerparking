@@ -18,6 +18,7 @@ from stavanger_parking.tables import (
     DATE_TABLE,
     FACILITY_TABLE,
     HOURLY_TABLE,
+    SUGGESTED_PRICE_TABLE,
     TIME_TABLE,
     table_path,
 )
@@ -95,6 +96,7 @@ def test_build_writes_the_date_and_time_dimensions(pipeline):
         FACILITY_TABLE: 10,
         AVAILABILITY_TABLE: 9,
         HOURLY_TABLE: 9,
+        SUGGESTED_PRICE_TABLE: 9,
     }
 
 

@@ -6,7 +6,7 @@ Gold holds the dimensions and facts of the star schema described in [`docs/archi
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
 ```
 
-`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions, the availability fact and the hourly fact.
+`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions, the availability fact, the hourly fact, and the suggested prices ([`docs/pricing.md`](pricing.md)).
 
 ## Date and time dimensions
 
