@@ -84,6 +84,7 @@ See [`docs/collector.md`](collector.md) for how a collection run works.
 | Silver | `silver_parking_fetch` | One row per facility per fetch | Every typed bronze row; how often a reading was fetched |
 | Silver | `silver_parking_reading` | One row per facility per source reading | Typed ([`docs/silver.md`](silver.md)): timestamp in UTC with the Oslo local date, minute of day and UTC offset, coordinates as decimals, `available_spaces` as a nullable integer and `status` (`numeric`, `open`, `unknown`). Deduplicated on (facility, source timestamp) |
 | Silver | `silver_snapshot_freshness` | One row per fetched snapshot | Source timestamp vs. `ingested_at`, and whether the source was stale at that fetch ([`docs/silver.md`](silver.md#source-staleness)) |
+| Silver | `silver_parking_area` | One row per register area per register snapshot | Capacities from the national parking register, typed ([`docs/silver.md`](silver.md#silver_parking_area)) |
 | Silver | `silver_stale_period` | One row per stale period | The frozen source timestamp, from when it was too old until the last fetch that saw it |
 | Silver | `silver_quarantine` | One row per rejected value | The raw value, the field and the reason; nothing is dropped silently |
 | Gold | dimensions and facts | See below | The star schema |
@@ -128,7 +129,9 @@ erDiagram
         string facility_name "natural key"
         decimal latitude
         decimal longitude
+        bigint register_id "nullable; national parking register"
         int capacity "nullable"
+        timestamp capacity_changed_at
         timestamp first_seen
         timestamp last_seen
         boolean is_active
