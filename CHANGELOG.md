@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.6.1] - 2026-09-29
+
+### Documentation
+
+- **adr:** Data modelling decisions ([#55](https://github.com/VirtueMe/stavangerparking/pull/55))
+
 ## [0.6.0] - 2026-09-29
 
 ### Features
