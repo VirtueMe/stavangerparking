@@ -1,0 +1,1167 @@
+[
+ {
+  "id": 3650,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.966155,
+  "lengdegrad": 5.732605,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P- Jernbanen",
+   "referanse": "Sentrumsnært",
+   "adresse": "Olav Vs gate",
+   "postnummer": "4005",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 390,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 30,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 5,
+   "vurderingForflytningshemmede": "iht parkeringsforskriften er det foretatt en vurdering med etablering av vilkårsparkerkering for for forflytningshemmede, det er tilrettelagt 8 plasser for forflytningshemmede på det angitte området, alle plassene er gitt best mulig plassering sett i forhold til tilbudet plassene er ment å best å betjene.",
+   "aktiveringstidspunkt": "2024-02-16T10:53:13Z",
+   "sistEndret": "2024-02-16T10:53:13Z",
+   "skiltplanId": 126709,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/6/skiltplan/126709/skiltplan"
+    }
+   ],
+   "versjonsnummer": 6,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P- Jernbanen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Vs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 7,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 10,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-22T07:14:09Z",
+    "sistEndret": "2017-06-22T07:14:09Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/1/vurdering/508/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2018-01-25T11:21:04Z",
+    "opplastetVurderingId": 508,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Jernbanen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Vs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 7,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 10,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2018-01-25T11:21:04Z",
+    "sistEndret": "2018-01-25T11:21:04Z",
+    "skiltplanId": 9342,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/2/skiltplan/9342/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/2/vurdering/508/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2018-05-29T10:12:00Z",
+    "opplastetVurderingId": 508,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Jernbanen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Vs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 7,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 10,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2018-05-29T10:12:00Z",
+    "sistEndret": "2018-05-29T10:12:00Z",
+    "skiltplanId": 9342,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/3/skiltplan/9342/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/3/vurdering/2126/vurdering"
+     }
+    ],
+    "versjonsnummer": 3,
+    "sluttidspunkt": "2022-12-28T14:00:00Z",
+    "opplastetVurderingId": 2126,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Jernbanen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Vs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 23,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 8,
+    "vurderingForflytningshemmede": "iht parkeringsforskriften er det foretatt en vurdering med etablering av vilkårsparkerkering for for forflytningshemmede, det er tilrettelagt 8 plasser for forflytningshemmede på det angitte området, alle plassene er gitt best mulig plassering sett i forhold til tilbudet plassene er ment å best å betjene.",
+    "aktiveringstidspunkt": "2022-12-28T14:00:00Z",
+    "sistEndret": "2022-12-28T12:20:30Z",
+    "skiltplanId": 94651,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/4/skiltplan/94651/skiltplan"
+     }
+    ],
+    "versjonsnummer": 4,
+    "sluttidspunkt": "2023-12-18T11:22:03Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Jernbanen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Vs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 46,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 8,
+    "vurderingForflytningshemmede": "iht parkeringsforskriften er det foretatt en vurdering med etablering av vilkårsparkerkering for for forflytningshemmede, det er tilrettelagt 8 plasser for forflytningshemmede på det angitte området, alle plassene er gitt best mulig plassering sett i forhold til tilbudet plassene er ment å best å betjene.",
+    "aktiveringstidspunkt": "2023-12-18T11:22:03Z",
+    "sistEndret": "2023-12-18T11:22:03Z",
+    "skiltplanId": 122547,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3650/versjon/5/skiltplan/122547/skiltplan"
+     }
+    ],
+    "versjonsnummer": 5,
+    "sluttidspunkt": "2024-02-16T10:53:13Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 44894,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.972244,
+  "lengdegrad": 5.730149,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P - Valberget",
+   "referanse": "Sentrum",
+   "adresse": "Skagenkaien 29",
+   "postnummer": "4006",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 141,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 14,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 0,
+   "vurderingForflytningshemmede": "I området er det opprettet flere parkeringsplasser for forflytningshemmede  på gateplan.",
+   "aktiveringstidspunkt": "2022-12-28T12:41:44Z",
+   "sistEndret": "2022-12-28T12:41:44Z",
+   "skiltplanId": 94688,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894/versjon/4/skiltplan/94688/skiltplan"
+    }
+   ],
+   "versjonsnummer": 4,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P - Valberget",
+    "referanse": null,
+    "adresse": "Skagenkaien 29",
+    "postnummer": "4006",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 141,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 14,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": "I området er det opprettet flere hc plasser på gateplan.",
+    "aktiveringstidspunkt": "2021-11-08T11:58:19Z",
+    "sistEndret": "2021-11-08T11:58:19Z",
+    "skiltplanId": 64941,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894/versjon/1/skiltplan/64941/skiltplan"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2021-12-28T13:18:55Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P - Valberget",
+    "referanse": "Sentrumsnært",
+    "adresse": "Skagenkaien 29",
+    "postnummer": "4006",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 141,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 14,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": "I området er det opprettet flere hc plasser på gateplan.",
+    "aktiveringstidspunkt": "2021-12-28T13:18:55Z",
+    "sistEndret": "2021-12-28T13:18:55Z",
+    "skiltplanId": 64941,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894/versjon/2/skiltplan/64941/skiltplan"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2021-12-28T13:26:16Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P - Valberget",
+    "referanse": "Sentrum",
+    "adresse": "Skagenkaien 29",
+    "postnummer": "4006",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 141,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 14,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": "I området er det opprettet flere parkeringsplasser for forflytningshemmede  på gateplan.",
+    "aktiveringstidspunkt": "2021-12-28T13:26:16Z",
+    "sistEndret": "2021-12-28T13:26:16Z",
+    "skiltplanId": 64941,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44894/versjon/3/skiltplan/64941/skiltplan"
+     }
+    ],
+    "versjonsnummer": 3,
+    "sluttidspunkt": "2022-12-28T12:41:44Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 44934,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.975556,
+  "lengdegrad": 5.721532,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P - Parketten",
+   "referanse": "Konserthuset",
+   "adresse": "Sandvigå 3",
+   "postnummer": "4007",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 290,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 16,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 15,
+   "vurderingForflytningshemmede": "I tillegg er det opprette plasser for bevegelseshemmede på gateplan.",
+   "aktiveringstidspunkt": "2022-12-28T12:44:10Z",
+   "sistEndret": "2022-12-28T12:44:10Z",
+   "skiltplanId": 94689,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44934"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44934/versjon/2/skiltplan/94689/skiltplan"
+    }
+   ],
+   "versjonsnummer": 2,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P - Parketten",
+    "referanse": null,
+    "adresse": "Sandvigå 3",
+    "postnummer": "4007",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 290,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 16,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 15,
+    "vurderingForflytningshemmede": "I tillegg er det opprette plasser for bevegelseshemmede på gateplan.",
+    "aktiveringstidspunkt": "2021-11-08T12:23:26Z",
+    "sistEndret": "2021-11-08T12:23:26Z",
+    "skiltplanId": 64980,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44934"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/44934/versjon/1/skiltplan/64980/skiltplan"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2022-12-28T12:44:10Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 124557,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.96634,
+  "lengdegrad": 5.729655,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "St.Olavsgate",
+   "referanse": "Hc - plass",
+   "adresse": "St.Olavsgate 13",
+   "postnummer": "4005",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 0,
+   "antallAvgiftsfriePlasser": 1,
+   "antallLadeplasser": 0,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 1,
+   "vurderingForflytningshemmede": "Parkeringsplass for forflytningshemmede er flyttet i forbindelse med byggearbeid.",
+   "aktiveringstidspunkt": "2026-09-17T07:27:09Z",
+   "sistEndret": "2026-09-17T07:27:09Z",
+   "skiltplanId": 242862,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/124557"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/124557/versjon/1/skiltplan/242862/skiltplan"
+    }
+   ],
+   "versjonsnummer": 1,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "LANGS_KJOREBANE",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": []
+ },
+ {
+  "id": 3740,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.969323,
+  "lengdegrad": 5.727334,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P- Kyrre",
+   "referanse": "Sentrumsnært",
+   "adresse": "Olav Kyrres gate",
+   "postnummer": "4008",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 310,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 20,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 3,
+   "vurderingForflytningshemmede": "I området er det opprettet flere parkeringsplasser for forflytningshemmede på gateplan.",
+   "aktiveringstidspunkt": "2022-12-28T12:38:55Z",
+   "sistEndret": "2022-12-28T12:38:55Z",
+   "skiltplanId": 94653,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740/versjon/4/skiltplan/94653/skiltplan"
+    }
+   ],
+   "versjonsnummer": 4,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P- Kyrre",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Kyrres gate",
+    "postnummer": "4008",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 310,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 6,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 6,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-23T07:37:23Z",
+    "sistEndret": "2017-06-23T07:37:23Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740/versjon/1/vurdering/532/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2018-05-31T10:40:31Z",
+    "opplastetVurderingId": 532,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Kyrre",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Kyrres gate",
+    "postnummer": "4008",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 310,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 6,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 6,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2018-05-31T10:40:31Z",
+    "sistEndret": "2018-05-31T10:40:31Z",
+    "skiltplanId": 10917,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740/versjon/2/skiltplan/10917/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740/versjon/2/vurdering/2141/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2021-12-29T12:41:04Z",
+    "opplastetVurderingId": 2141,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Kyrre",
+    "referanse": "Sentrumsnært",
+    "adresse": "Olav Kyrres gate",
+    "postnummer": "4008",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 310,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 20,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 3,
+    "vurderingForflytningshemmede": "I området er det oppretter flere parkeringsplasser for forflytningshemmede på gateplan.",
+    "aktiveringstidspunkt": "2021-12-29T12:41:04Z",
+    "sistEndret": "2021-12-29T12:41:04Z",
+    "skiltplanId": 67778,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3740/versjon/3/skiltplan/67778/skiltplan"
+     }
+    ],
+    "versjonsnummer": 3,
+    "sluttidspunkt": "2022-12-28T12:38:55Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 30372,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.953123,
+  "lengdegrad": 5.691474,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P-Siddis",
+   "referanse": "Dnb Arena",
+   "adresse": "Sonja Henies gate",
+   "postnummer": "4021",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 360,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 20,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 10,
+   "vurderingForflytningshemmede": "I tillegg til 10 plasser i parkeringshuset P - Siddis er det tilrettelagt parkering for forflytningshemmede på gateplan.",
+   "aktiveringstidspunkt": "2022-12-28T12:51:15Z",
+   "sistEndret": "2022-12-28T12:51:15Z",
+   "skiltplanId": 94690,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372/versjon/3/skiltplan/94690/skiltplan"
+    }
+   ],
+   "versjonsnummer": 3,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P-Siddis",
+    "referanse": null,
+    "adresse": "Ishockeyveien 7, 4021 Stavanger",
+    "postnummer": "4021",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 360,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 20,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2020-09-08T06:22:38Z",
+    "sistEndret": "2020-09-08T06:22:38Z",
+    "skiltplanId": 41558,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372/versjon/1/skiltplan/41558/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372/versjon/1/vurdering/6601/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2020-11-09T09:48:01Z",
+    "opplastetVurderingId": 6601,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P-Siddis",
+    "referanse": null,
+    "adresse": "Sonja Henies gate",
+    "postnummer": "4021",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 360,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 20,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2020-11-09T09:48:01Z",
+    "sistEndret": "2020-11-09T09:48:01Z",
+    "skiltplanId": 45318,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372/versjon/2/skiltplan/45318/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/30372/versjon/2/vurdering/6601/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2022-12-28T12:51:15Z",
+    "opplastetVurderingId": 6601,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 3749,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.972228,
+  "lengdegrad": 5.736832,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P- Jorenholmen",
+   "referanse": "Sentrumsnært",
+   "adresse": "Jorenholmsgata",
+   "postnummer": "4013",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 500,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 20,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 2,
+   "vurderingForflytningshemmede": "Det er avsatt 2 plasser for forflytningshemmede i Jorenholmen p- hus, dette anses som tilstrekkelig, da det er sjeldent at begge plassen er opptatt. \n",
+   "aktiveringstidspunkt": "2023-01-19T09:58:45Z",
+   "sistEndret": "2023-01-19T09:58:45Z",
+   "skiltplanId": 96185,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749/versjon/3/skiltplan/96185/skiltplan"
+    }
+   ],
+   "versjonsnummer": 3,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P- Jorenholmen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Jorenholmsgata",
+    "postnummer": "4013",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 6,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 2,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-23T07:31:46Z",
+    "sistEndret": "2017-06-23T07:31:46Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749/versjon/1/vurdering/513/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2018-06-04T08:00:57Z",
+    "opplastetVurderingId": 513,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Jorenholmen",
+    "referanse": "Sentrumsnært",
+    "adresse": "Jorenholmsgata",
+    "postnummer": "4013",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 500,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 6,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 2,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2018-06-04T08:00:57Z",
+    "sistEndret": "2018-06-04T08:00:57Z",
+    "skiltplanId": 10979,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749/versjon/2/skiltplan/10979/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3749/versjon/2/vurdering/2161/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2023-01-19T09:58:45Z",
+    "opplastetVurderingId": 2161,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 3754,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.969598,
+  "lengdegrad": 5.72944,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P- Posten",
+   "referanse": "Sentrumsnært",
+   "adresse": "Lars Hertervigs gate",
+   "postnummer": "4005",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 150,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 3,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 0,
+   "vurderingForflytningshemmede": "Det er ikke tilrettelagt plasser for forflytningshemmede på det angitte området. Det er tilrettelagt parkeringsplasser for forflytningshemmede langs offentlig vei.",
+   "aktiveringstidspunkt": "2022-12-28T14:00:00Z",
+   "sistEndret": "2022-12-28T12:31:10Z",
+   "skiltplanId": 94652,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754/versjon/3/skiltplan/94652/skiltplan"
+    }
+   ],
+   "versjonsnummer": 3,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P- Posten",
+    "referanse": "Sentrumsnært",
+    "adresse": "Lars Hertervigs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 150,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 0,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 0,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-23T08:10:36Z",
+    "sistEndret": "2017-06-23T08:10:36Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754/versjon/1/vurdering/533/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2018-05-31T10:46:32Z",
+    "opplastetVurderingId": 533,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- Posten",
+    "referanse": "Sentrumsnært",
+    "adresse": "Lars Hertervigs gate",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 150,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 0,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 2,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2018-05-31T10:46:32Z",
+    "sistEndret": "2018-05-31T10:46:32Z",
+    "skiltplanId": 10938,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754/versjon/2/skiltplan/10938/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3754/versjon/2/vurdering/2142/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2022-12-28T14:00:00Z",
+    "opplastetVurderingId": 2142,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 3756,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.966838,
+  "lengdegrad": 5.730341,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P- St. Olav",
+   "referanse": "Sentrumsnært",
+   "adresse": "St. Olavs gate 6",
+   "postnummer": "4005",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 480,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 30,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 6,
+   "vurderingForflytningshemmede": "Det er tilrettelagt parkering for forflytningshemmede på gateplan.",
+   "aktiveringstidspunkt": "2022-12-28T13:02:40Z",
+   "sistEndret": "2022-12-28T13:02:40Z",
+   "skiltplanId": 94691,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756/versjon/4/skiltplan/94691/skiltplan"
+    }
+   ],
+   "versjonsnummer": 4,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P- St. Olav",
+    "referanse": "Sentrumsnært",
+    "adresse": "St. Olavs gate 6",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 480,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 8,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 2,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-23T08:25:01Z",
+    "sistEndret": "2017-06-23T08:25:01Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756/versjon/1/vurdering/514/vurdering"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2017-06-23T08:26:30Z",
+    "opplastetVurderingId": 514,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- St. Olav",
+    "referanse": "Sentrumsnært",
+    "adresse": "St. Olavs gate 6",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 480,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 8,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 1,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2017-06-23T08:26:30Z",
+    "sistEndret": "2017-06-23T08:26:30Z",
+    "skiltplanId": 0,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756/versjon/2/vurdering/514/vurdering"
+     }
+    ],
+    "versjonsnummer": 2,
+    "sluttidspunkt": "2020-10-14T07:59:08Z",
+    "opplastetVurderingId": 514,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   },
+   {
+    "navn": "P- St. Olav",
+    "referanse": "Sentrumsnært",
+    "adresse": "St. Olavs gate 6",
+    "postnummer": "4005",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 480,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 8,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 1,
+    "vurderingForflytningshemmede": null,
+    "aktiveringstidspunkt": "2020-10-14T07:59:08Z",
+    "sistEndret": "2020-10-14T07:59:08Z",
+    "skiltplanId": 43918,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756/versjon/3/skiltplan/43918/skiltplan"
+     },
+     {
+      "rel": "vurdering",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/3756/versjon/3/vurdering/514/vurdering"
+     }
+    ],
+    "versjonsnummer": 3,
+    "sluttidspunkt": "2022-12-28T13:02:40Z",
+    "opplastetVurderingId": 514,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ },
+ {
+  "id": 46816,
+  "parkeringstilbyderId": 105,
+  "parkeringstilbyderNavn": "STAVANGER PARKERINGSSELSKAP KF",
+  "parkeringstilbyderOrganisasjonsnummer": "974782766",
+  "breddegrad": 58.954429,
+  "lengdegrad": 5.70189,
+  "deaktivert": null,
+  "aktivVersjon": {
+   "navn": "P - Forum",
+   "referanse": null,
+   "adresse": "Gunnar Warebergs gate 1",
+   "postnummer": "4021",
+   "poststed": "STAVANGER",
+   "antallAvgiftsbelagtePlasser": 289,
+   "antallAvgiftsfriePlasser": 0,
+   "antallLadeplasser": 19,
+   "merknadLadeplasser": null,
+   "antallForflytningshemmede": 2,
+   "vurderingForflytningshemmede": "I området er det opprettet flere parkeringsplasser for forflytningshemmede på gateplan",
+   "aktiveringstidspunkt": "2023-03-24T12:39:58Z",
+   "sistEndret": "2023-03-24T12:39:58Z",
+   "skiltplanId": 100557,
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/46816"
+    },
+    {
+     "rel": "skiltplan",
+     "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/46816/versjon/2/skiltplan/100557/skiltplan"
+    }
+   ],
+   "versjonsnummer": 2,
+   "sluttidspunkt": null,
+   "opplastetVurderingId": 0,
+   "typeParkeringsomrade": "PARKERINGSHUS",
+   "innfartsparkering": "NEI",
+   "handhever": null
+  },
+  "historiskeVersjoner": [
+   {
+    "navn": "P - Forum",
+    "referanse": null,
+    "adresse": "Gunnar Warebergs gate 1",
+    "postnummer": "4021",
+    "poststed": "STAVANGER",
+    "antallAvgiftsbelagtePlasser": 289,
+    "antallAvgiftsfriePlasser": 0,
+    "antallLadeplasser": 19,
+    "merknadLadeplasser": null,
+    "antallForflytningshemmede": 2,
+    "vurderingForflytningshemmede": "I området er det opprettet flere parkeringsplasser for forflytningshemmede på gateplan",
+    "aktiveringstidspunkt": "2021-12-29T12:53:23Z",
+    "sistEndret": "2021-12-29T12:53:23Z",
+    "skiltplanId": 67779,
+    "links": [
+     {
+      "rel": "self",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/46816"
+     },
+     {
+      "rel": "skiltplan",
+      "href": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade/46816/versjon/1/skiltplan/67779/skiltplan"
+     }
+    ],
+    "versjonsnummer": 1,
+    "sluttidspunkt": "2023-03-24T12:39:58Z",
+    "opplastetVurderingId": 0,
+    "typeParkeringsomrade": "PARKERINGSHUS",
+    "innfartsparkering": "NEI",
+    "handhever": null
+   }
+  ]
+ }
+]

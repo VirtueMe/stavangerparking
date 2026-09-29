@@ -3,10 +3,10 @@
     python -m stavanger_parking.bronze.load --raw-root DIR --tables-root DIR
 
 For every source, raw files under `--raw-root` that are not yet in bronze are appended to the
-source's `bronze_table` under `--tables-root`: one row per record, every source field as a string,
-plus the sidecar metadata and the raw file path. The roots are local folders or Lakehouse paths
-(for example `/lakehouse/default/Files` and `/lakehouse/default/Tables`), so the same code runs
-locally and on the platform.
+source's `bronze_table` under `--tables-root`: one row per record, every source field as a string
+(nested objects and lists as JSON text), plus the sidecar metadata and the raw file path. The
+roots are local folders or Lakehouse paths (for example `/lakehouse/default/Files` and
+`/lakehouse/default/Tables`), so the same code runs locally and on the platform.
 
 Bronze is append-only. A raw file is loaded once: files already in bronze, or already recorded as
 a load issue, are skipped. Files that cannot be loaded (no sidecar, or a payload that is not a
@@ -134,9 +134,16 @@ def bronze_rows(
         "loaded_at": loaded_at,
     }
     return [
-        {**{k: None if v is None else str(v) for k, v in record.items()}, **meta, "record_index": i}
+        {**{k: _as_text(v) for k, v in record.items()}, **meta, "record_index": i}
         for i, record in enumerate(records)
     ]
+
+
+def _as_text(value) -> str | None:
+    """A field value as text: strings unchanged, anything else as JSON (`true`, `3650`, `{...}`)."""
+    if value is None or isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
 
 
 def read_raw_file(raw_root: Path, raw_file: str) -> Issue | tuple[dict, list[dict]]:

@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from stavanger_parking.bronze.ckan import resolve_resource
-from stavanger_parking.config import ConfigError, load_sources, parse_sources
+from stavanger_parking.config import ConfigError, HttpLocation, load_sources, parse_sources
 
 REPO_CONFIG = Path(__file__).parent.parent / "config" / "sources.json"
 PACKAGE_SHOW = Path(__file__).parent / "fixtures" / "ckan_package_show_stavanger_parkering.json"
@@ -17,6 +17,10 @@ def config() -> dict:
     return json.loads(REPO_CONFIG.read_text(encoding="utf-8"))
 
 
+def parking():
+    return next(s for s in load_sources(REPO_CONFIG) if s.id == "stavanger_parking")
+
+
 def problems_of(data) -> str:
     with pytest.raises(ConfigError) as e:
         parse_sources(data)
@@ -24,23 +28,27 @@ def problems_of(data) -> str:
 
 
 def test_repository_config_is_valid():
-    (source,) = load_sources(REPO_CONFIG)
+    assert [s.id for s in load_sources(REPO_CONFIG)] == [
+        "stavanger_parking",
+        "parkeringsregisteret",
+    ]
+    source = parking()
 
     assert source.id == "stavanger_parking"
-    assert source.ckan.package_id == "stavanger-parkering"
+    assert source.location.package_id == "stavanger-parkering"
     assert source.bronze_table == "bronze_parking"
     assert source.licence.publisher == "Stavanger kommune"
 
 
 def test_config_feeds_the_ckan_resolver():
-    (source,) = load_sources(REPO_CONFIG)
+    source = parking()
     package_show = json.loads(PACKAGE_SHOW.read_text(encoding="utf-8"))
     client = httpx.Client(
         transport=httpx.MockTransport(lambda r: httpx.Response(200, json=package_show))
     )
 
     resource = resolve_resource(
-        source.ckan.base_url, source.ckan.package_id, source.ckan.format, client
+        source.location.base_url, source.location.package_id, source.location.format, client
     )
 
     assert resource.url.endswith("/download/parking.json")
@@ -55,13 +63,11 @@ def test_second_source_needs_only_a_config_entry(config):
 
     sources = parse_sources(config)
 
-    assert [s.id for s in sources] == ["stavanger_parking", "sandnes_parking"]
-    assert sources[1].ckan.package_id == "sandnes-parkering"
+    assert [s.id for s in sources][-1] == "sandnes_parking"
+    assert sources[-1].location.package_id == "sandnes-parkering"
 
 
-@pytest.mark.parametrize(
-    "field", ["id", "ckan", "raw_path", "bronze_table", "licence", "polling", "freshness"]
-)
+@pytest.mark.parametrize("field", ["id", "raw_path", "bronze_table", "licence"])
 def test_missing_source_field_is_named(config, field):
     del config["sources"][0][field]
 
@@ -156,7 +162,7 @@ def test_invalid_json_fails_with_position(tmp_path):
 
 
 def test_repository_config_has_the_adr_003_polling_policy():
-    (source,) = load_sources(REPO_CONFIG)
+    source = parking()
 
     assert source.polling.fast_interval_minutes == 5
     assert source.polling.slow_interval_minutes == 20
@@ -188,14 +194,55 @@ def test_change_ignores_fields_must_be_a_list_of_names(config, value):
     )
 
 
-def test_missing_polling_section_is_named(config):
+def test_polling_and_freshness_are_optional(config):
     del config["sources"][0]["polling"]
+    del config["sources"][0]["freshness"]
+
+    source = parse_sources(config)[0]
+
+    assert (source.polling, source.freshness) == (None, None)
+
+
+def test_a_polling_section_must_be_an_object(config):
+    config["sources"][0]["polling"] = 5
 
     assert "polling is required and must be an object" in problems_of(config)
 
 
+def test_repository_register_source_is_fetched_by_url_and_not_polled():
+    register = next(s for s in load_sources(REPO_CONFIG) if s.id == "parkeringsregisteret")
+
+    assert isinstance(register.location, HttpLocation)
+    assert register.location.url.startswith("https://parkreg-open.atlas.vegvesen.no/")
+    assert "orgnr=974782766" in register.location.url
+    assert (register.polling, register.freshness) == (None, None)
+    assert register.licence.publisher == "Statens vegvesen"
+
+
+@pytest.mark.parametrize("sections", [(), ("ckan", "http")])
+def test_a_source_has_exactly_one_of_ckan_and_http(config, sections):
+    entry = config["sources"][0]
+    del entry["ckan"]
+    for section in sections:
+        entry[section] = {"url": "https://example.org"} if section == "http" else {}
+
+    assert "exactly one of ckan and http is required" in problems_of(config)
+
+
+def test_an_http_url_must_be_https(config):
+    config["sources"][1]["http"]["url"] = "http://example.org/data.json"
+
+    assert "http.url must be an https URL" in problems_of(config)
+
+
+def test_unknown_http_field_is_rejected(config):
+    config["sources"][1]["http"]["uri"] = "https://example.org"
+
+    assert "unknown field 'http.uri'" in problems_of(config)
+
+
 def test_repository_config_has_a_staleness_threshold():
-    (source,) = load_sources(REPO_CONFIG)
+    source = parking()
 
     assert source.freshness.stale_after_minutes == 15
 
