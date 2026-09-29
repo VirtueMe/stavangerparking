@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.8.0] - 2026-09-29
+
+### Features
+
+- **gold:** Date and time dimensions ([#57](https://github.com/VirtueMe/stavangerparking/pull/57))
+
 ## [0.7.0] - 2026-09-29
 
 ### Features
