@@ -217,6 +217,19 @@ def _append(frame: pl.DataFrame, path: str, storage_options) -> None:
     )
 
 
+def run(config_path, raw_root: Path, tables_root: str, now: datetime, storage_options=None):
+    """Load every source's new raw files; returns the report, a line per source and per issue."""
+    lines = []
+    for source in load_sources(config_path):
+        r = load_source(source, raw_root, tables_root, now, storage_options)
+        lines.append(
+            f"{source.id}: loaded {len(r.loaded_files)} file(s), {r.rows} row(s); "
+            f"skipped {r.skipped} already handled; {len(r.issues)} issue(s)"
+        )
+        lines += [f"  {i.issue}: {i.raw_file} ({i.detail})" for i in r.issues]
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m stavanger_parking.bronze.load")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
@@ -224,15 +237,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tables-root", required=True, help="folder or URI of the tables")
     args = parser.parse_args(argv)
 
-    now = datetime.now(UTC)
-    for source in load_sources(args.config):
-        r = load_source(source, args.raw_root, args.tables_root, now)
-        print(
-            f"{source.id}: loaded {len(r.loaded_files)} file(s), {r.rows} row(s); "
-            f"skipped {r.skipped} already handled; {len(r.issues)} issue(s)"
-        )
-        for issue in r.issues:
-            print(f"  {issue.issue}: {issue.raw_file} ({issue.detail})")
+    for line in run(args.config, args.raw_root, args.tables_root, datetime.now(UTC)):
+        print(line)
     return 0
 
 

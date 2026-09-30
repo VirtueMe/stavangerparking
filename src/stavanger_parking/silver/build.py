@@ -198,6 +198,34 @@ def _insert_new(frame: pl.DataFrame, path: str, key: list[str], storage_options)
     ).when_not_matched_insert_all().execute()
 
 
+def run(config_path, tables_root: str, rebuild: bool = False, storage_options=None) -> list[str]:
+    """Build the parking source's silver tables, and the register's once it is collected."""
+    sources = {s.id: s for s in load_sources(config_path)}
+    source = sources.get(PARKING_SOURCE_ID)
+    if source is None:
+        raise BuildError(f"no source {PARKING_SOURCE_ID!r} in {config_path}")
+    r = build(source, tables_root, rebuild, storage_options)
+    lines = [
+        f"{source.id}: {'rebuilt from' if rebuild else 'parsed'} {r.new_rows} bronze row(s) "
+        f"→ {r.fetches} fetch(es), {r.quarantined} value(s) quarantined, "
+        f"{r.excluded} reading(s) left out; {r.readings} reading(s) after deduplication, "
+        f"{r.conflicts} conflicting value(s); {r.stale_snapshots} stale snapshot(s) "
+        f"in {r.stale_periods} stale period(s)"
+    ]
+    if REGISTER_SOURCE_ID in sources:
+        register = build_register(sources[REGISTER_SOURCE_ID], tables_root, storage_options)
+        if register is None:
+            lines.append(
+                f"{REGISTER_SOURCE_ID}: no bronze table yet; collect and load the register first"
+            )
+        else:
+            lines.append(
+                f"{REGISTER_SOURCE_ID}: {register.bronze_rows} bronze row(s) → "
+                f"{register.areas} area(s), {register.quarantined} value(s) quarantined"
+            )
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m stavanger_parking.silver.build")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
@@ -207,32 +235,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    sources = {s.id: s for s in load_sources(args.config)}
-    source = sources.get(PARKING_SOURCE_ID)
-    if source is None:
-        print(f"no source {PARKING_SOURCE_ID!r} in {args.config}", file=sys.stderr)
-        return 1
     try:
-        r = build(source, args.tables_root, rebuild=args.rebuild)
+        lines = run(args.config, args.tables_root, rebuild=args.rebuild)
     except BuildError as e:
         print(e, file=sys.stderr)
         return 1
-    print(
-        f"{source.id}: {'rebuilt from' if args.rebuild else 'parsed'} {r.new_rows} bronze row(s) "
-        f"→ {r.fetches} fetch(es), {r.quarantined} value(s) quarantined, "
-        f"{r.excluded} reading(s) left out; {r.readings} reading(s) after deduplication, "
-        f"{r.conflicts} conflicting value(s); {r.stale_snapshots} stale snapshot(s) "
-        f"in {r.stale_periods} stale period(s)"
-    )
-    if REGISTER_SOURCE_ID in sources:
-        register = build_register(sources[REGISTER_SOURCE_ID], args.tables_root)
-        if register is None:
-            print(f"{REGISTER_SOURCE_ID}: no bronze table yet; collect and load the register first")
-        else:
-            print(
-                f"{REGISTER_SOURCE_ID}: {register.bronze_rows} bronze row(s) → "
-                f"{register.areas} area(s), {register.quarantined} value(s) quarantined"
-            )
+    for line in lines:
+        print(line)
     return 0
 
 

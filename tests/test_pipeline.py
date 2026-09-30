@@ -1,0 +1,171 @@
+import json
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import polars as pl
+import pytest
+from deltalake import DeltaTable
+
+from stavanger_parking import pipeline
+from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
+from stavanger_parking.config import load_sources
+from stavanger_parking.pipeline import run_pipeline
+from stavanger_parking.tables import (
+    FACILITY_TABLE,
+    FETCH_TABLE,
+    HOURLY_TABLE,
+    QUALITY_TABLE,
+    table_path,
+)
+
+ROOT = Path(__file__).parent.parent
+CONFIG = ROOT / "config"
+REGISTER = ROOT / "tests" / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
+T0 = datetime(2026, 9, 29, 12, 3, tzinfo=UTC)
+NINE = ["Jernbanen", "Valberget", "Posten", "Jorenholmen", "St Olav", "Siddis", "Forum"]
+NINE += ["Kyrre", "Parketten"]
+FILES = {
+    "config_path": CONFIG / "sources.json",
+    "mapping_path": CONFIG / "facility_mapping.json",
+    "tariffs_path": CONFIG / "tariffs.json",
+    "rules_path": CONFIG / "pricing_rules.json",
+}
+
+
+def record(sted: str, free: str = "100") -> dict:
+    return {
+        "Dato": "29.09.2026",
+        "Klokkeslett": "14:00",
+        "Sted": sted,
+        "Latitude": "58.966341",
+        "Longitude": "5.732047",
+        "Antall_ledige_plasser": free,
+    }
+
+
+@pytest.fixture
+def roots(tmp_path):
+    """A raw root with the register and one parking snapshot, and an empty tables root."""
+    raw, tables = tmp_path / "raw", str(tmp_path / "tables")
+    sources = {s.id: s for s in load_sources(FILES["config_path"])}
+
+    def collect(source_id: str, at: datetime, payload: bytes) -> None:
+        raw_file = render_raw_path(sources[source_id].raw_path, at)
+        (raw / raw_file).parent.mkdir(parents=True, exist_ok=True)
+        (raw / raw_file).write_bytes(payload)
+        (raw / sidecar_path(raw_file)).write_text(json.dumps({"ingested_at": at.isoformat()}))
+
+    def snapshot(records: list[dict]):
+        collect("parkeringsregisteret", T0 - timedelta(hours=1), REGISTER.read_bytes())
+        collect("stavanger_parking", T0, json.dumps(records).encode())
+        return raw, tables
+
+    return snapshot
+
+
+def run(raw, tables) -> pipeline.PipelineResult:
+    return run_pipeline(raw, tables, now=T0, **FILES)
+
+
+def cli(raw, tables, *extra: str) -> int:
+    files = [f"--{k.removesuffix('_path')}={v}" for k, v in FILES.items()]
+    return pipeline.main(["run", "--raw-root", str(raw), "--tables-root", tables, *files, *extra])
+
+
+def test_a_full_run_builds_every_layer_in_order(roots):
+    raw, tables = roots([record(f) for f in NINE])
+
+    result = run(raw, tables)
+
+    assert [s.name for s in result.steps] == ["bronze", "silver", "gold", "quality"]
+    assert (result.failed_step, result.critical, result.exit_code) == (None, False, 0)
+    for name in (FETCH_TABLE, FACILITY_TABLE, HOURLY_TABLE, QUALITY_TABLE):
+        assert DeltaTable.is_deltatable(table_path(tables, name)), name
+    assert (
+        "stavanger_parking: loaded 1 file(s), 9 row(s); skipped 0 already handled; 0 issue(s)"
+        in result.steps[0].report
+    )
+    assert "fact_parking_hourly" in "\n".join(result.steps[2].report)
+
+
+def test_a_second_run_adds_nothing_but_new_quality_results(roots):
+    """So an orchestrator can retry a run safely."""
+    raw, tables = roots([record(f) for f in NINE])
+    run(raw, tables)
+    results = pl.read_delta(table_path(tables, QUALITY_TABLE)).height
+
+    again = run(raw, tables)
+
+    assert again.exit_code == 0
+    assert all("loaded 0 file(s)" in line for line in again.steps[0].report)
+    assert pl.read_delta(table_path(tables, FETCH_TABLE)).height == 9
+    assert pl.read_delta(table_path(tables, QUALITY_TABLE)).height == 2 * results
+
+
+def test_a_step_that_cannot_run_stops_the_pipeline(tmp_path):
+    raw, tables = tmp_path / "raw", str(tmp_path / "tables")
+
+    result = run(raw, tables)
+
+    # Nothing to load is not a failure, but silver has no bronze table to build from
+    assert [(s.name, s.error is not None) for s in result.steps] == [
+        ("bronze", False),
+        ("silver", True),
+    ]
+    assert result.failed_step.error.startswith("no bronze table at")
+    assert result.exit_code == 1
+    assert not Path(table_path(tables, FACILITY_TABLE)).exists()
+    assert "== silver FAILED" in result.report()
+
+
+def test_a_critical_check_fails_the_run_after_its_results_are_stored(roots):
+    # Forum reports more free spaces than the register's 289
+    raw, tables = roots([record(f, "292" if f == "Forum" else "100") for f in NINE])
+
+    result = run(raw, tables)
+
+    assert (result.failed_step, result.critical, result.exit_code) == (None, True, 3)
+    stored = pl.read_delta(table_path(tables, QUALITY_TABLE))
+    assert stored.filter(~pl.col("passed") & (pl.col("severity") == "critical"))[
+        "subject"
+    ].to_list() == ["Forum"]
+
+
+def test_cli_exit_codes(roots, tmp_path, capsys):
+    raw, tables = roots([record(f, "292" if f == "Forum" else "100") for f in NINE])
+
+    assert cli(raw, tables) == 3
+    assert cli(tmp_path / "none", str(tmp_path / "empty")) == 1
+    out, err = capsys.readouterr()
+    assert "== quality" in out and "CRITICAL free_exceeds_capacity Forum" in out
+    assert "a critical quality check failed" in err
+    assert "silver could not run" in err
+
+
+def test_cli_passes_storage_options(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake(raw_root, tables_root, storage_options, *files):
+        seen.update(tables_root=tables_root, storage_options=storage_options)
+        return pipeline.PipelineResult([])
+
+    monkeypatch.setattr(pipeline, "run_pipeline", fake)
+
+    code = pipeline.main(
+        [
+            "run",
+            "--raw-root=/Volumes/main/parking/raw",
+            "--tables-root=abfss://x@y.dfs.core.windows.net/Tables",
+            "--storage-option=bearer_token=abc=",
+            "--storage-option=use_fabric_endpoint=true",
+        ]
+    )
+
+    assert code == 0
+    assert seen["storage_options"] == {"bearer_token": "abc=", "use_fabric_endpoint": "true"}
+
+
+def test_cli_rejects_a_malformed_storage_option(tmp_path):
+    with pytest.raises(SystemExit) as exit:
+        cli(tmp_path, str(tmp_path), "--storage-option=no-equals-sign")
+    assert exit.value.code == 2
