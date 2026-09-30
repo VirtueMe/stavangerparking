@@ -26,8 +26,10 @@ from pathlib import Path
 
 import polars as pl
 
-DEFAULT_TARIFFS = Path("config/tariffs.json")
-DEFAULT_RULES = Path("config/pricing_rules.json")
+from stavanger_parking.config import CONFIG_DIR
+
+DEFAULT_TARIFFS = CONFIG_DIR / "tariffs.json"
+DEFAULT_RULES = CONFIG_DIR / "pricing_rules.json"
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 OSLO = "Europe/Oslo"
 

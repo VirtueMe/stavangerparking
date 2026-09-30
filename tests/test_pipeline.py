@@ -1,4 +1,9 @@
 import json
+import os
+import shutil
+import subprocess
+import sys
+import tomllib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -8,7 +13,9 @@ from deltalake import DeltaTable
 
 from stavanger_parking import pipeline
 from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
-from stavanger_parking.config import load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
+from stavanger_parking.facilities import DEFAULT_MAPPING
+from stavanger_parking.gold.pricing import DEFAULT_RULES, DEFAULT_TARIFFS
 from stavanger_parking.pipeline import run_pipeline
 from stavanger_parking.tables import (
     FACILITY_TABLE,
@@ -19,16 +26,15 @@ from stavanger_parking.tables import (
 )
 
 ROOT = Path(__file__).parent.parent
-CONFIG = ROOT / "config"
 REGISTER = ROOT / "tests" / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
 T0 = datetime(2026, 9, 29, 12, 3, tzinfo=UTC)
 NINE = ["Jernbanen", "Valberget", "Posten", "Jorenholmen", "St Olav", "Siddis", "Forum"]
 NINE += ["Kyrre", "Parketten"]
 FILES = {
-    "config_path": CONFIG / "sources.json",
-    "mapping_path": CONFIG / "facility_mapping.json",
-    "tariffs_path": CONFIG / "tariffs.json",
-    "rules_path": CONFIG / "pricing_rules.json",
+    "config_path": DEFAULT_CONFIG,
+    "mapping_path": DEFAULT_MAPPING,
+    "tariffs_path": DEFAULT_TARIFFS,
+    "rules_path": DEFAULT_RULES,
 }
 
 
@@ -169,3 +175,48 @@ def test_cli_rejects_a_malformed_storage_option(tmp_path):
     with pytest.raises(SystemExit) as exit:
         cli(tmp_path, str(tmp_path), "--storage-option=no-equals-sign")
     assert exit.value.code == 2
+
+
+@pytest.mark.skipif(shutil.which("uv") is None, reason="needs uv to build and install the wheel")
+def test_the_installed_wheel_runs_the_pipeline_with_its_own_configuration(roots, tmp_path):
+    """What a platform does: install the wheel, and run the pipeline outside the repository."""
+    raw, tables = roots([record(f) for f in NINE])
+    dist, venv = tmp_path / "dist", tmp_path / "venv"
+    subprocess.run(["uv", "build", "--wheel", "-o", dist], cwd=ROOT, check=True)
+    (wheel,) = dist.glob("*.whl")
+    version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    assert wheel.name.startswith(f"stavanger_parking-{version}-")
+    subprocess.run(
+        ["uv", "venv", "-q", "--python", "{}.{}".format(*sys.version_info[:2]), venv], check=True
+    )
+    python = venv / ("Scripts" if os.name == "nt" else "bin") / "python"
+    subprocess.run(["uv", "pip", "install", "-q", "--python", python, wheel], check=True)
+
+    # No configuration arguments, and a working directory without a config folder
+    run = subprocess.run(
+        [
+            python,
+            "-m",
+            "stavanger_parking.pipeline",
+            "run",
+            "--raw-root",
+            raw,
+            "--tables-root",
+            tables,
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+
+    assert run.returncode == 0, run.stdout + run.stderr
+    assert "== quality" in run.stdout
+    assert DeltaTable.is_deltatable(table_path(tables, HOURLY_TABLE))
+    installed = subprocess.run(
+        [python, "-c", "import stavanger_parking; print(stavanger_parking.__file__)"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert Path(installed.stdout.strip()).is_relative_to(venv)

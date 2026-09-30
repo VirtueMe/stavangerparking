@@ -22,9 +22,9 @@ from stavanger_parking.bronze.collector import (
     sidecar_path,
     values_fingerprint,
 )
-from stavanger_parking.config import Polling, load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, Polling, load_sources
 
-REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
+REPO_CONFIG = DEFAULT_CONFIG
 PACKAGE_SHOW = (
     Path(__file__).parent.parent / "fixtures" / "ckan_package_show_stavanger_parkering.json"
 )

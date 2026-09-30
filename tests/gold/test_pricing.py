@@ -8,6 +8,8 @@ import pytest
 from stavanger_parking.gold.facility import FACILITY_SCHEMA
 from stavanger_parking.gold.hourly import HOURLY_SCHEMA
 from stavanger_parking.gold.pricing import (
+    DEFAULT_RULES,
+    DEFAULT_TARIFFS,
     NO_DATA,
     NO_TARIFF,
     PRICE_SCHEMA,
@@ -20,8 +22,8 @@ from stavanger_parking.gold.pricing import (
 )
 
 ROOT = Path(__file__).parent.parent.parent
-TARIFFS = ROOT / "config" / "tariffs.json"
-RULES = ROOT / "config" / "pricing_rules.json"
+TARIFFS = DEFAULT_TARIFFS
+RULES = DEFAULT_RULES
 # Wednesday 30 September 2026, 12:00 UTC is 14:00 in Oslo; 05:00 UTC is 07:00 (morning rush)
 WEDNESDAY_14 = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
 WEDNESDAY_07 = datetime(2026, 9, 30, 5, 0, tzinfo=UTC)

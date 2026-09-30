@@ -1,6 +1,6 @@
 # Source configuration
 
-Every source is described in [`config/sources.json`](../config/sources.json). The collector and the ingestion code read it through `stavanger_parking.config.load_sources`; nothing source-specific is hardcoded.
+Every source is described in [`src/stavanger_parking/config/sources.json`](../src/stavanger_parking/config/sources.json). The collector and the ingestion code read it through `stavanger_parking.config.load_sources`; nothing source-specific is hardcoded.
 
 ## Fields
 
@@ -32,20 +32,15 @@ Add an entry to `sources` with a new `id`, its CKAN location or URL, its own `ra
 
 ## Getting the config to the platform runtime
 
-Files in this repository are not automatically available to notebooks on the data platform. The loader takes a file path, so any of these routes works. The choice is made together with the platform (see #17):
+The configuration ships **inside the package**: `sources.json`, `facility_mapping.json`, `tariffs.json` and `pricing_rules.json` sit in `src/stavanger_parking/config/` and are part of the wheel (#70). Code and configuration are versioned and deployed as one unit, on both platforms ([ADR 011](adr/011-one-repository-two-platforms.md)). Every loader and command defaults to the packaged files, wherever it runs: from the repository, from the collector's checkout, or from a wheel installed on a platform. A path argument (`--config`, `--mapping`, `--tariffs`, `--rules`) still overrides them, for trying out a change without a release.
 
-| Route | How | Trade-off |
-|---|---|---|
-| Ship it inside the package | Move the file into `src/stavanger_parking/` as package data and install the package (wheel) on the platform | Code and config are versioned and deployed as one unit; changing the config means a new package version |
-| Fabric environment resource | Upload `sources.json` to the environment's resources; notebooks read it from the resources folder | Simple, but a manual upload unless automated |
-| Deploy step to `Files/config/` | A CI job copies the file to the Lakehouse `Files/config/` after merge | Config can change without a new package version; needs a deploy credential |
-| Databricks Asset Bundle | The bundle deploys the repository files, including `config/`, to the workspace | Code and config deploy together from `main` |
+Changing the configuration therefore means a new package version: the change is merged like code, the release workflow builds the wheel and attaches it to the GitHub release, and the platform installs that version.
 
-Until the platform is chosen, the collector running outside the platform reads the file directly from the repository checkout.
+Other routes were considered: uploading the files as a Fabric environment resource (a manual step), copying them to the Lakehouse `Files/config/` in CI (a deploy credential, and config versioned apart from the code), and deploying them with a Databricks Asset Bundle (Databricks only). Each would give the two platforms different ways to find the same file.
 
 ## Facility mapping
 
-[`config/facility_mapping.json`](../config/facility_mapping.json) links each facility in the parking feed to its parking area in the national parking register, where its capacity comes from ([ADR 005](adr/005-capacity-as-reference-data.md)). It is maintained by hand, because the names differ between the feed, the register and the operator's website ([ADR 004](adr/004-facility-name-as-natural-key.md)). It is read through `stavanger_parking.facilities.load_facility_mapping` and validated on load, like the source configuration.
+[`src/stavanger_parking/config/facility_mapping.json`](../src/stavanger_parking/config/facility_mapping.json) links each facility in the parking feed to its parking area in the national parking register, where its capacity comes from ([ADR 005](adr/005-capacity-as-reference-data.md)). It is maintained by hand, because the names differ between the feed, the register and the operator's website ([ADR 004](adr/004-facility-name-as-natural-key.md)). It is read through `stavanger_parking.facilities.load_facility_mapping` and validated on load, like the source configuration.
 
 | Field | Meaning |
 |---|---|
@@ -58,4 +53,4 @@ When a facility is added to the feed or renamed, add or change its entry; until 
 
 ## Tariffs and pricing rules
 
-[`config/tariffs.json`](../config/tariffs.json) (the operator's prices per facility) and [`config/pricing_rules.json`](../config/pricing_rules.json) (occupancy bands, rush hours, limits) drive the suggested prices. Both are validated on load; see [`docs/pricing.md`](pricing.md).
+[`src/stavanger_parking/config/tariffs.json`](../src/stavanger_parking/config/tariffs.json) (the operator's prices per facility) and [`src/stavanger_parking/config/pricing_rules.json`](../src/stavanger_parking/config/pricing_rules.json) (occupancy bands, rush hours, limits) drive the suggested prices. Both are validated on load; see [`docs/pricing.md`](pricing.md).
