@@ -2,7 +2,7 @@
 
 Case solution: collection, transformation and modelling of open parking data from Stavanger kommune ([opencom.no/dataset/stavanger-parkering](https://opencom.no/dataset/stavanger-parkering)) with a medallion architecture (bronze → silver → gold), a star schema and a Power BI report. One repository deploys to Microsoft Fabric and to Databricks ([ADR 011](docs/adr/011-one-repository-two-platforms.md)).
 
-Work is planned and tracked in [GitHub Issues](https://github.com/VirtueMe/stavangerparking/issues) and on the project board [The Stavanger Parking Case](https://github.com/users/VirtueMe/projects/3). The [initial plan](https://github.com/VirtueMe/stavangerparking/blob/27c5e3337b7e2341de13154f83ac222038971b3e/backlog.md) the issues were created from is kept in the history.
+For the 22 October meeting, the [walkthrough](docs/walkthrough.md) goes through the case requirements in 15 minutes. Work is planned and tracked in [GitHub Issues](https://github.com/VirtueMe/stavangerparking/issues) and on the project board [The Stavanger Parking Case](https://github.com/users/VirtueMe/projects/3). The [initial plan](https://github.com/VirtueMe/stavangerparking/blob/27c5e3337b7e2341de13154f83ac222038971b3e/backlog.md) the issues were created from is kept in the history.
 
 ## Status
 
@@ -151,6 +151,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `docs/maintenance.md` | [Table maintenance](docs/maintenance.md): compacting and vacuuming the Delta tables |
 | `docs/quality.md` | [Data quality checks](docs/quality.md): what is checked, what stops a run, and the stored results |
 | `docs/architecture.md` | [Architecture](docs/architecture.md): data flow, layers and star schema |
+| `docs/walkthrough.md` | [Walkthrough](docs/walkthrough.md) for the 22 October meeting: what to show and say for each case requirement, and likely questions |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
 | `templates/DATA-LICENCE.md` | Data attribution placed at the root of the `data` branch |
