@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.20.2] - 2026-09-30
+
+### Documentation
+
+- **walkthrough:** Merge a change live during the presentation ([#93](https://github.com/VirtueMe/stavangerparking/pull/93))
+
 ## [0.20.1] - 2026-09-30
 
 ### Documentation
