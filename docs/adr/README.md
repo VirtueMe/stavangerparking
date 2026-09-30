@@ -14,7 +14,8 @@ Each significant decision is recorded as an ADR: the context, the decision, the 
 | [004](004-facility-name-as-natural-key.md) | The facility name in the feed is the natural key of a facility | Accepted |
 | [005](005-capacity-as-reference-data.md) | Capacity comes from the national parking register, through a hand-maintained name mapping | Accepted; collection replaced by 010 |
 | [006](006-scalability-assessment.md) | Scalability: the solution scales in facilities and years; the limits are one machine's memory and the per-run derivation | Accepted |
-| [007](007-collect-outside-the-platform.md) | Collect raw snapshots outside the data platform while access is pending | Accepted |
+| [007](007-collect-outside-the-platform.md) | Collect raw snapshots outside the data platform while access is pending | Accepted; handover refined by 011 |
 | [008](008-trigger-collection-externally.md) | Trigger collection externally from cron-job.org, not from GitHub's schedule | Accepted |
 | [009](009-silver-model.md) | Silver keeps every fetch and derives readings, conflicts and staleness from them | Accepted |
 | [010](010-collect-the-register-hourly.md) | Collect the parking register hourly with the parking feed, keeping only the mapped areas | Accepted |
+| [011](011-one-repository-two-platforms.md) | One repository deploys to Fabric and Databricks; only a thin platform layer differs | Accepted |
