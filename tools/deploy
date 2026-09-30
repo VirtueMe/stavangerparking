@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Deploy to a platform: dev by default, --prod for prod (the latest release, or the release tag given)
+#
+#   tools/deploy -p databricks
+#   tools/deploy -p databricks --prod
+#   tools/deploy -p databricks --prod v0.16.0 --dry-run
+#
+# Options and how the platform is chosen: tools/platform.sh
+exec "$(dirname "$0")/platform.sh" deploy "$@"

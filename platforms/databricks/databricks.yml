@@ -1,7 +1,7 @@
 # The Databricks deployment of the pipeline (ADR 011, docs/databricks.md).
 #
-#   platforms/databricks/deploy.sh dev              # a wheel built from this checkout
-#   platforms/databricks/deploy.sh prod v0.17.0     # a released wheel
+#   tools/deploy -p databricks              # dev: a wheel built from this checkout
+#   tools/deploy -p databricks --prod       # prod: the latest release's wheel (or give a tag)
 #
 # The workspace comes from the CLI profile (`databricks auth login`), not from this file.
 bundle:
