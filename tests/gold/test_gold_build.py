@@ -109,14 +109,15 @@ def test_every_facility_in_the_feed_gets_a_key_and_its_capacity(pipeline):
     facilities = by_name(pipeline.facilities())
     assert sorted(r["facility_key"] for r in facilities.values()) == [-1, *range(1, 10)]
     jernbanen = facilities["Jernbanen"]
-    assert (jernbanen["register_id"], jernbanen["capacity"]) == (3650, 390)
+    # 390 paid, 30 charging and 5 accessible spaces (#91)
+    assert (jernbanen["register_id"], jernbanen["capacity"]) == (3650, 425)
     assert jernbanen["capacity_changed_at"] == datetime(2024, 2, 16, 10, 53, 13, tzinfo=UTC)
     assert (jernbanen["first_seen"], jernbanen["last_seen"], jernbanen["is_active"]) == (
         T0,
         T0,
         True,
     )
-    assert facilities["Forum"]["capacity"] == 289
+    assert facilities["Forum"]["capacity"] == 310
 
 
 def test_the_unknown_member_is_always_there(pipeline):
@@ -228,7 +229,7 @@ def test_the_availability_fact_has_one_row_per_reading(pipeline):
     assert jernbanen["last_fetched_at"].to_list() == [T0 + timedelta(minutes=40), later]
     # 14:00 was 43 minutes old when fetched at 12:43 UTC: the source was stale
     assert jernbanen["is_stale"].to_list() == [True, False]
-    assert jernbanen["occupied_spaces"].to_list() == [290, 290]
+    assert jernbanen["occupied_spaces"].to_list() == [325, 325]
 
 
 def test_a_reading_outside_dim_date_stops_the_build(pipeline):

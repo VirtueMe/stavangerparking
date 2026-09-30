@@ -23,7 +23,7 @@ powerbi/
     uv run python -m stavanger_parking.pipeline run --raw-root <data branch> --tables-root C:\stavangerparking\tables
     ```
 
-    It also runs the quality checks. While Forum's capacity in the register is wrong, it ends with exit code 3; the tables are built all the same ([`docs/pipeline.md`](pipeline.md#exit-codes)).
+    It also runs the quality checks. If a critical check fails, it ends with exit code 3; the tables are built all the same ([`docs/pipeline.md`](pipeline.md#exit-codes)).
 
 2. Open `powerbi/StavangerParking.pbip` in Power BI Desktop.
 3. Set the parameter **TablesRoot** (*Transform data → Edit parameters*) to that folder, and refresh.

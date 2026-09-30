@@ -6,9 +6,11 @@ The natural key is the feed's name, `facility_name` (ADR 004); facts use the sur
 
 - `latitude`, `longitude`: from the facility's latest fetch that had them
 - `register_id`, `capacity`, `capacity_changed_at`: the register area the mapping links the name to
-  (ADR 005), from the latest register snapshot: its paid spaces and when the register last changed
-  the area. Unknown (null) when the facility is not in the mapping, the register has not been
-  collected, the area is missing from the snapshot, or the provider has deactivated it
+  (ADR 005), from the latest register snapshot: every kind of space it lists (paid, free of charge,
+  charging and accessible), because the feed counts free spaces of every kind, and when the
+  register last changed the area. Unknown (null) when the facility is not in the mapping, the
+  register has not been collected, the area is missing from the snapshot or has no paid count, or
+  the provider has deactivated it. The counts behind it stay in silver's `silver_parking_area`
 - `first_seen`, `last_seen`: the first and last fetch that included the facility
 - `is_active`: the facility is in the latest fetched snapshot
 
@@ -41,6 +43,17 @@ FACILITY_SCHEMA = {
 ATTRIBUTES = [c for c in FACILITY_SCHEMA if c != "facility_key"]
 
 
+def capacity() -> pl.Expr:
+    """All the spaces an area lists; the paid count is the base, so without it capacity is unknown.
+
+    The register counts paid, free-of-charge, charging and accessible spaces separately, and the
+    feed's free spaces include every kind (#91, ADR 005): Forum reported 292 free spaces against
+    289 paid ones, within its 310 spaces of all kinds. A kind the register leaves out adds nothing.
+    """
+    others = ("free_spaces", "charging_spaces", "accessible_spaces")
+    return pl.col("paid_spaces") + pl.sum_horizontal(pl.col(c).fill_null(0) for c in others)
+
+
 def facility_attributes(
     fetches: pl.DataFrame, areas: pl.DataFrame, mapping: tuple[FacilityMapping, ...]
 ) -> pl.DataFrame:
@@ -62,7 +75,7 @@ def facility_attributes(
     )
     latest_areas = areas.filter(pl.col("ingested_at") == pl.col("ingested_at").max()).select(
         "register_id",
-        pl.when(pl.col("deactivated_at").is_null()).then("paid_spaces").alias("capacity"),
+        pl.when(pl.col("deactivated_at").is_null()).then(capacity()).alias("capacity"),
         pl.col("changed_at").alias("capacity_changed_at"),
     )
     return (

@@ -48,3 +48,18 @@ The names differ between all three sources (ADR 004), so no source can be joined
 - The mapping must be updated by hand when a facility is added or renamed; until then, that facility has no capacity. A facility in the feed without a mapping is easy to detect (#21).
 - The register can be wrong or late. The discrepancies for Jernbanen and Forum are recorded, not resolved, and `free spaces > capacity` is an obvious symptom the quality checks can test (#21).
 - Recorded in [`docs/weaknesses.md`](../weaknesses.md).
+
+## Addendum 2026-09-30: capacity counts every kind of space
+
+The decision above takes capacity as the register's number of paid spaces, `antallAvgiftsbelagtePlasser`, assuming "every space in these facilities is paid". The data says otherwise. The register lists four kinds of space per area: paid (`antallAvgiftsbelagtePlasser`), free of charge (`antallAvgiftsfriePlasser`), charging (`antallLadeplasser`) and accessible (`antallForflytningshemmede`). The feed's free spaces count every kind: Forum reported 292 free spaces against 289 paid ones, which is what the quality check `free_exceeds_capacity` (#21) stopped every run on. With its 19 charging and 2 accessible spaces, Forum has 310.
+
+| Facility | Paid | Charging | Accessible | Capacity now | Most free spaces seen |
+|---|---|---|---|---|---|
+| Forum | 289 | 19 | 2 | 310 | 292 |
+| Jernbanen | 390 | 30 | 5 | 425 | 285 |
+
+No area in these facilities has free-of-charge spaces today.
+
+- **Capacity is the sum of all four counts**, paid being the base: without a paid count, capacity is unknown; a missing count of another kind adds nothing (`gold/facility.py`, #91). The counts themselves stay in `silver_parking_area`.
+- **Where this comes from:** the field's name says *paid* spaces, and the other kinds are listed beside it; the owner of this repository read the discrepancy that way, and the data fits it. The register's documentation does not say whether charging and accessible spaces are counted in addition to paid ones or as part of them (its documentation link was broken on 2026-09-30). If they turn out to be part of them, Forum's register figure is simply too low again, and `free_exceeds_capacity` will say so as soon as capacity goes back to the paid count. Confirmation from Statens vegvesen is recorded here when it arrives.
+- **Jernbanen's website figure (500) is the register's own version from 2017**, replaced by 390 paid spaces in February 2024: that website is out of date, which also answers the discrepancy recorded above. The operator's 325 for Forum is still higher than 310, and stays a noted discrepancy.
