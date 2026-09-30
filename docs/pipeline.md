@@ -26,7 +26,7 @@ if result.exit_code:
 | `--raw-root` | The raw files, as a local path: a folder, the `data` branch, `/lakehouse/default/Files`, or a Unity Catalog volume (`/Volumes/<catalog>/<schema>/raw`) |
 | `--tables-root` | Where the tables are: a folder, `/lakehouse/default/Tables`, or a URI delta-rs writes to, such as `abfss://…/Tables` |
 | `--storage-option KEY=VALUE` | A delta-rs storage option for the tables root, such as credentials for an `abfss://` URI; repeat for more. `storage_options={...}` in `run_pipeline` |
-| `--config`, `--mapping`, `--tariffs`, `--rules` | The configuration files; by default those under `config/` |
+| `--config`, `--mapping`, `--tariffs`, `--rules` | The configuration files; by default those shipped in the package (`stavanger_parking/config/`) |
 
 ## Order, and what stops a run
 

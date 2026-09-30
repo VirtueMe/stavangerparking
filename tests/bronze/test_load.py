@@ -18,9 +18,9 @@ from stavanger_parking.bronze.load import (
     issues_path,
     load_source,
 )
-from stavanger_parking.config import load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 
-REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
+REPO_CONFIG = DEFAULT_CONFIG
 REGISTER = (
     Path(__file__).parent.parent / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
 )

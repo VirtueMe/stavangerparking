@@ -4,13 +4,15 @@ from pathlib import Path
 
 import pytest
 
+from stavanger_parking.config import CONFIG_DIR
 from stavanger_parking.facilities import (
+    DEFAULT_MAPPING,
     MappingError,
     load_facility_mapping,
     parse_facility_mapping,
 )
 
-MAPPING = Path(__file__).parent.parent / "config" / "facility_mapping.json"
+MAPPING = DEFAULT_MAPPING
 REGISTER = Path(__file__).parent / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
 # The facilities in the feed, as collected since 2026-09-28
 FEED_FACILITIES = {
@@ -105,3 +107,9 @@ def test_wrong_top_level_shape_fails_clearly(data):
 def test_missing_file_fails_clearly(tmp_path):
     with pytest.raises(MappingError, match="not found"):
         load_facility_mapping(tmp_path / "facility_mapping.json")
+
+
+def test_the_default_mapping_is_in_the_config_package():
+    """`facilities` finds the folder by path, since `config` imports it; both must agree."""
+    assert DEFAULT_MAPPING.parent == CONFIG_DIR
+    assert DEFAULT_MAPPING.is_file()

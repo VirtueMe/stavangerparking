@@ -1,4 +1,4 @@
-"""Declarative source configuration (`config/sources.json`).
+"""Declarative source configuration (`sources.json` in this package).
 
 Everything source-specific lives in the config: where the data comes from, where raw files and the
 bronze table go, and under which licence the data is published. A source is fetched either through
@@ -20,8 +20,9 @@ from urllib.parse import urlparse
 
 from stavanger_parking.facilities import FacilityMapping
 
-# Where the command line tools look for the config, relative to the repository root
-DEFAULT_CONFIG = Path("config/sources.json")
+# The configuration files ship in this package, so an installed wheel finds them wherever it runs
+CONFIG_DIR = Path(__file__).parent
+DEFAULT_CONFIG = CONFIG_DIR / "sources.json"
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
 # In this order, so that sorting raw paths sorts snapshots by time (the collector relies on it)
 RAW_PATH_PLACEHOLDERS = ("yyyy", "mm", "dd", "HHmmss")

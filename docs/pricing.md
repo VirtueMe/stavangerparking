@@ -2,7 +2,7 @@
 
 `fact_suggested_price` suggests an hourly price per facility: today's tariff, adjusted by how full the facility was and whether it was a rush hour. It is built with the other gold tables (`python -m stavanger_parking.gold.build`), from the hourly fact and two configuration files. Changing a price, a threshold or a multiplier is a change to those files, never to code.
 
-## Tariffs: `config/tariffs.json`
+## Tariffs: `src/stavanger_parking/config/tariffs.json`
 
 The prices Stavanger Parkering publishes ([stavanger-parkering.no](https://stavanger-parkering.no/en/parkering/p-hus/), checked 2026-09-29), entered by hand in the unit they are published in: **NOK per half hour**. Each facility has periods covering the day; a period that names weekdays overrides the general period on those days. The file is validated on load: every hour of every day must have exactly one general price, periods start on the hour, and weekdays are `mon` to `sun`.
 
@@ -20,7 +20,7 @@ The prices Stavanger Parkering publishes ([stavanger-parkering.no](https://stava
 
 The operator already prices by time of day and weekday: Jernbanen and Jorenholmen cost more on Friday and Saturday middays, and Kyrre less on weekend afternoons. The daily maximum is recorded but not used, since suggestions are per hour.
 
-## Rules: `config/pricing_rules.json`
+## Rules: `src/stavanger_parking/config/pricing_rules.json`
 
 **An example policy for the analysis, not Stavanger Parkering's.** Setting real thresholds and multipliers is the operator's decision (#27).
 

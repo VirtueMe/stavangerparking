@@ -10,7 +10,7 @@ from deltalake import DeltaTable
 from stavanger_parking import maintenance
 from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
 from stavanger_parking.bronze.load import load_source
-from stavanger_parking.config import load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 from stavanger_parking.gold import build as gold
 from stavanger_parking.maintenance import (
     DEFAULT_RETENTION,
@@ -22,7 +22,7 @@ from stavanger_parking.quality import check
 from stavanger_parking.silver import build as silver
 from stavanger_parking.tables import FETCH_TABLE, QUALITY_TABLE, table_path
 
-REPO_CONFIG = Path(__file__).parent.parent / "config" / "sources.json"
+REPO_CONFIG = DEFAULT_CONFIG
 NO_RETENTION = timedelta(0)
 
 
