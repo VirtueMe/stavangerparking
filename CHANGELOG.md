@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.19.0] - 2026-09-30
+
+### Features
+
+- **report:** Generate and publish the Power BI model per platform ([#86](https://github.com/VirtueMe/stavangerparking/pull/86))
+
 ## [0.18.1] - 2026-09-30
 
 ### Bug Fixes
