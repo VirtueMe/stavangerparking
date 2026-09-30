@@ -5,7 +5,7 @@
       "register_id": 3650,
       "register_name": "P- Jernbanen",
       "operator_name": "P-Jernbanen",
-      "note": "Capacity differs: register 390 paid spaces (changed 2024-02-16), operator website 500 (checked 2026-09-29)"
+      "note": "The operator's website says 500 (checked 2026-09-29): that is the register's own version from 2017, replaced by 390 paid spaces on 2024-02-16, so the website is out of date"
     },
     {
       "facility": "Valberget",
@@ -42,7 +42,8 @@
       "register_id": 46816,
       "register_name": "P - Forum",
       "operator_name": "P-Forum",
-      "note": "Capacity differs: register 289 paid spaces (changed 2023-03-24), operator website 325 (checked 2026-09-29). The feed has reported 292 free spaces (23.09.2026 19:16), more than the register's 289, so the register's figure is likely out of date"
+      "note": "The register counts the 289 public (paid) spaces. The garage also has 26 reserved spaces, which the register leaves out and the feed counts: 26 x sign 850.0 on floor 1 of the sign plan the operator filed in the register (area 46816, version 2, sign plan 100557, March 2023), for Madla and Tjensvoll HBT, Kolumbus (2) and one private holder (position 20). 289 + 26 = 315; the feed has reported 292 free spaces. The operator's website says 325 (checked 2026-09-29), 10 more, not explained (#91)",
+      "reserved_spaces": 26
     },
     {
       "facility": "Kyrre",

@@ -118,7 +118,8 @@ def test_every_facility_in_the_feed_gets_a_key_and_its_capacity(pipeline):
         T0,
         True,
     )
-    assert facilities["Forum"]["capacity"] == 289
+    # 289 public spaces in the register and 26 reserved ones from the mapping (#91)
+    assert facilities["Forum"]["capacity"] == 315
 
 
 def test_the_unknown_member_is_always_there(pipeline):

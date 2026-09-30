@@ -155,3 +155,22 @@ def test_existing_keys_are_kept_and_new_ones_continue_after_the_highest():
         "Forum": 7,
         "Jernbanen": 8,
     }
+
+
+def test_capacity_adds_the_spaces_reserved_for_others():
+    """Forum: 289 public spaces in the register, 26 reserved ones it leaves out (#91)."""
+    forum = FacilityMapping("Forum", 46816, "P - Forum", "P-Forum", "26 reserved", 26)
+    rows = fetches(("a.json", "Forum", timedelta(0), "58.3"))
+
+    attrs = by_name(facility_attributes(rows, areas((46816, 289, None)), (forum,)))
+
+    assert attrs["Forum"]["capacity"] == 315
+
+
+def test_reserved_spaces_alone_are_no_capacity():
+    forum = FacilityMapping("Forum", 46816, "P - Forum", "P-Forum", "26 reserved", 26)
+    rows = fetches(("a.json", "Forum", timedelta(0), "58.3"))
+
+    attrs = by_name(facility_attributes(rows, areas((46816, None, None)), (forum,)))
+
+    assert attrs["Forum"]["capacity"] is None
