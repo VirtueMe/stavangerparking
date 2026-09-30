@@ -34,6 +34,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `src/stavanger_parking/config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/pipeline.md` | [Pipeline](docs/pipeline.md): the one entry point that runs every layer, its parameters and exit codes |
 | `platforms/databricks/` | [Databricks deployment](docs/databricks.md): the Asset Bundle, its jobs, deploying and backfilling |
+| `tools/` | `deploy` and `backfill` for any platform: `tools/deploy -p databricks [--prod] [--dry-run]`, or with `PLATFORM` in `.env` ([deploying](docs/databricks.md#deploying)) |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
 | `docs/gold.md` | [Gold](docs/gold.md): the star schema's dimensions and facts |

@@ -24,14 +24,19 @@ Needs the [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/inst
 
 ```sh
 databricks auth login --host https://<workspace>.cloud.databricks.com   # once; stores a profile
-platforms/databricks/deploy.sh dev                                      # builds the wheel from this checkout
-platforms/databricks/deploy.sh prod v0.17.0                             # installs a released wheel
+tools/deploy -p databricks                                              # dev: builds the wheel from this checkout
+tools/deploy -p databricks --prod                                       # prod: installs the latest release's wheel
+tools/deploy -p databricks --prod v0.16.0                               # prod: a given release, e.g. to revert
+tools/deploy -p databricks --prod --dry-run                             # validate and show the plan, deploy nothing
 ```
 
 - **`dev`** (the default target) is for trying a change: the bundle's development mode prefixes the jobs with your name and keeps every schedule paused.
-- **`prod`** installs the wheel attached to a GitHub release, so what runs is a released version.
+- **`prod`** installs the wheel attached to a GitHub release, so what runs is a released version: the latest one, or the tag given, which is how a release is reverted.
+- **`--dry-run`/`-n`** runs `bundle validate` and `bundle plan` instead of `bundle deploy`, and names the release a prod deploy would install. It still fetches or builds the wheel into `dist/` locally, because the plan needs it; the workspace is untouched.
 
-The workspace is not in the repository: the CLI's profile says which one. `databricks bundle validate -t <target>` checks the bundle without deploying.
+The tools in `tools/` run the platform's own script, [`deploy.sh`](../platforms/databricks/deploy.sh) here, which also runs on its own (`platforms/databricks/deploy.sh [--dry-run] dev | prod [tag]`). The platform comes from `-p`/`--platform`, else `PLATFORM` in the environment, else a `PLATFORM=databricks` line in `.env` at the root of the checkout, so with that line `tools/deploy --prod` is enough. `.env` is read for that line only, never sourced.
+
+The workspace is not in the repository: the CLI's profile says which one.
 
 ## Secrets
 
@@ -40,7 +45,8 @@ None today. The data is open and needs no credentials, the pipeline reads and wr
 ## Backfill
 
 ```sh
-platforms/databricks/backfill.sh dev
+tools/backfill -p databricks                     # dev
+tools/backfill -p databricks --prod --dry-run    # count the files and name the volume, copy nothing
 ```
 
 Copies the raw files from the `data` branch into the raw volume and runs the pipeline job once, which loads every file bronze does not have yet and rebuilds silver and gold. Raw files never change, so running it again copies the same files and loads only new ones. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.

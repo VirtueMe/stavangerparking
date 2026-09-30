@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Copy the raw files from the `data` branch to a platform and run its pipeline: dev by default, --prod for prod
+#
+#   tools/backfill -p databricks
+#   tools/backfill -p databricks --prod --dry-run
+#
+# Options and how the platform is chosen: tools/platform.sh
+exec "$(dirname "$0")/platform.sh" backfill "$@"
