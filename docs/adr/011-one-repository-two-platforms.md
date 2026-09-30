@@ -83,3 +83,12 @@ tests/                   shared tests; they never need a platform
 - On Databricks, the solution does not use Spark-based features such as Auto Loader or Lakeflow declarative pipelines. How the tables are registered in Unity Catalog is decided in #71. This is ADR 001's revisit point: this decision keeps Polars, and ADR 001's triggers for switching to Spark still apply.
 - ADR 008's cron-job.org trigger and token are retired at the switch, not when a platform is merely deployed.
 - Revisit when the platform is decided: the other platform's folder can then be removed, or kept as proof that the solution is portable.
+
+## Addendum 2026-09-30: as built on Databricks
+
+The Databricks deployment (#71) and the report per platform (#72) settled two points this decision left open, in ways that differ from the text above:
+
+- **Tables on Databricks are in a volume, not external tables.** Free Edition has no external locations, so the tables root is a managed Unity Catalog volume. delta-rs cannot commit to a volume with a rename that refuses to replace, so the pipeline commits with a plain rename (`allow_unsafe_rename`), which is safe only with one writer: the pipeline job allows one run at a time, and any other writer to the tables must be a task of that job. A `publish` task copies the tables the report reads into the Unity Catalog schema with Spark, because Power BI's Databricks connector reads tables, not files. Spark stays in the platform folder; the package still never imports it ([`docs/databricks.md`](../databricks.md)).
+- **The Power BI data source is generated per platform, not chosen by a parameter.** A query that picks its source with an `if` on a parameter does not refresh in the Power BI service, which needs one data source per query. The model in `powerbi/` stays as it is, and `tools/report` replaces its one data source function, `DeltaTable(name)`, with the platform's (`platforms/<platform>/report/expressions.tmdl`) in a generated copy, then publishes it with the Fabric CLI. The tables, measures and pages are still one definition ([`docs/report.md`](../report.md#on-a-platform)).
+
+The rest holds: one package and one entry point, thin platform folders (now with `tools/` to run the same operation on either), and collection only by a deliberate handover. The handover to Databricks is also blocked for now: Free Edition limits outbound internet to trusted domains, and the sources are not among them.

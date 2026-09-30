@@ -7,10 +7,36 @@ How open parking data from Stavanger flows from the source to a star schema, fol
 - **Source:** the CKAN dataset [Stavanger parkering](https://opencom.no/dataset/stavanger-parkering) (Stavanger kommune, [NLOD 2.0](https://data.norge.no/nlod/en/2.0)): the current number of free spaces in 9 parking facilities, re-published every 2 minutes. Only the current state is available, so history exists only if we collect it.
 - **Collection:** adaptive polling, every 5 minutes while the values change and every 20 minutes while they don't ([ADR 003](adr/003-polling-interval.md)). The download URL is resolved through the CKAN API on every run.
 - **Storage:** raw responses are kept unchanged and are the source of truth; every table can be rebuilt from them.
-- **Engine:** Polars and delta-rs on pure Python notebooks, not Spark ([ADR 001](adr/001-polars-over-pyspark.md)). The logic lives in the `stavanger_parking` package; notebooks are thin wrappers, so the same code runs and is tested locally.
+- **Engine:** Polars and delta-rs, not Spark ([ADR 001](adr/001-polars-over-pyspark.md)). The logic lives in the `stavanger_parking` package, installed as a wheel; the platform only calls its entry point (a Databricks job task, a Fabric notebook), so the same code runs and is tested locally ([ADR 011](adr/011-one-repository-two-platforms.md)).
+- **Platforms:** one repository deploys to Databricks (running) and Microsoft Fabric (written for, pending a capacity).
 - **Model:** a periodic snapshot fact of availability per facility and reading, an hourly aggregate fact, and date, time and facility dimensions.
 
-## Target data flow (Microsoft Fabric)
+## Data flow on Databricks (deployed)
+
+```mermaid
+flowchart LR
+    data[("data branch<br/>raw files + sidecars")]
+
+    subgraph ws["Databricks workspace · Asset Bundle in platforms/databricks/"]
+        direction LR
+        raw[("volume raw")]
+        run["job task pipeline<br/>stavanger-parking-pipeline run<br/>(the wheel, serverless)"]
+        tables[("volume tables<br/>Delta, every layer")]
+        pub["job task publish<br/>publish.py (Spark)"]
+        uc[("Unity Catalog tables<br/>star schema, prices,<br/>quality results")]
+        raw --> run --> tables --> pub --> uc
+    end
+
+    wh["SQL warehouse"]
+    pbi["Power BI service<br/>semantic model + report<br/>(Pro workspace)"]
+
+    data -- "tools/backfill" --> raw
+    uc --> wh --> pbi
+```
+
+Both tasks belong to one job, `stavanger_parking_pipeline`, which allows one run at a time. The pipeline writes Delta tables with delta-rs into a volume, because on this workspace volumes are the only writable paths; `publish` copies the tables the report reads into Unity Catalog, which is what Power BI's Databricks connector reads. The collection job is deployed but paused: GitHub Actions stays the collector of record ([`docs/databricks.md`](databricks.md)). `tools/report` generates the Power BI model with the Databricks data source and publishes it ([`docs/report.md`](report.md#on-a-platform)).
+
+## Data flow on Microsoft Fabric (planned)
 
 ```mermaid
 flowchart LR
@@ -54,9 +80,9 @@ The notebooks (rectangles) run in one Data pipeline; the yellow cylinders are th
 | Quality | Notebook step | Data quality and schema drift checks after silver and gold; results stored in `quality_check_results`; a critical failure stops the pipeline, never collection ([`docs/quality.md`](quality.md)) | #21 |
 | Reporting | Semantic model + report | On the gold tables (optional) | #24 |
 
-## Interim flow (until platform access)
+## Collection outside the platform
 
-A Fabric trial could not be activated, so collection started outside the platform ([ADR 007](adr/007-collect-outside-the-platform.md)). The raw files are stored in the same layout the Lakehouse will use, and are copied there when access is available (#17).
+A Fabric trial could not be activated, so collection started outside the platform ([ADR 007](adr/007-collect-outside-the-platform.md)), and it stays there until a platform takes over with a handover ([ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover)). The raw files are stored in the same layout on every platform, and are copied in by backfill: into the Databricks volume today, into the Lakehouse's `Files/` when Fabric is available (#17).
 
 ```mermaid
 flowchart LR
@@ -65,10 +91,12 @@ flowchart LR
     data[("data branch<br/>bronze/parking/…<br/>raw JSON + sidecar")]
     local["Local run<br/>uv run …<br/>Polars + deltalake"]
     delta[("Local Delta tables<br/>bronze / silver / gold")]
+    vol[("Databricks volume raw<br/>(tools/backfill)")]
     lh[("Lakehouse Files/<br/>(backfill, #17)")]
 
     src --> gha --> data
     data --> local --> delta
+    data --> vol
     data -. "when access arrives" .-> lh
 ```
 
@@ -91,7 +119,7 @@ See [`docs/collector.md`](collector.md) for how a collection run works.
 
 Silver can always be rebuilt from bronze, and bronze from the raw files, with the same result as incremental runs (#9).
 
-## Star schema (draft)
+## Star schema
 
 ```mermaid
 erDiagram
@@ -192,18 +220,17 @@ erDiagram
 
 ## Platform mapping
 
-The platform is not final: if Fabric access is not available, the case moves to Databricks, which was offered as an equal alternative. The design is the same; only the items change.
+Both platforms run the same package, the same entry point and the same Power BI model; only the items around them differ ([ADR 011](adr/011-one-repository-two-platforms.md)). Polars stays the engine on Databricks too: a job task installs the wheel on serverless compute, and Spark is used only by the small `publish` task.
 
-| Concern | Microsoft Fabric | Databricks |
+| Concern | Databricks (deployed) | Microsoft Fabric (planned) |
 |---|---|---|
-| Raw files | Lakehouse `Files/` | Unity Catalog volume |
-| Tables | Lakehouse `Tables/` (Delta) | Unity Catalog schemas (Delta) |
-| Transformations | Notebooks (pure Python) | Notebooks (serverless) |
-| Orchestration and alerts | Data pipeline | Lakeflow Jobs |
-| Deployment | Git integration | Databricks Asset Bundles |
-| Reporting | Power BI semantic model | Power BI via SQL warehouse, or AI/BI dashboards |
-
-On Databricks, the engine choice would be revisited ([ADR 001](adr/001-polars-over-pyspark.md)), since its managed features assume Spark.
+| Raw files | Unity Catalog volume `raw` | Lakehouse `Files/` |
+| Tables | Volume `tables` (Delta, written by delta-rs), the report's tables published to the Unity Catalog schema | Lakehouse `Tables/` (Delta) |
+| Transformations | Job task running the wheel's `stavanger-parking-pipeline` | Notebook calling `run_pipeline` |
+| Orchestration and alerts | Lakeflow Jobs, e-mail on failure; schedules paused | Data pipeline with an alert |
+| Deployment | Asset Bundle, `tools/deploy -p databricks [--prod]` | Git integration |
+| Reporting | Power BI, Databricks connector through a SQL warehouse, `tools/report` | Power BI, SQL analytics endpoint (or Direct Lake) |
+| Collection | Deployed, paused; outbound internet blocked on Free Edition | Not built |
 
 ## Related documents
 
@@ -211,4 +238,5 @@ On Databricks, the engine choice would be revisited ([ADR 001](adr/001-polars-ov
 - Known weaknesses: [`docs/weaknesses.md`](weaknesses.md)
 - Source configuration: [`docs/config.md`](config.md)
 - Collector: [`docs/collector.md`](collector.md)
-- Scalability assessment: #22
+- Scalability assessment: [ADR 006](adr/006-scalability-assessment.md)
+- One repository, two platforms: [ADR 011](adr/011-one-repository-two-platforms.md)
