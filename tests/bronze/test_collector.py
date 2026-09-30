@@ -288,6 +288,41 @@ def test_an_overdue_latest_snapshot_is_an_open_gap():
     assert gap.next_snapshot is None
 
 
+def on_demand(at: datetime) -> dict:
+    return {"ingested_at": at.isoformat(), "next_due": None}
+
+
+def test_the_time_after_an_on_demand_snapshot_is_not_checked():
+    # It promises no next fetch, so the five hours until the next scheduled snapshot are no gap
+    history = [
+        sidecar(T0, 60),
+        on_demand(T0 + timedelta(minutes=10)),
+        sidecar(T0 + timedelta(hours=5), 60),
+    ]
+
+    assert list(find_gaps(history, tolerance=timedelta(minutes=10))) == []
+
+
+def test_an_on_demand_snapshot_ends_a_gap():
+    history = [
+        sidecar(T0, 60),
+        on_demand(T0 + timedelta(hours=3)),
+        sidecar(T0 + timedelta(hours=5), 60),
+    ]
+
+    (gap,) = find_gaps(history, tolerance=timedelta(minutes=10))
+
+    assert gap.after == T0
+    assert gap.next_snapshot == T0 + timedelta(hours=3)
+
+
+def test_a_latest_on_demand_snapshot_leaves_no_open_gap():
+    history = [sidecar(T0, 60), on_demand(T0 + timedelta(minutes=30))]
+    now = T0 + timedelta(days=1)
+
+    assert list(find_gaps(history, tolerance=timedelta(minutes=10), now=now)) == []
+
+
 # --- command line ------------------------------------------------------------------------------
 
 
