@@ -6,6 +6,8 @@ The pipeline runs bronze load, silver, gold and the quality checks, in that orde
 uv run python -m stavanger_parking.pipeline run --raw-root <raw files> --tables-root <tables>
 ```
 
+Installed from the wheel, the same command is the console script `stavanger-parking-pipeline run …`, which the Databricks job calls ([`docs/databricks.md`](databricks.md)).
+
 From a notebook:
 
 ```python

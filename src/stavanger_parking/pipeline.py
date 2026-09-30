@@ -163,5 +163,10 @@ def main(argv: list[str] | None = None) -> int:
     return result.exit_code
 
 
-if __name__ == "__main__":
+def entry() -> None:
+    """The console script: exits with `main`'s code, however the caller starts it."""
     sys.exit(main())
+
+
+if __name__ == "__main__":
+    entry()

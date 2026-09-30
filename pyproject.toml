@@ -12,6 +12,11 @@ dependencies = [
     "polars>=1.44",
 ]
 
+# Entry points of the platforms' jobs (Databricks wheel tasks call them by name)
+[project.scripts]
+stavanger-parking-pipeline = "stavanger_parking.pipeline:entry"
+stavanger-parking-collect = "stavanger_parking.bronze.collect:entry"
+
 [dependency-groups]
 dev = [
     "jsonschema>=4.23",
