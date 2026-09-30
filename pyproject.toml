@@ -23,6 +23,9 @@ dev = [
     "pytest>=9.1",
     "ruff>=0.16",
 ]
+powerbi = [
+    "ms-fabric-cli>=1.7,<2",
+]
 release = [
     "git-cliff>=2.14.2,<3",
 ]
