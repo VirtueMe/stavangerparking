@@ -68,3 +68,6 @@ This narrows one rule of the decision; the decision itself still holds. It recor
 
 **Why not the alternatives** (the full response hourly, stored every time or only on change, or one request per area) is recorded in ADR 010.
 
+## Addendum 2026-09-30: handover to either platform
+
+This refines the handover in the decision; collecting outside the platform until then is unchanged. The repository now deploys to Fabric and to Databricks ([ADR 011](011-one-repository-two-platforms.md)), so "the platform" is whichever one takes over collection, and only one does. Deploying a platform does not start its collection. The handover is a deliberate switch: backfill, then an overlap of at least 24 hours in which the platform collects into a separate comparison root, then a comparison by `values_fingerprint`. Only then are the GitHub workflow, the cron-job.org job and its token retired, and the platform continues the history from the `data` branch's last snapshot. The overlap's snapshots never become part of the history. The steps are in [ADR 011](011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover).

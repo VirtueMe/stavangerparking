@@ -2,6 +2,8 @@
 
 The collector fetches raw snapshots from every configured source and stores them unchanged. Until the data platform is available, it runs on GitHub Actions and stores onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data) ([ADR 007](adr/007-collect-outside-the-platform.md)).
 
+**Collector of record:** GitHub Actions, onto the `data` branch. Exactly one collector writes the history at a time. A platform takes over only through the handover in [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover), and this line then names it.
+
 ## What a run does
 
 The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/collect.yml)) is started every 5 minutes by cron-job.org ([below](#trigger)) and can also be started by hand (*Run workflow*). Each run:
