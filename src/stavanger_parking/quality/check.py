@@ -15,6 +15,7 @@ current state, so a stopped collector would lose history for good.
 import argparse
 import os
 import sys
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -137,6 +138,20 @@ def report(results: list[Result], snapshot: str) -> str:
     return "\n".join(lines)
 
 
+@dataclass(frozen=True)
+class Outcome:
+    report: str
+    critical: bool
+
+
+def run(tables_root: str, mapping_path, config_path, now, storage_options=None) -> Outcome:
+    """Run the checks and store their results, before saying whether a critical one failed."""
+    snapshot, results = run_checks(tables_root, mapping_path, config_path, storage_options)
+    store(results, snapshot, tables_root, now, storage_options)
+    critical = any(r.severity == CRITICAL and not r.passed for r in results)
+    return Outcome(report(results, snapshot), critical)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m stavanger_parking.quality.check")
     parser.add_argument("--tables-root", required=True, help="folder or URI of the tables")
@@ -145,19 +160,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        snapshot, results = run_checks(args.tables_root, args.mapping, args.config)
+        outcome = run(args.tables_root, args.mapping, args.config, datetime.now(UTC))
     except CheckError as e:
         print(e, file=sys.stderr)
         return 1
-    store(results, snapshot, args.tables_root, datetime.now(UTC))
-    text = report(results, snapshot)
-    print(text)
+    print(outcome.report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as f:
-            f.write("```\n" + text + "\n```\n")
-    critical = [r for r in results if r.severity == CRITICAL and not r.passed]
-    return 1 if critical else 0
+            f.write("```\n" + outcome.report + "\n```\n")
+    return 1 if outcome.critical else 0
 
 
 if __name__ == "__main__":

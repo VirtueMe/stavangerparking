@@ -32,6 +32,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 | `benchmarks/scaling.py` | How the transformations scale with facilities and years ([ADR 006](docs/adr/006-scalability-assessment.md)) |
 | `.github/workflows/collect.yml` | [Collector](docs/collector.md): snapshot collection of the parking feed and the parking register onto the `data` branch, started by cron-job.org |
 | `config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
+| `docs/pipeline.md` | [Pipeline](docs/pipeline.md): the one entry point that runs every layer, its parameters and exit codes |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
 | `docs/gold.md` | [Gold](docs/gold.md): the star schema's dimensions and facts |

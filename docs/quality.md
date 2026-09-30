@@ -6,7 +6,7 @@ The checks run after silver and gold, on the latest data, and store every result
 uv run python -m stavanger_parking.quality.check --tables-root <tables>
 ```
 
-Each run appends its results to `quality_check_results`, prints the failures, and adds them to the GitHub Actions run summary. It exits with **1 if a critical check failed**, which is what stops the pipeline: locally now, and through orchestration once it exists (#19). The results are stored before the exit, so a failed run keeps its evidence.
+Each run appends its results to `quality_check_results`, prints the failures, and adds them to the GitHub Actions run summary. It exits with **1 if a critical check failed**. In the [pipeline](pipeline.md), which runs the checks last, a critical failure gives exit code 3, for the orchestration to alert on (#19). The results are stored before the exit, so a failed run keeps its evidence.
 
 The checks **never stop collection**. The source only shows its current state, so a collector that stopped on a quality problem would lose history for good; collection and quality are separate steps.
 
