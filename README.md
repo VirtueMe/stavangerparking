@@ -26,12 +26,12 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 
 | Path | Contents |
 |---|---|
-| `config/sources.json` | [Source configuration](docs/config.md): where each dataset comes from, where it lands, and its licence |
+| `src/stavanger_parking/config/sources.json` | [Source configuration](docs/config.md): where each dataset comes from, where it lands, and its licence |
 | `src/stavanger_parking/` | Transformation logic as plain Python modules; notebooks import from here |
 | `tests/` | Tests, run on every pull request |
 | `benchmarks/scaling.py` | How the transformations scale with facilities and years ([ADR 006](docs/adr/006-scalability-assessment.md)) |
 | `.github/workflows/collect.yml` | [Collector](docs/collector.md): snapshot collection of the parking feed and the parking register onto the `data` branch, started by cron-job.org |
-| `config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
+| `src/stavanger_parking/config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/pipeline.md` | [Pipeline](docs/pipeline.md): the one entry point that runs every layer, its parameters and exit codes |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |
@@ -52,7 +52,7 @@ The data is the open dataset [Stavanger parkering](https://opencom.no/dataset/st
 
 > Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune.
 
-Each source's licence is recorded in [`config/sources.json`](config/sources.json), so a source cannot be added without one.
+Each source's licence is recorded in [`src/stavanger_parking/config/sources.json`](src/stavanger_parking/config/sources.json), so a source cannot be added without one.
 
 ## Licence
 

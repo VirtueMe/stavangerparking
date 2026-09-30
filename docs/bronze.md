@@ -1,6 +1,6 @@
 # Bronze loading
 
-Collected raw snapshots ([`docs/collector.md`](collector.md)) are loaded into the bronze Delta table of their source (`bronze_table` in [`config/sources.json`](../config/sources.json)).
+Collected raw snapshots ([`docs/collector.md`](collector.md)) are loaded into the bronze Delta table of their source (`bronze_table` in [`src/stavanger_parking/config/sources.json`](../src/stavanger_parking/config/sources.json)).
 
 ```sh
 uv run python -m stavanger_parking.bronze.load --raw-root <raw files> --tables-root <tables>

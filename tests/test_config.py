@@ -6,9 +6,15 @@ import httpx
 import pytest
 
 from stavanger_parking.bronze.ckan import resolve_resource
-from stavanger_parking.config import ConfigError, HttpLocation, load_sources, parse_sources
+from stavanger_parking.config import (
+    DEFAULT_CONFIG,
+    ConfigError,
+    HttpLocation,
+    load_sources,
+    parse_sources,
+)
 
-REPO_CONFIG = Path(__file__).parent.parent / "config" / "sources.json"
+REPO_CONFIG = DEFAULT_CONFIG
 PACKAGE_SHOW = Path(__file__).parent / "fixtures" / "ckan_package_show_stavanger_parkering.json"
 
 

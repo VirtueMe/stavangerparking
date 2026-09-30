@@ -1,4 +1,4 @@
-"""The facility mapping (`config/facility_mapping.json`): the feed's facilities in other sources.
+"""The facility mapping (`facility_mapping.json`): the feed's facilities in other sources.
 
 The feed names a facility only by `Sted` (the natural key, ADR 004). The mapping links each name to
 its parking area in the national parking register (Parkeringsregisteret), where its capacity comes
@@ -12,8 +12,8 @@ import json
 from dataclasses import dataclass, fields
 from pathlib import Path
 
-# Where the command line tools look for the mapping, relative to the repository root
-DEFAULT_MAPPING = Path("config/facility_mapping.json")
+# In the `stavanger_parking.config` package, found by path: that package imports this module
+DEFAULT_MAPPING = Path(__file__).parent / "config" / "facility_mapping.json"
 
 
 class MappingError(ValueError):

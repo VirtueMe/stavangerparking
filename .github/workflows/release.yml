@@ -1,7 +1,7 @@
 name: Release
 
 # Every merge to main with a changelog-relevant change (see cliff.toml) becomes a version:
-# a tag, a dated CHANGELOG.md section, the package version and a GitHub Release.
+# a tag, a dated CHANGELOG.md section, the package version and a GitHub Release with the wheel.
 on:
   push:
     branches: [main]
@@ -59,6 +59,12 @@ jobs:
           cliff --tag "$TAG" --unreleased --strip header > "$RUNNER_TEMP/notes.md"
           uv version "${TAG#v}" --no-sync
 
+      # Before the push, so a wheel that cannot be built stops the release. The version is the
+      # one just set, and the configuration ships inside the package (docs/config.md)
+      - name: Build the wheel
+        if: steps.version.outputs.release == 'true'
+        run: uv build --wheel -o "$RUNNER_TEMP/dist"
+
       # Commit and tag are pushed atomically. If another merge landed meanwhile, the push is
       # rejected and nothing is published; the queued run for that merge releases both.
       - name: Commit, tag and push
@@ -78,4 +84,7 @@ jobs:
         env:
           TAG: ${{ steps.version.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$TAG" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
+        # The wheel is attached, so a platform installs a released version (ADR 011)
+        run: |
+          gh release create "$TAG" "$RUNNER_TEMP"/dist/*.whl \
+            --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag

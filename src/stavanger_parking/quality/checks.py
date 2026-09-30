@@ -132,7 +132,7 @@ def facility_checks(
                 "unmapped_facility",
                 WARNING,
                 name in mapped,
-                "mapped" if name in mapped else "not in config/facility_mapping.json",
+                "mapped" if name in mapped else "not in the facility mapping",
                 name,
             )
         )

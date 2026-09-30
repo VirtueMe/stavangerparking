@@ -36,7 +36,7 @@ flowchart LR
 - **The price service** reads occupancy from the car parks' own counting, applies the approved rules, and publishes a **price event** whenever a price changes: facility, new price, when it takes effect, the occupancy it was based on and the rule that produced it. It depends on nothing in the analytics platform.
 - **The price event log** is the single truth for every consumer. Boards, payment and the website all read the same events, and the log can be replayed to show which price applied where and when, for complaints, audits and analysis.
 - **The analytics platform** receives the same events and the occupancy history. It evaluates the rules (did high prices move cars to emptier car parks?), proposes changes, and never writes to the boards. An event-driven path in the platform (for example Eventstream and Activator on Fabric) can be evaluated for alerting and analysis, but not as the path the boards depend on.
-- **Rules are released like code.** A change to the thresholds or multipliers is a reviewed, approved change to a versioned file (as `config/pricing_rules.json` already is in this repository), released to the price service.
+- **Rules are released like code.** A change to the thresholds or multipliers is a reviewed, approved change to a versioned file (as `src/stavanger_parking/config/pricing_rules.json` already is in this repository), released to the price service.
 
 ## The law
 

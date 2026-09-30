@@ -9,7 +9,7 @@ The collector fetches raw snapshots from every configured source and stores them
 The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/collect.yml)) is started every 5 minutes by cron-job.org ([below](#trigger)) and can also be started by hand (*Run workflow*). Each run:
 
 1. Checks out the `data` branch. On the very first run, it creates the branch with its own history, containing only [`DATA-LICENCE.md`](../templates/DATA-LICENCE.md), before any snapshot is published.
-2. Runs `python -m stavanger_parking.bronze.collect run`, which for every source with `polling` in [`config/sources.json`](../config/sources.json) (the register is collected separately, [below](#parkeringsregisteret)):
+2. Runs `python -m stavanger_parking.bronze.collect run`, which for every source with `polling` in [`src/stavanger_parking/config/sources.json`](../src/stavanger_parking/config/sources.json) (the register is collected separately, [below](#parkeringsregisteret)):
    - decides whether to fetch, from the latest sidecars (adaptive polling, below);
    - resolves the download URL through CKAN and downloads the snapshot;
    - stores the response unchanged at the source's `raw_path` and writes a sidecar next to it.

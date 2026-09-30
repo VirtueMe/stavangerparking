@@ -7,15 +7,16 @@ import pytest
 
 from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
 from stavanger_parking.bronze.load import load_source
-from stavanger_parking.config import load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
+from stavanger_parking.facilities import DEFAULT_MAPPING
 from stavanger_parking.gold import build as gold
 from stavanger_parking.quality import check
 from stavanger_parking.silver import build as silver
 from stavanger_parking.tables import QUALITY_TABLE, table_path
 
 ROOT = Path(__file__).parent.parent.parent
-REPO_CONFIG = ROOT / "config" / "sources.json"
-MAPPING = ROOT / "config" / "facility_mapping.json"
+REPO_CONFIG = DEFAULT_CONFIG
+MAPPING = DEFAULT_MAPPING
 REGISTER = ROOT / "tests" / "fixtures" / "parkeringsregisteret_stavanger_parkering.json"
 T0 = datetime(2026, 9, 29, 12, 3, tzinfo=UTC)
 NINE = ["Jernbanen", "Valberget", "Posten", "Jorenholmen", "St Olav", "Siddis", "Forum"]

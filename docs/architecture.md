@@ -15,7 +15,7 @@ How open parking data from Stavanger flows from the source to a star schema, fol
 ```mermaid
 flowchart LR
     src["opencom.no<br/>CKAN API + parking.json"]
-    cfg[/"config/sources.json"/]
+    cfg[/"sources.json"/]
 
     subgraph pipe["Data pipeline · every 5 min · failure alert (notebooks write to the Lakehouse, in yellow)"]
         direction LR
@@ -184,7 +184,7 @@ erDiagram
 
 ## Configuration, new sources and new facilities
 
-- **Configuration** lives in [`config/sources.json`](../config/sources.json): per source, the CKAN location, the raw path template, the bronze table, the licence and the polling parameters ([`docs/config.md`](config.md)). Paths and table names are relative; the storage root and schema belong to the runtime, so the same config works locally and on the platform.
+- **Configuration** lives in [`src/stavanger_parking/config/sources.json`](../src/stavanger_parking/config/sources.json): per source, the CKAN location, the raw path template, the bronze table, the licence and the polling parameters ([`docs/config.md`](config.md)). Paths and table names are relative; the storage root and schema belong to the runtime, so the same config works locally and on the platform.
 - **A new source** is a new config entry; no code changes. The collector, bronze loading and the tests pick it up.
 - **A new facility** needs nothing at all. It appears in the next snapshot, flows through bronze and silver unchanged, and the facility MERGE inserts it into `dim_parking_facility` with a new surrogate key and `first_seen` (tested with a synthetic 10th facility in #12). Its capacity is unknown until it is added to the mapping file.
 - **A facility that disappears** from the feed is marked `is_active = false`, never deleted, so its history keeps its dimension row.

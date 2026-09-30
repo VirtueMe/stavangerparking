@@ -1,14 +1,13 @@
 import json
 import shutil
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import polars as pl
 import pytest
 
 from stavanger_parking.bronze.collector import render_raw_path, sidecar_path
 from stavanger_parking.bronze.load import load_source
-from stavanger_parking.config import load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 from stavanger_parking.silver import build
 from stavanger_parking.silver.build import (
     FETCH_TABLE,
@@ -20,7 +19,7 @@ from stavanger_parking.silver.build import (
 )
 from stavanger_parking.tables import table_path
 
-REPO_CONFIG = Path(__file__).parent.parent.parent / "config" / "sources.json"
+REPO_CONFIG = DEFAULT_CONFIG
 T0 = datetime(2026, 9, 28, 12, 3, tzinfo=UTC)
 TABLES = (FETCH_TABLE, READING_TABLE, QUARANTINE_TABLE, FRESHNESS_TABLE, STALE_PERIOD_TABLE)
 
