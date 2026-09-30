@@ -1,6 +1,6 @@
 # Gold: the star schema
 
-Gold holds the dimensions and facts of the star schema described in [`docs/architecture.md`](architecture.md#star-schema-draft).
+Gold holds the dimensions and facts of the star schema described in [`docs/architecture.md`](architecture.md#star-schema).
 
 ```sh
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
