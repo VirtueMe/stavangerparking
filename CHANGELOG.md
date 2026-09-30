@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.17.0] - 2026-09-30
+
+### Features
+
+- **databricks:** Deploy the pipeline with a Databricks Asset Bundle ([#81](https://github.com/VirtueMe/stavangerparking/pull/81))
+
 ## [0.16.0] - 2026-09-30
 
 ### Features
