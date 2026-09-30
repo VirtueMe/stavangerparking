@@ -1,0 +1,154 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "about-text",
+  "position": {
+    "x": 16,
+    "y": 60,
+    "z": 2000,
+    "height": 612,
+    "width": 1248,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Sources",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "14pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Free spaces per facility: "
+                  },
+                  {
+                    "value": "Stavanger parkering",
+                    "url": "https://opencom.no/dataset/stavanger-parkering"
+                  },
+                  {
+                    "value": ", published by Stavanger kommune, fetched every 5 minutes while the values change and every 20 minutes while they do not."
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Capacities: "
+                  },
+                  {
+                    "value": "Parkeringsregisteret",
+                    "url": "https://data.norge.no/en/datasets/a0cf9785-601e-4c5b-b19c-74b639b5819a/parkeringsregisteret"
+                  },
+                  {
+                    "value": ", the national parking register published by Statens vegvesen, fetched hourly and matched to the facilities by a hand-maintained mapping."
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": ""
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Licence",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "14pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune. Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Statens vegvesen. Licence: "
+                  },
+                  {
+                    "value": "NLOD 2.0",
+                    "url": "https://data.norge.no/nlod/en/2.0"
+                  },
+                  {
+                    "value": "."
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": ""
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Reading the figures",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "14pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Stale",
+                    "textStyle": {
+                      "fontWeight": "bold"
+                    }
+                  },
+                  {
+                    "value": ": the source's own timestamp is older than expected. The feed has not updated since 23 September 2026, 19:16, although the file is re-published every 2 minutes, so the latest readings are shown as stale rather than as current."
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Occupancy",
+                    "textStyle": {
+                      "fontWeight": "bold"
+                    }
+                  },
+                  {
+                    "value": ": the share of capacity in use, from the time-weighted average of free spaces. It uses each facility's capacity in the register, which can be wrong: Forum reports more free spaces than its registered capacity, so its occupancy is negative."
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Averages",
+                    "textStyle": {
+                      "fontWeight": "bold"
+                    }
+                  },
+                  {
+                    "value": ": readings arrive irregularly, so every average over time is weighted by how long each reading was valid."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

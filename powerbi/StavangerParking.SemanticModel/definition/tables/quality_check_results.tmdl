@@ -1,0 +1,61 @@
+/// One row per check per quality run, per facility for checks about facilities (docs/quality.md). Not related to the star schema.
+table quality_check_results
+
+	/// When the run checked, UTC
+	column checked_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: checked_at
+
+	/// The raw file of the snapshot that was checked
+	column snapshot
+		dataType: string
+		summarizeBy: none
+		sourceColumn: snapshot
+
+	/// The check's name
+	column check
+		dataType: string
+		summarizeBy: none
+		sourceColumn: check
+
+	/// critical or warning
+	column severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: severity
+
+	column passed
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: passed
+
+	/// The facility or table the result is about
+	column subject
+		dataType: string
+		summarizeBy: none
+		sourceColumn: subject
+
+	/// What was found
+	column detail
+		dataType: string
+		summarizeBy: none
+		sourceColumn: detail
+
+	/// Failed checks in the latest quality run; blank for every other run, so a table of checks shows only the latest failures.
+	measure 'Failed checks (latest run)' =
+			VAR latest =
+				CALCULATE ( MAX ( quality_check_results[checked_at] ), ALL ( quality_check_results ) )
+			RETURN
+				CALCULATE (
+					COUNTROWS ( quality_check_results ),
+					quality_check_results[checked_at] = latest,
+					quality_check_results[passed] = FALSE ()
+				)
+		formatString: 0
+		displayFolder: Quality
+
+	partition quality_check_results = m
+		mode: import
+		source = DeltaTable("quality_check_results")

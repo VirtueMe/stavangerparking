@@ -95,6 +95,15 @@ table fact_parking_availability
 		formatString: #,0
 		displayFolder: Availability
 
+	/// The facilities' capacity from the national parking register; blank for a facility without one (ADR 005).
+	measure Capacity =
+			SUMX (
+				VALUES ( dim_parking_facility[facility_key] ),
+				CALCULATE ( MAX ( dim_parking_facility[capacity] ) )
+			)
+		formatString: #,0
+		displayFolder: Availability
+
 	/// Number of source readings. Readings are irregular (ADR 003): never average over them unweighted.
 	measure Readings = COUNTROWS ( fact_parking_availability )
 		formatString: #,0

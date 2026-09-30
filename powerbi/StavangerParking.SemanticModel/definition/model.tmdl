@@ -8,3 +8,4 @@ ref table dim_time
 ref table dim_parking_facility
 ref table fact_parking_availability
 ref table fact_parking_hourly
+ref table quality_check_results

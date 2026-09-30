@@ -1,0 +1,116 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "failed-checks-table",
+  "position": {
+    "x": 16,
+    "y": 448,
+    "z": 3200,
+    "height": 224,
+    "width": 1248,
+    "tabOrder": 3200
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "quality_check_results"
+                    }
+                  },
+                  "Property": "check"
+                }
+              },
+              "queryRef": "quality_check_results.check",
+              "nativeQueryRef": "check"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "quality_check_results"
+                    }
+                  },
+                  "Property": "severity"
+                }
+              },
+              "queryRef": "quality_check_results.severity",
+              "nativeQueryRef": "severity"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "quality_check_results"
+                    }
+                  },
+                  "Property": "subject"
+                }
+              },
+              "queryRef": "quality_check_results.subject",
+              "nativeQueryRef": "subject"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "quality_check_results"
+                    }
+                  },
+                  "Property": "detail"
+                }
+              },
+              "queryRef": "quality_check_results.detail",
+              "nativeQueryRef": "detail"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "quality_check_results"
+                    }
+                  },
+                  "Property": "Failed checks (latest run)"
+                }
+              },
+              "queryRef": "quality_check_results.Failed checks (latest run)",
+              "nativeQueryRef": "Failed checks (latest run)"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Failed checks in the latest quality run'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
