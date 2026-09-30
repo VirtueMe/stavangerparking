@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.18.1] - 2026-09-30
+
+### Bug Fixes
+
+- **collect:** An on-demand snapshot starts no gap ([#85](https://github.com/VirtueMe/stavangerparking/pull/85))
+
 ## [0.18.0] - 2026-09-30
 
 ### Features
