@@ -1,9 +1,9 @@
 """The Power BI project stays in step with the code.
 
 Power BI Desktop cannot run here, so these tests check what can be checked without it: the model's
-tables and columns are the ones the gold build writes, with matching types; relationships join
-existing columns; TMDL uses tab indentation; and every project JSON file is valid against the
-published schema of its format (kept in tests/fixtures/powerbi_schemas).
+tables and columns are the ones the gold build and the quality checks write, with matching types;
+relationships join existing columns; TMDL uses tab indentation; and every project JSON file is
+valid against the published schema of its format (kept in tests/fixtures/powerbi_schemas).
 """
 
 import json
@@ -13,16 +13,21 @@ from pathlib import Path
 import polars as pl
 import pytest
 from jsonschema import Draft7Validator
+from referencing import Registry, Resource
+from referencing.exceptions import NoSuchResource
+from referencing.jsonschema import DRAFT7
 
 from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA
 from stavanger_parking.gold.calendar import DATE_SCHEMA, TIME_SCHEMA
 from stavanger_parking.gold.facility import FACILITY_SCHEMA
 from stavanger_parking.gold.hourly import HOURLY_SCHEMA
+from stavanger_parking.quality.check import RESULT_SCHEMA
 from stavanger_parking.tables import (
     AVAILABILITY_TABLE,
     DATE_TABLE,
     FACILITY_TABLE,
     HOURLY_TABLE,
+    QUALITY_TABLE,
     TIME_TABLE,
 )
 
@@ -31,12 +36,13 @@ MODEL = ROOT / "StavangerParking.SemanticModel" / "definition"
 REPORT = ROOT / "StavangerParking.Report"
 SCHEMAS = Path(__file__).parent / "fixtures" / "powerbi_schemas"
 
-GOLD = {
+TABLES = {
     DATE_TABLE: DATE_SCHEMA,
     TIME_TABLE: TIME_SCHEMA,
     FACILITY_TABLE: FACILITY_SCHEMA,
     AVAILABILITY_TABLE: AVAILABILITY_SCHEMA,
     HOURLY_TABLE: HOURLY_SCHEMA,
+    QUALITY_TABLE: RESULT_SCHEMA,
 }
 
 
@@ -60,22 +66,22 @@ def model_columns(table: str) -> dict[str, str]:
     return dict(re.findall(r"^\tcolumn (\S+)\n(?:\t\t.*\n)*?\t\tdataType: (\w+)$", text, re.M))
 
 
-def test_the_model_has_exactly_the_gold_tables():
+def test_the_model_has_exactly_the_tables_the_code_writes():
     files = {p.stem for p in (MODEL / "tables").glob("*.tmdl")}
     refs = re.findall(r"^ref table (\S+)$", (MODEL / "model.tmdl").read_text(), re.M)
 
-    assert files == set(GOLD)
-    assert sorted(refs) == sorted(GOLD)
+    assert files == set(TABLES)
+    assert sorted(refs) == sorted(TABLES)
 
 
-@pytest.mark.parametrize("table", sorted(GOLD))
+@pytest.mark.parametrize("table", sorted(TABLES))
 def test_model_columns_match_the_tables_the_code_writes(table):
-    expected = {c: tmdl_type(t) for c, t in GOLD[table].items()}
+    expected = {c: tmdl_type(t) for c, t in TABLES[table].items()}
 
     assert model_columns(table) == expected
 
 
-@pytest.mark.parametrize("table", sorted(GOLD))
+@pytest.mark.parametrize("table", sorted(TABLES))
 def test_every_partition_reads_its_own_delta_table(table):
     text = (MODEL / "tables" / f"{table}.tmdl").read_text()
 
@@ -89,7 +95,7 @@ def test_relationships_join_existing_columns_from_fact_to_dimension():
     assert len(pairs) == 5
     for from_table, from_column, to_table, to_column in pairs:
         assert from_table.startswith("fact_") and to_table.startswith("dim_")
-        assert from_column in GOLD[from_table] and to_column in GOLD[to_table]
+        assert from_column in TABLES[from_table] and to_column in TABLES[to_table]
 
 
 def test_measures_are_declared_on_the_facts():
@@ -97,7 +103,7 @@ def test_measures_are_declared_on_the_facts():
         table: re.findall(
             r"^\tmeasure '?([^'=]+?)'? =", (MODEL / "tables" / f"{table}.tmdl").read_text(), re.M
         )
-        for table in GOLD
+        for table in TABLES
     }
 
     assert set(names[HOURLY_TABLE]) >= {"Free spaces (avg)", "Occupancy", "Stale share"}
@@ -149,3 +155,90 @@ def test_every_page_in_the_page_order_exists():
 
     assert set(order) == pages
     assert "about" in pages
+
+
+# --- visuals (#87) ---
+
+VISUALS = sorted(REPORT.glob("definition/pages/*/visuals/*/visual.json"))
+DEFINITIONS = SCHEMAS / "report_definition"
+DEFINITION_URL = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/"
+
+
+def retrieve(uri: str) -> Resource:
+    """The published schemas a visual's schema refers to, from tests/fixtures, never the network."""
+    if not uri.startswith(DEFINITION_URL):
+        raise NoSuchResource(ref=uri)
+    contents = json.loads((DEFINITIONS / uri.removeprefix(DEFINITION_URL)).read_text("utf-8"))
+    return Resource.from_contents(contents, default_specification=DRAFT7)
+
+
+def model_fields() -> dict[tuple[str, str], str]:
+    """(table, name) to "Column" or "Measure", for every column and measure in the model."""
+    fields = {}
+    for path in (MODEL / "tables").glob("*.tmdl"):
+        text = path.read_text(encoding="utf-8")
+        fields |= {(path.stem, c): "Column" for c in re.findall(r"^\tcolumn (\S+)$", text, re.M)}
+        fields |= {
+            (path.stem, m): "Measure" for m in re.findall(r"^\tmeasure '?([^'=]+?)'? =", text, re.M)
+        }
+    return fields
+
+
+def fields_used(node) -> list[tuple[str, str, str]]:
+    """Every (kind, table, name) a visual refers to, anywhere in its query or formatting."""
+    found = []
+    if isinstance(node, dict):
+        for kind in ("Column", "Measure"):
+            ref = node.get(kind)
+            if isinstance(ref, dict) and "Property" in ref:
+                found.append((kind, ref["Expression"]["SourceRef"]["Entity"], ref["Property"]))
+        for value in node.values():
+            found += fields_used(value)
+    elif isinstance(node, list):
+        for value in node:
+            found += fields_used(value)
+    return found
+
+
+def test_every_page_has_visuals():
+    pages = {p.parent.name for p in REPORT.glob("definition/pages/*/page.json")}
+
+    assert {v.parents[2].name for v in VISUALS} == pages
+
+
+@pytest.mark.parametrize("path", VISUALS, ids=lambda p: f"{p.parents[2].name}/{p.parent.name}")
+def test_visuals_are_valid_against_their_published_schema(path):
+    document = json.loads(path.read_text(encoding="utf-8"))
+    schema = json.loads((DEFINITIONS / "visualContainer/2.12.0/schema.json").read_text("utf-8"))
+
+    assert document["$schema"] == DEFINITION_URL + "visualContainer/2.12.0/schema.json"
+    validator = Draft7Validator(schema, registry=Registry(retrieve=retrieve))
+    assert [e.message for e in validator.iter_errors(document)] == []
+    assert document["name"] == path.parent.name
+
+
+@pytest.mark.parametrize("path", VISUALS, ids=lambda p: f"{p.parents[2].name}/{p.parent.name}")
+def test_visuals_use_only_fields_in_the_model(path):
+    fields = model_fields()
+    used = fields_used(json.loads(path.read_text(encoding="utf-8")))
+
+    assert [(kind, t, n) for kind, t, n in used if fields.get((t, n)) != kind] == []
+
+
+@pytest.mark.parametrize("path", VISUALS, ids=lambda p: f"{p.parents[2].name}/{p.parent.name}")
+def test_visuals_fit_on_their_page(path):
+    page = json.loads((path.parents[2] / "page.json").read_text(encoding="utf-8"))
+    box = json.loads(path.read_text(encoding="utf-8"))["position"]
+
+    assert 0 <= box["x"] and box["x"] + box["width"] <= page["width"]
+    assert 0 <= box["y"] and box["y"] + box["height"] <= page["height"]
+
+
+def test_every_page_carries_the_attribution():
+    """Both sources' NLOD attribution, in a footer on every page (#32, #54)."""
+    for page in sorted(REPORT.glob("definition/pages/*/page.json")):
+        footer = page.parent / "visuals" / "footer" / "visual.json"
+        text = footer.read_text(encoding="utf-8")
+
+        assert "distributed by Stavanger kommune and by Statens vegvesen" in text, page.parent.name
+        assert "https://data.norge.no/nlod/en/2.0" in text, page.parent.name
