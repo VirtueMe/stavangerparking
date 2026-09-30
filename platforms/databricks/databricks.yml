@@ -1,0 +1,138 @@
+# The Databricks deployment of the pipeline (ADR 011, docs/databricks.md).
+#
+#   platforms/databricks/deploy.sh dev              # a wheel built from this checkout
+#   platforms/databricks/deploy.sh prod v0.17.0     # a released wheel
+#
+# The workspace comes from the CLI profile (`databricks auth login`), not from this file.
+bundle:
+  name: stavanger_parking
+
+variables:
+  catalog:
+    description: The Unity Catalog catalog; Free Edition has one, `workspace`
+    default: workspace
+  schema:
+    description: The schema that holds the volumes and the published tables
+    default: stavanger_parking
+
+resources:
+  schemas:
+    stavanger_parking:
+      catalog_name: ${var.catalog}
+      name: ${var.schema}
+      comment: Stavanger parking; raw files, pipeline tables and the tables the report reads
+
+  volumes:
+    # The raw files, in the layout of `raw_path` in the source configuration
+    raw:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.stavanger_parking.name}
+      name: raw
+      volume_type: MANAGED
+    # Every layer's Delta tables, written by delta-rs; published as tables by `publish.py`
+    tables:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.stavanger_parking.name}
+      name: tables
+      volume_type: MANAGED
+
+  jobs:
+    pipeline:
+      name: stavanger_parking_pipeline
+      # Paused until Databricks is the collector of record: raw files arrive only by backfill
+      schedule:
+        quartz_cron_expression: "0 0/15 * * * ?"
+        timezone_id: Europe/Oslo
+        pause_status: PAUSED
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+            dependencies:
+              - ./dist/*.whl
+      tasks:
+        - task_key: pipeline
+          environment_key: default
+          # Serverless auto-optimization retries a failed task. A retry repeats a critical
+          # check's verdict and stores its results twice; the next scheduled run is the retry
+          # (while the schedule is paused, run the job again by hand)
+          disable_auto_optimization: true
+          python_wheel_task:
+            package_name: stavanger_parking
+            entry_point: stavanger-parking-pipeline
+            parameters:
+              - run
+              - --raw-root
+              - ${resources.volumes.raw.volume_path}
+              - --tables-root
+              - ${resources.volumes.tables.volume_path}
+              # A volume cannot rename without replacing, which a Delta commit needs; safe with
+              # one writer, which `max_concurrent_runs: 1` makes sure of. Anything else that
+              # writes these tables (maintenance, docs/maintenance.md) must be a task of this job
+              - --storage-option
+              - allow_unsafe_rename=true
+        # Also after a failed pipeline: a critical check (exit 3) leaves every table built, and
+        # the tables up to a failed step are consistent. The job still fails, and notifies.
+        - task_key: publish
+          depends_on:
+            - task_key: pipeline
+          run_if: ALL_DONE
+          environment_key: default
+          spark_python_task:
+            python_file: ./publish.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${resources.schemas.stavanger_parking.name}
+              - --tables-root
+              - ${resources.volumes.tables.volume_path}
+
+    collect:
+      name: stavanger_parking_collect
+      # Paused: GitHub Actions is the collector of record until the handover (ADR 011)
+      schedule:
+        quartz_cron_expression: "0 0/5 * * * ?"
+        timezone_id: Europe/Oslo
+        pause_status: PAUSED
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+            dependencies:
+              - ./dist/*.whl
+      tasks:
+        - task_key: collect
+          environment_key: default
+          # The next scheduled run is the retry, and adaptive polling decides whether it fetches;
+          # while the schedule is paused, run the job again by hand
+          disable_auto_optimization: true
+          python_wheel_task:
+            package_name: stavanger_parking
+            entry_point: stavanger-parking-collect
+            parameters:
+              - run
+              - --storage
+              # During the handover's overlap, point this at a comparison volume instead
+              - ${resources.volumes.raw.volume_path}
+              - --run-id
+              - "databricks-{{job.run_id}}"
+
+targets:
+  # Resources are prefixed with the deploying user (the schema too), and schedules stay paused
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}

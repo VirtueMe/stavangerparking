@@ -171,6 +171,17 @@ def test_cli_passes_storage_options(monkeypatch, tmp_path):
     assert seen["storage_options"] == {"bearer_token": "abc=", "use_fabric_endpoint": "true"}
 
 
+def test_the_entry_point_exits_with_the_code_of_the_run(monkeypatch, tmp_path):
+    """A wheel task may call the function rather than run the script: the code must not be lost."""
+    argv = ["run", "--raw-root", str(tmp_path / "raw"), "--tables-root", str(tmp_path / "t")]
+    monkeypatch.setattr("sys.argv", ["stavanger-parking-pipeline", *argv])
+
+    with pytest.raises(SystemExit) as exit:
+        pipeline.entry()
+
+    assert exit.value.code == 1
+
+
 def test_cli_rejects_a_malformed_storage_option(tmp_path):
     with pytest.raises(SystemExit) as exit:
         cli(tmp_path, str(tmp_path), "--storage-option=no-equals-sign")
@@ -192,12 +203,12 @@ def test_the_installed_wheel_runs_the_pipeline_with_its_own_configuration(roots,
     python = venv / ("Scripts" if os.name == "nt" else "bin") / "python"
     subprocess.run(["uv", "pip", "install", "-q", "--python", python, wheel], check=True)
 
-    # No configuration arguments, and a working directory without a config folder
+    # The console script the platforms' jobs call, with no configuration arguments, from a
+    # working directory without a config folder
+    script = python.parent / ("stavanger-parking-pipeline" + (".exe" if os.name == "nt" else ""))
     run = subprocess.run(
         [
-            python,
-            "-m",
-            "stavanger_parking.pipeline",
+            script,
             "run",
             "--raw-root",
             raw,
