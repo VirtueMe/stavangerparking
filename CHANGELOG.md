@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.15.2] - 2026-09-30
+
+### Documentation
+
+- **adr:** One repository for Fabric and Databricks ([#78](https://github.com/VirtueMe/stavangerparking/pull/78))
+
 ## [0.15.1] - 2026-09-29
 
 ### Documentation
