@@ -1,0 +1,128 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "free-spaces-line",
+  "position": {
+    "x": 16,
+    "y": 188,
+    "z": 3000,
+    "height": 484,
+    "width": 1248,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_date"
+                    }
+                  },
+                  "Property": "date"
+                }
+              },
+              "queryRef": "dim_date.date",
+              "nativeQueryRef": "date",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_hourly"
+                    }
+                  },
+                  "Property": "hour"
+                }
+              },
+              "queryRef": "fact_parking_hourly.hour",
+              "nativeQueryRef": "hour"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_hourly"
+                    }
+                  },
+                  "Property": "Free spaces (avg)"
+                }
+              },
+              "queryRef": "fact_parking_hourly.Free spaces (avg)",
+              "nativeQueryRef": "Free spaces (avg)"
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_parking_facility"
+                    }
+                  },
+                  "Property": "facility_name"
+                }
+              },
+              "queryRef": "dim_parking_facility.facility_name",
+              "nativeQueryRef": "facility_name"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "dim_date"
+                  }
+                },
+                "Property": "date"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Free spaces (time-weighted average) by date, drill down to hour'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

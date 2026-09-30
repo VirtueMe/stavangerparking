@@ -1,0 +1,43 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "footer",
+  "position": {
+    "x": 16,
+    "y": 678,
+    "z": 9000,
+    "height": 38,
+    "width": 1248,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune and by Statens vegvesen. ",
+                    "textStyle": {
+                      "fontSize": "9pt"
+                    }
+                  },
+                  {
+                    "value": "NLOD 2.0",
+                    "textStyle": {
+                      "fontSize": "9pt"
+                    },
+                    "url": "https://data.norge.no/nlod/en/2.0"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

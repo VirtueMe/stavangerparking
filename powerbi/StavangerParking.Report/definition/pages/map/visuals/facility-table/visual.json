@@ -1,0 +1,102 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "facility-table",
+  "position": {
+    "x": 852,
+    "y": 60,
+    "z": 3100,
+    "height": 612,
+    "width": 412,
+    "tabOrder": 3100
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_parking_facility"
+                    }
+                  },
+                  "Property": "facility_name"
+                }
+              },
+              "queryRef": "dim_parking_facility.facility_name",
+              "nativeQueryRef": "facility_name"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_availability"
+                    }
+                  },
+                  "Property": "Capacity"
+                }
+              },
+              "queryRef": "fact_parking_availability.Capacity",
+              "nativeQueryRef": "Capacity"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_availability"
+                    }
+                  },
+                  "Property": "Free spaces (latest)"
+                }
+              },
+              "queryRef": "fact_parking_availability.Free spaces (latest)",
+              "nativeQueryRef": "Free spaces (latest)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_hourly"
+                    }
+                  },
+                  "Property": "Occupancy"
+                }
+              },
+              "queryRef": "fact_parking_hourly.Occupancy",
+              "nativeQueryRef": "Occupancy"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Facilities'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "holiday-hint",
+  "position": {
+    "x": 708,
+    "y": 60,
+    "z": 2200,
+    "height": 112,
+    "width": 400,
+    "tabOrder": 2200
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Choose False under Public holiday to leave the 13 public holidays out of the pattern.",
+                    "textStyle": {
+                      "fontSize": "10pt"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

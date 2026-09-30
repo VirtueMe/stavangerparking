@@ -21,6 +21,7 @@ stavanger-parking-collect = "stavanger_parking.bronze.collect:entry"
 dev = [
     "jsonschema>=4.23",
     "pytest>=9.1",
+    "referencing>=0.36",
     "ruff>=0.16",
 ]
 powerbi = [

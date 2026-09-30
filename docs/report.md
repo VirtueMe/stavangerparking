@@ -13,7 +13,7 @@ powerbi/
     └── definition/                       # PBIR: report, pages
 ```
 
-**Status:** written and checked without Power BI. The project files validate against Microsoft's published schemas, and the model's tables, columns and relationships are tested against the tables the gold build writes (`tests/test_powerbi.py`). **On Databricks it runs in the Power BI service** (2026-09-30): `tools/report -p databricks --prod` published it to the Pro workspace, a refresh loaded all five tables with the row counts the pipeline wrote (`dim_date` 5844, `dim_time` 1440, `dim_parking_facility` 10, `fact_parking_availability` 9, `fact_parking_hourly` 1431), and every measure evaluates. It has **not been opened in Power BI Desktop or rendered**: the pages have no visuals yet, and the layout below is the specification for them.
+**Status:** written without Power BI Desktop and running in the Power BI service. The project files, the visuals included, validate against Microsoft's published schemas, and the model's tables, columns and relationships are tested against the tables the gold build and the quality checks write (`tests/test_powerbi.py`). **On Databricks it runs in the Power BI service** (2026-09-30): `tools/report -p databricks --prod` published it to the Pro workspace, a refresh loaded all five tables with the row counts the pipeline wrote (`dim_date` 5844, `dim_time` 1440, `dim_parking_facility` 10, `fact_parking_availability` 9, `fact_parking_hourly` 1431), and every measure evaluates. **All five pages render with data** in the service (checked by eye on 2026-09-30, #87); the report has not been opened in Power BI Desktop.
 
 ## Opening it
 
@@ -50,7 +50,7 @@ tools/report -p databricks                    # dev: the dev schema, published t
 
 ## The model
 
-Three dimensions and two facts, as in the star schema, joined fact to dimension:
+Three dimensions and two facts, as in the star schema, joined fact to dimension, and the quality results (`quality_check_results`, [`docs/quality.md`](quality.md)) as a table of their own, related to nothing:
 
 | Relationship | |
 |---|---|
@@ -68,33 +68,35 @@ Every column has a description (from `docs/gold.md`). Month and weekday names so
 | `Free spaces (min)`, `Free spaces (max)` | hourly | The lowest and highest single reading in the selection |
 | `Occupancy` | hourly | Share of capacity in use, over facilities with a known capacity; outside 0–100 % means the capacity is wrong |
 | `Covered minutes`, `Stale minutes`, `Stale share` | hourly | How much of the time is covered by readings, and how much of it rests on stale data |
+| `Capacity` | availability | The facilities' capacity from the national parking register, summed; blank without one |
 | `Readings` | availability | Number of source readings; never average over them unweighted |
 | `Data age (minutes)` | availability | How old the newest reading was at the last fetch that saw it |
 | `Source status` | availability | `Stale` if a current reading was seen stale, otherwise `Fresh` |
 | `Attribution` | availability | The NLOD 2.0 attribution text for both sources |
+| `Failed checks (latest run)` | quality results | Failed checks in the latest quality run; blank for older runs, so a table of checks lists only the latest failures |
 
 These follow the rules in [`docs/gold.md`](gold.md): readings are irregular, so averages are weighted by time; free spaces are semi-additive, so they add up across facilities at one time, never over time.
 
 ## Pages
 
-The report has five pages. Their layout is specified here and done in Power BI Desktop:
+The report has five pages, each with a title and the attribution footer. The visuals are PBIR files, one folder per visual in `powerbi/StavangerParking.Report/definition/pages/<page>/visuals/`, written as files rather than in Power BI Desktop, reviewed in pull requests and published with `tools/report` (#87):
 
 | Page | Visuals |
 |---|---|
 | **Availability over time** | Line chart of `Free spaces (avg)` by `dim_date[date]` and `fact_parking_hourly[hour]`, one line per `facility_name`; a card with `Free spaces (latest)`; slicers for date and facility |
 | **Weekday and hour patterns** | Matrix of `Occupancy` (or `Free spaces (avg)`) with `dim_date[weekday]` in rows and `fact_parking_hourly[hour]` in columns, conditional formatting as a heat map; slicer for facility; a toggle to exclude public holidays (`dim_date[is_public_holiday]`) |
-| **Facilities on the map** | Map with `dim_parking_facility[latitude]`, `[longitude]`, bubble size `Free spaces (latest)`, tooltip with `capacity` and `Occupancy` |
-| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; column chart of `Stale share` and `Covered minutes` by date; table of the latest `quality_check_results` failures once that table is added to the model |
+| **Facilities on the map** | Azure Maps bubbles at `dim_parking_facility[latitude]`, `[longitude]`, sized by `Free spaces (latest)`, tooltip with `Capacity` and `Occupancy`; beside it a table of the same figures, which also stands in for the map if the tenant has map visuals turned off |
+| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; column chart of `Stale share` and `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
 | **About the data** | A text box or card with `Attribution`, links to the licence and the sources, and a note on what the stale and occupancy figures mean |
 
 The **attribution** is required by the NLOD 2.0 licences of both sources (#32, #54): *Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune* (Stavanger parkering) and *by Statens vegvesen* (Parkeringsregisteret), with a link to the licence, <https://data.norge.no/nlod/en/2.0>. It belongs on the About page and, if the report is published, in a footer on every page.
 
 ## Not verified yet
 
-Until the project is opened in Power BI Desktop or Fabric:
+Until the project is opened in Power BI Desktop or on Fabric:
 
 - **The M data source.** `DeltaLake.Table(Folder.Contents(...))` for a local folder is the documented function with a folder listing; whether it reads the local Delta tables as written by delta-rs has not been tried. The Databricks source refreshes in the service; the Fabric source follows the navigation its connector generates and has not been tried (#16).
-- **The DAX in visuals.** Every measure evaluates over the whole model in the service (a `ROW` of all of them through the `executeQueries` API), but not yet per facility, hour or date, as the pages will slice them.
+- **Formatting in the visual files.** The published schemas type a visual's query and position, but leave its formatting (titles, colours, labels) loosely typed, so a mistake there passes the tests and shows only in the service. Text boxes need room for their text plus padding, or Power BI adds a scrollbar: check a changed page by eye after publishing.
 - **The theme** named in `report.json` (`CY24SU10`), a built-in theme name that may not match the installed version of Power BI Desktop; if Desktop objects, pick a theme there and save.
 
 Whatever Power BI Desktop changes when the project is first saved should be committed, and `tests/test_powerbi.py` keeps the model's columns in step with the code from then on.
