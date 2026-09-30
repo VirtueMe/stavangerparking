@@ -150,14 +150,20 @@ def find_gaps(
 
     Intended slow-mode intervals are not gaps: each sidecar records when the next was due. With
     `now`, a latest snapshot whose successor is overdue is reported as an open gap.
+
+    An on-demand snapshot has no next due time, so it starts no gap, but as a snapshot it can end
+    one. A history mixes the two only where a source's `polling` changed, such as the register
+    becoming hourly (ADR 010).
     """
     for previous, following in pairwise(sidecars):
+        if previous.get("next_due") is None:
+            continue
         expected = datetime.fromisoformat(previous["next_due"])
         arrived = datetime.fromisoformat(following["ingested_at"])
         if arrived > expected + tolerance:
             after = datetime.fromisoformat(previous["ingested_at"])
             yield Gap(after=after, expected_by=expected, next_snapshot=arrived)
-    if sidecars and now is not None:
+    if sidecars and now is not None and sidecars[-1].get("next_due") is not None:
         expected = datetime.fromisoformat(sidecars[-1]["next_due"])
         if now > expected + tolerance:
             after = datetime.fromisoformat(sidecars[-1]["ingested_at"])
