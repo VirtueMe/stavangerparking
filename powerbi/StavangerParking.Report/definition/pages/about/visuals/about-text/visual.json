@@ -127,7 +127,7 @@
                     }
                   },
                   {
-                    "value": ": the share of capacity in use, from the time-weighted average of free spaces. It uses each facility's capacity in the register, which can be wrong: Forum reports more free spaces than its registered capacity, so its occupancy is negative."
+                    "value": ": the share of capacity in use, from the time-weighted average of free spaces. It uses each facility's capacity in the register: every kind of space it lists, paid, charging and accessible. A capacity that is too low shows as negative occupancy, and stops the pipeline's quality checks."
                   }
                 ]
               },

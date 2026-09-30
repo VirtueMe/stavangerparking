@@ -46,8 +46,13 @@ def fetches(*rows: tuple[str, str, timedelta, str | None]) -> pl.DataFrame:
     )
 
 
-def areas(*rows: tuple[int, int | None, datetime | None], at: datetime = T0) -> pl.DataFrame:
-    """Register areas of one snapshot: (register id, paid spaces, deactivated at)."""
+def areas(
+    *rows: tuple[int, int | None, datetime | None], at: datetime = T0, **spaces: list[int | None]
+) -> pl.DataFrame:
+    """Register areas of one snapshot: (register id, paid spaces, deactivated at).
+
+    Other kinds of space, such as `charging_spaces=[30]`, are given per row; left out, they are 0.
+    """
     given = {
         "register_id": [rid for rid, _, _ in rows],
         "paid_spaces": [paid for _, paid, _ in rows],
@@ -55,6 +60,8 @@ def areas(*rows: tuple[int, int | None, datetime | None], at: datetime = T0) -> 
         "ingested_at": [at] * len(rows),
         "changed_at": [datetime(2024, 2, 16, tzinfo=UTC)] * len(rows),
     }
+    for kind in ("free_spaces", "charging_spaces", "accessible_spaces"):
+        given[kind] = spaces.get(kind, [0] * len(rows))
     return pl.DataFrame(
         {c: given.get(c, [None] * len(rows)) for c in AREA_SCHEMA}, schema=AREA_SCHEMA
     )
@@ -155,3 +162,34 @@ def test_existing_keys_are_kept_and_new_ones_continue_after_the_highest():
         "Forum": 7,
         "Jernbanen": 8,
     }
+
+
+def test_capacity_counts_every_kind_of_space():
+    """Forum on 2026-09-30: 289 paid, 19 charging and 2 accessible spaces; the feed saw 292 free."""
+    rows = fetches(("a.json", "Forum", timedelta(0), "58.3"))
+    register = areas(
+        (46816, 289, None), free_spaces=[0], charging_spaces=[19], accessible_spaces=[2]
+    )
+
+    attrs = by_name(facility_attributes(rows, register, MAPPING))
+
+    assert attrs["Forum"]["capacity"] == 310
+
+
+def test_a_kind_the_register_leaves_out_adds_nothing_but_paid_spaces_are_needed():
+    rows = fetches(
+        ("a.json", "Jernbanen", timedelta(0), "58.1"),
+        ("a.json", "Forum", timedelta(0), "58.3"),
+    )
+    register = areas(
+        (3650, 390, None),
+        (46816, None, None),
+        free_spaces=[None, 0],
+        charging_spaces=[30, 19],
+        accessible_spaces=[None, 2],
+    )
+
+    attrs = by_name(facility_attributes(rows, register, MAPPING))
+
+    assert attrs["Jernbanen"]["capacity"] == 420
+    assert attrs["Forum"]["capacity"] is None

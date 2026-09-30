@@ -49,7 +49,7 @@ The checks look at the **latest parking snapshot** (the newest raw file, whether
 
 On the real data, the checks fail on one critical and one warning:
 
-- **`free_exceeds_capacity`, Forum: 292 free of 289.** The register's capacity for Forum is too low; the operator's website says 325. The run stops until the capacity is corrected ([ADR 005](adr/005-capacity-as-reference-data.md), noted in the facility mapping).
+- **`free_exceeds_capacity`, Forum: 292 free of 289** (until #91). Capacity was the register's *paid* spaces, while the feed counts free spaces of every kind; Forum also has 19 charging and 2 accessible spaces. The check stopped every run until capacity counted every kind of space: 310 for Forum ([ADR 005](adr/005-capacity-as-reference-data.md#addendum-2026-09-30-capacity-counts-every-kind-of-space)). It is the check working as meant: it found a wrong assumption, not a wrong number.
 - **`source_stale`: the data is about 5.8 days old**, since the feed froze on 23 September.
 
 Everything else passes: the schema is as expected, the snapshot has its 9 facilities, all mapped and inside the Stavanger area, and the register has every mapped area.
