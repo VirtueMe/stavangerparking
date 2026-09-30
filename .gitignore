@@ -27,3 +27,6 @@ htmlcov/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Generated Power BI projects (tools/report)
+/dist/

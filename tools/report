@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Build the Power BI project against a platform's tables and publish it: dev by default, --prod for prod
+#
+#   tools/report -p databricks
+#   tools/report -p databricks --prod --dry-run     # build dist/powerbi-databricks-prod/ only
+#
+# Options and how the platform is chosen: tools/platform.sh
+exec "$(dirname "$0")/platform.sh" report "$@"
