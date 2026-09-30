@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.16.0] - 2026-09-30
+
+### Features
+
+- **pipeline:** One entry point for the whole pipeline ([#79](https://github.com/VirtueMe/stavangerparking/pull/79))
+
 ## [0.15.2] - 2026-09-30
 
 ### Documentation
