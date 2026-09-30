@@ -13,7 +13,7 @@ powerbi/
     └── definition/                       # PBIR: report, pages
 ```
 
-**Status:** written and checked without Power BI. The project files validate against Microsoft's published schemas, and the model's tables, columns and relationships are tested against the tables the gold build writes (`tests/test_powerbi.py`). Power BI Desktop runs only on Windows and there is no Fabric workspace yet (#16), so the model has **not been opened, refreshed or rendered**; the pages have no visuals yet, and the layout below is the specification for them.
+**Status:** written and checked without Power BI. The project files validate against Microsoft's published schemas, and the model's tables, columns and relationships are tested against the tables the gold build writes (`tests/test_powerbi.py`). **On Databricks it runs in the Power BI service** (2026-09-30): `tools/report -p databricks --prod` published it to the Pro workspace, a refresh loaded all five tables with the row counts the pipeline wrote (`dim_date` 5844, `dim_time` 1440, `dim_parking_facility` 10, `fact_parking_availability` 9, `fact_parking_hourly` 1431), and every measure evaluates. It has **not been opened in Power BI Desktop or rendered**: the pages have no visuals yet, and the layout below is the specification for them.
 
 ## Opening it
 
@@ -28,7 +28,25 @@ powerbi/
 2. Open `powerbi/StavangerParking.pbip` in Power BI Desktop.
 3. Set the parameter **TablesRoot** (*Transform data → Edit parameters*) to that folder, and refresh.
 
-The data source is defined once, in `expressions.tmdl`: `TablesRoot` and a `DeltaTable(name)` function that reads a Delta table with `DeltaLake.Table`. Every table's partition calls `DeltaTable("<table>")`. **On Fabric** (#16), the tables live in the Lakehouse: point `DeltaTable` at the Lakehouse, or switch the partitions to Direct Lake; nothing else in the model changes.
+The data source is defined once, in `expressions.tmdl`: `TablesRoot` and a `DeltaTable(name)` function that reads a Delta table with `DeltaLake.Table`. Every table's partition calls `DeltaTable("<table>")`.
+
+## On a platform
+
+On Databricks and Fabric the model reads the platform's tables instead. The model in `powerbi/` is not edited for that: `tools/report` generates a copy whose `expressions.tmdl` is the platform's own, [`platforms/<platform>/report/expressions.tmdl`](../platforms/databricks/report/expressions.tmdl), and publishes it to Power BI. Only that file differs, and it defines the same `DeltaTable(name)`, so the tables, measures and pages stay one definition (`tests/test_powerbi_platforms.py`).
+
+```sh
+uv run --only-group powerbi fab auth login   # once: the Fabric CLI, signed in as you
+tools/report -p databricks --prod --dry-run   # generate dist/powerbi-databricks-prod/ only
+tools/report -p databricks --prod             # generate it and publish to "Stavanger Parking Case"
+tools/report -p databricks                    # dev: the dev schema, published to "My workspace"
+```
+
+- **One data source per generated model.** A single model that picks its source with an `if` on a parameter is simpler to switch in Desktop, but the Power BI service does not refresh a query whose data source depends on such a switch. Generating the model per platform keeps the service's view to one source.
+- **Databricks** reads the Unity Catalog tables that the pipeline job's `publish` task writes ([`docs/databricks.md`](databricks.md)), through a SQL warehouse, with the Databricks connector. [`report.sh`](../platforms/databricks/report.sh) takes the host from the CLI profile, the warehouse's HTTP path from the workspace (`DATABRICKS_WAREHOUSE` names one if there are several), and the catalog and schema from the bundle target, so the workspace stays out of the repository. `POWERBI_WORKSPACE` overrides the Power BI workspace.
+- **Fabric** reads the Lakehouse tables through its SQL analytics endpoint in import mode. It is written but not tried (#16), and has no `report.sh` until Fabric has a platform folder. Direct Lake would need other partitions, not another function.
+- **Publishing** imports the semantic model and then the report with the [Fabric CLI](https://aka.ms/fabric-cli) (dependency group `powerbi`), through the Fabric REST API; this works on a Pro workspace, no Fabric capacity needed. The published report points at the published model by its id. Publishing replaces both, so changes made in the service are lost at the next publish: the repository is the definition. On Linux without a keyring, the CLI's login needs `fab config set encryption_fallback_enabled true`, which stores its token unencrypted under `~/.config/fab/`.
+- **After the first publish**, set the model's credentials once in the Power BI service (the semantic model's *Settings → Data source credentials*): for Databricks, a personal access token. A cloud source needs no gateway on Pro. Then refresh, or set a refresh schedule there.
+- `--dry-run` only generates the project. It opens in Power BI Desktop as it is, with the model next to the report, which is also how to use it on a machine without the Fabric CLI.
 
 ## The model
 
@@ -75,8 +93,8 @@ The **attribution** is required by the NLOD 2.0 licences of both sources (#32, #
 
 Until the project is opened in Power BI Desktop or Fabric:
 
-- **The M data source.** `DeltaLake.Table(Folder.Contents(...))` for a local folder is the documented function with a folder listing; whether it reads the local Delta tables as written by delta-rs has not been tried.
-- **The DAX.** The measures follow the documented functions and the model's rules, but have not been evaluated.
+- **The M data source.** `DeltaLake.Table(Folder.Contents(...))` for a local folder is the documented function with a folder listing; whether it reads the local Delta tables as written by delta-rs has not been tried. The Databricks source refreshes in the service; the Fabric source follows the navigation its connector generates and has not been tried (#16).
+- **The DAX in visuals.** Every measure evaluates over the whole model in the service (a `ROW` of all of them through the `executeQueries` API), but not yet per facility, hour or date, as the pages will slice them.
 - **The theme** named in `report.json` (`CY24SU10`), a built-in theme name that may not match the installed version of Power BI Desktop; if Desktop objects, pick a theme there and save.
 
 Whatever Power BI Desktop changes when the project is first saved should be committed, and `tests/test_powerbi.py` keeps the model's columns in step with the code from then on.
