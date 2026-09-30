@@ -61,6 +61,30 @@ def test_discrepancies_between_sources_are_noted():
     assert "390" in notes["Jernbanen"] and "500" in notes["Jernbanen"]
 
 
+def test_forum_has_its_reserved_spaces_with_their_source():
+    forum = next(m for m in load_facility_mapping(MAPPING) if m.facility == "Forum")
+
+    assert forum.reserved_spaces == 26
+    assert "sign plan 100557" in forum.note
+    assert {m.reserved_spaces for m in load_facility_mapping(MAPPING) if m.facility != "Forum"} == {
+        0
+    }
+
+
+@pytest.mark.parametrize("value", [-1, 2.5, "26", True])
+def test_reserved_spaces_must_be_a_non_negative_integer(data, value):
+    data["facilities"][0]["reserved_spaces"] = value
+
+    assert "reserved_spaces must be a non-negative integer" in problems_of(data)
+
+
+def test_reserved_spaces_need_a_note_with_their_source(data):
+    entry = next(e for e in data["facilities"] if "note" not in e)
+    entry["reserved_spaces"] = 3
+
+    assert "reserved_spaces needs a note giving its source" in problems_of(data)
+
+
 @pytest.mark.parametrize("field", ["facility", "register_name", "operator_name"])
 def test_missing_text_field_is_named(data, field):
     del data["facilities"][0][field]
