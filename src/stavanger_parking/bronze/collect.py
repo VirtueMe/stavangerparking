@@ -104,5 +104,10 @@ def _report(lines: list[str]) -> None:
             f.write("```\n" + text + "\n```\n")
 
 
-if __name__ == "__main__":
+def entry() -> None:
+    """The console script: exits with `main`'s code, however the caller starts it."""
     sys.exit(main())
+
+
+if __name__ == "__main__":
+    entry()
