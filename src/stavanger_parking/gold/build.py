@@ -188,6 +188,21 @@ def _overwrite(frame: pl.DataFrame, path: str, storage_options) -> None:
     )
 
 
+def run(
+    tables_root: str,
+    mapping_path=DEFAULT_MAPPING,
+    config_path=DEFAULT_CONFIG,
+    tariffs_path=DEFAULT_TARIFFS,
+    rules_path=DEFAULT_RULES,
+    storage_options=None,
+) -> list[str]:
+    """Write the gold tables; returns the report, a line per table."""
+    written = build(
+        tables_root, mapping_path, config_path, tariffs_path, rules_path, storage_options
+    )
+    return [f"{name}: {rows} row(s)" for name, rows in written.items()]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m stavanger_parking.gold.build")
     parser.add_argument("--tables-root", required=True, help="folder or URI of the tables")
@@ -198,12 +213,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        written = build(args.tables_root, args.mapping, args.config, args.tariffs, args.rules)
+        lines = run(args.tables_root, args.mapping, args.config, args.tariffs, args.rules)
     except BuildError as e:
         print(e, file=sys.stderr)
         return 1
-    for name, rows in written.items():
-        print(f"{name}: {rows} row(s)")
+    for line in lines:
+        print(line)
     return 0
 
 

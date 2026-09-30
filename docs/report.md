@@ -20,10 +20,10 @@ powerbi/
 1. Build the tables into a folder the Windows machine can read, for example `C:\stavangerparking\tables`:
 
     ```sh
-    uv run python -m stavanger_parking.bronze.load --raw-root <data branch> --tables-root C:\stavangerparking\tables
-    uv run python -m stavanger_parking.silver.build --tables-root C:\stavangerparking\tables
-    uv run python -m stavanger_parking.gold.build --tables-root C:\stavangerparking\tables
+    uv run python -m stavanger_parking.pipeline run --raw-root <data branch> --tables-root C:\stavangerparking\tables
     ```
+
+    It also runs the quality checks. While Forum's capacity in the register is wrong, it ends with exit code 3; the tables are built all the same ([`docs/pipeline.md`](pipeline.md#exit-codes)).
 
 2. Open `powerbi/StavangerParking.pbip` in Power BI Desktop.
 3. Set the parameter **TablesRoot** (*Transform data → Edit parameters*) to that folder, and refresh.
