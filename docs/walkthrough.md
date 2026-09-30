@@ -1,23 +1,26 @@
 # Walkthrough: 22 October 2026
 
-A 10–15 minute walkthrough of the case, following its requirements: the architecture and data model, fetching the data, the platform, the report, a new facility, scalability, PySpark or Polars, and the weaknesses. Each part says **what to show** and **what to say**; the links go to the detail, for questions.
+A 10–15 minute walkthrough of the case, following its requirements: the architecture and data model, fetching the data, the platform, a change made live, the report, a new facility, scalability, PySpark or Polars, and the weaknesses. Each part says **what to show** and **what to say**; the links go to the detail, for questions.
 
-About 14 minutes in all, then questions.
+About 15 minutes in all, then questions.
 
 | # | Part | Minutes | Case requirement |
 |---|---|---|---|
 | 1 | [The case and where it stands](#1-the-case-and-where-it-stands) | 1 | |
-| 2 | [Architecture and data flow](#2-architecture-and-data-flow) | 2 | Overview of the data model and data flow; medallion structure |
+| 2 | [Architecture and data flow](#2-architecture-and-data-flow) | 1.5 | Overview of the data model and data flow; medallion structure |
 | 3 | [The data model](#3-the-data-model) | 1.5 | Suitable fact and dimension tables |
-| 4 | [Fetching the data, outside the platform](#4-fetching-the-data-outside-the-platform) | 2 | Fetch data programmatically from opencom.no |
+| 4 | [Fetching the data, outside the platform](#4-fetching-the-data-outside-the-platform) | 1.5 | Fetch data programmatically from opencom.no |
 | 5 | [One repository, two platforms](#5-one-repository-two-platforms) | 2 | Lakehouse, notebooks, pipelines with dependencies and failure alerts |
-| 6 | [The report, live](#6-the-report-live) | 2 | Optional: visualise in Power BI |
-| 7 | [A new facility](#7-a-new-facility) | 1 | How the code handles a new parking facility |
-| 8 | [Scalability, and PySpark or Polars](#8-scalability-and-pyspark-or-polars) | 1.5 | Is the solution scalable? PySpark vs. Polars |
-| 9 | [Known weaknesses](#9-known-weaknesses) | 1 | Potential weaknesses |
+| 6 | [A change, live](#6-a-change-live) | 1.5 | How changes reach the platform |
+| 7 | [The report, live](#7-the-report-live) | 2 | Optional: visualise in Power BI |
+| 8 | [A new facility](#8-a-new-facility) | 1 | How the code handles a new parking facility |
+| 9 | [Scalability, and PySpark or Polars](#9-scalability-and-pyspark-or-polars) | 1.5 | Is the solution scalable? PySpark vs. Polars |
+| 10 | [Known weaknesses, and the change landing](#10-known-weaknesses-and-the-change-landing) | 1.5 | Potential weaknesses |
 
 ## Before the meeting
 
+- **The change for part 6:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91) (capacity counts every kind of space) is open, its checks are green, and it merges without conflicts; rebase it if `main` has moved. Do not merge it before the meeting.
+- **Logins for part 6:** `gh auth status`, `databricks auth describe` and `uv run --only-group powerbi fab auth status` all say you are signed in, and `tools/deploy -p databricks --prod --dry-run` plans without errors.
 - **Bring Databricks up to date:** `tools/backfill -p databricks --prod` copies the new raw files from the `data` branch and runs the pipeline. It ends with exit code 3 while Forum's capacity is wrong; the tables are published all the same ([`docs/databricks.md`](databricks.md#backfill)).
 - **Refresh the report** in the Power BI service (the semantic model's *Refresh now*), and check the freshness page shows today's data age.
 - **Check collection is running:** the latest commit on the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data) is minutes old, and `collect gaps` lists nothing new ([`docs/collector.md`](collector.md)).
@@ -83,9 +86,23 @@ About 14 minutes in all, then questions.
 - `tools/deploy`, `tools/backfill` and `tools/report` do the same thing on either platform, with a dry run first.
 - **Collection stays in one place** until a platform takes over with a handover, so every period of history has exactly one collector. Databricks' collector is deployed but paused: Free Edition blocks the sources.
 
-## 6. The report, live
+## 6. A change, live
 
-**Show:** the report in the service, page by page.
+**Show:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91), then GitHub Actions, then a terminal.
+
+**Say, while doing it:**
+
+- **The finding:** the quality check has stopped every run since the first one, because Forum reports 292 free spaces and the register says 289. The field is the register's *paid* spaces; Forum also has 19 charging and 2 accessible spaces, so 310 in all. The check did its job: it found a wrong assumption, not a wrong number.
+- **The change:** one function, `capacity()`, an ADR 005 addendum that says what the reading rests on, and tests. Merge it (squash).
+- **What happens next, without anyone deploying by hand from a branch:**
+  1. The merge makes a release, about 20 seconds: a tag, the changelog, and the wheel on the GitHub Release.
+  2. `tools/deploy -p databricks --prod` installs that release, the latest by default (about a minute; `--dry-run` first shows the plan).
+  3. `tools/backfill -p databricks --prod` runs the pipeline with the new wheel (about 3–4 minutes). **Leave it running and go on to part 7.**
+- **If anything goes wrong:** `tools/deploy -p databricks --prod v0.20.1` puts the previous release back.
+
+## 7. The report, live
+
+**Show:** the report in the service, page by page. It still shows the data from before the change: the backfill from part 6 is running.
 
 **Say:**
 
@@ -96,7 +113,7 @@ About 14 minutes in all, then questions.
 - **About:** both sources, the NLOD attribution (also in every page's footer), and what "stale" and "occupancy" mean.
 - The model and report are files in the repository, published with `tools/report`, which gives each platform its own data source so the service can refresh it ([`docs/report.md`](report.md#on-a-platform)).
 
-## 7. A new facility
+## 8. A new facility
 
 **Show:** [A new facility](../README.md#a-new-facility), and the test [`test_a_new_facility_appears_on_the_next_run_with_unknown_capacity`](../tests/gold/test_gold_build.py).
 
@@ -106,7 +123,7 @@ About 14 minutes in all, then questions.
 - **Its capacity is unknown until someone adds it to the facility mapping**, one line. Until then, the quality check stops the run, deliberately, so a new facility cannot go unnoticed.
 - A facility that disappears is marked inactive, never deleted. A renamed one appears as new, because the feed has no id: the name is the key ([ADR 004](adr/004-facility-name-as-natural-key.md)).
 
-## 8. Scalability, and PySpark or Polars
+## 9. Scalability, and PySpark or Polars
 
 **Show:** [How it scales](../README.md#how-it-scales).
 
@@ -117,7 +134,7 @@ About 14 minutes in all, then questions.
 - **What changes first:** derive only the dates a run touches, or move to Spark, before the fetch table nears 20 million rows. The Delta tables are engine-neutral, so readers and the report are unaffected, and the transformations are pure functions with tests that serve as the specification for a rewrite.
 - **What does not scale by configuration:** a second municipality. The model is written for one parking source; it needs a field mapping and the source in the facility's key.
 
-## 9. Known weaknesses
+## 10. Known weaknesses, and the change landing
 
 **Show:** [Known weaknesses](../README.md#known-weaknesses), and mention that [`docs/weaknesses.md`](weaknesses.md) has been kept as each trade-off was made.
 
@@ -128,6 +145,10 @@ About 14 minutes in all, then questions.
 - **Collection** depends on cron-job.org, and nothing alerts if its calls stop; gaps are listed afterwards from the sidecars.
 - **The facility name as key:** a rename splits a facility's history.
 - **The platform:** Databricks Free Edition cannot reach the sources, and deploying is manual (#83).
+
+**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has only the `source_stale` warning, and Forum's occupancy is 18 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
+
+After the meeting, `tools/report -p databricks --prod` publishes the About page's new wording on capacity; the figures are already right after the refresh.
 
 ## Likely questions
 
