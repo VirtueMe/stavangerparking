@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.18.0] - 2026-09-30
+
+### Features
+
+- **tools:** Run platform scripts with --platform or PLATFORM from .env ([#84](https://github.com/VirtueMe/stavangerparking/pull/84))
+
 ## [0.17.0] - 2026-09-30
 
 ### Features
