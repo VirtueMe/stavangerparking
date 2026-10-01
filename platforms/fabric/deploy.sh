@@ -7,9 +7,11 @@
 #   platforms/fabric/deploy.sh --dry-run prod      # prepare dist/ and check the workspace, deploy nothing
 #
 # The items in workspace/ are deployed with fabric-cicd (`fab deploy`), which creates or updates them
-# and fills in the IDs parameter.yml names. The workspace is not in the repository: FABRIC_WORKSPACE
-# names the prod workspace, FABRIC_DEV_WORKSPACE the dev one. FABRIC_ALERT_EMAIL is where a failed
-# pipeline e-mails (default: the signed-in account). Not yet run against a real workspace (#16).
+# and fills in the IDs parameter.yml names. The wheel's dependencies are installed at the versions in
+# uv.lock (the checkout's for dev, the release tag's for prod; tools/requirements.sh, ADR 012), as CI
+# tests them. The workspace is not in the repository: FABRIC_WORKSPACE names the prod workspace,
+# FABRIC_DEV_WORKSPACE the dev one. FABRIC_ALERT_EMAIL is where a failed pipeline e-mails (default:
+# the signed-in account). Not yet run against a real workspace (#16).
 set -euo pipefail
 cd "$(dirname "$0")"
 # The Fabric CLI is in the dependency group "powerbi"; use it from there unless it is installed
@@ -32,11 +34,16 @@ out=$(cd ../.. && pwd)/dist/fabric-$target
 rm -rf "$out"
 mkdir -p "$out/wheel"
 case "$target" in
-  dev) uv build --wheel -o "$out/wheel" ../.. ;;
+  dev)
+    uv build --wheel -o "$out/wheel" ../..
+    ../../tools/requirements.sh "$out/wheel/requirements.txt"
+    ;;
   prod)
     tag=${2:-$(gh release view --repo "$repo" --json tagName --jq .tagName)}
     echo "release $tag"
     gh release download "$tag" --repo "$repo" --pattern '*.whl' --dir "$out/wheel"
+    # The lock file of that release, not of this checkout
+    ../../tools/requirements.sh "$out/wheel/requirements.txt" "$tag"
     ;;
 esac
 wheel_file=$(cd "$out/wheel" && ls -- *.whl)
@@ -68,4 +75,6 @@ if $dry_run; then
   exit 0
 fi
 fab deploy --config "$out/workspace/config.yml" --target_env "$target" -f
-fab cp "$out/wheel/$wheel_file" "$workspace.Workspace/StavangerParking.Lakehouse/Files/wheels/$wheel_file" -f
+for file in requirements.txt "$wheel_file"; do
+  fab cp "$out/wheel/$file" "$workspace.Workspace/StavangerParking.Lakehouse/Files/wheels/$file" -f
+done

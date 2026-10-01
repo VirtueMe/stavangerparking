@@ -8,8 +8,8 @@ The pipeline is ready to run on Microsoft Fabric from this repository, from the 
 
 | Item | What it is |
 |---|---|
-| Lakehouse `StavangerParking` | `Files/` holds the raw files, in the same layout as the `data` branch, and the wheel (`Files/wheels/`); `Tables/` holds every layer's Delta tables |
-| Notebook `RunPipeline` | A pure Python notebook (not Spark, ADR 001) with the Lakehouse attached: installs the wheel from `Files/wheels/`, then `run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")` ([`docs/pipeline.md`](pipeline.md)). A non-zero exit code raises, so the run fails. Its kernel is pinned to **Python 3.11**, the version CI tests on and Databricks runs, rather than Fabric's default 3.12; Fabric supports 3.11 until October 2027 ([kernel lifecycle](https://learn.microsoft.com/en-us/fabric/data-engineering/python-notebook-runtime-lifecycle)). `Collect` is pinned the same way |
+| Lakehouse `StavangerParking` | `Files/` holds the raw files, in the same layout as the `data` branch, and the wheel with its locked requirements (`Files/wheels/`); `Tables/` holds every layer's Delta tables |
+| Notebook `RunPipeline` | A pure Python notebook (not Spark, ADR 001) with the Lakehouse attached: installs the dependencies at the versions in `uv.lock` and then the wheel from `Files/wheels/` ([below](#dependencies-from-uvlock)), then `run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")` ([`docs/pipeline.md`](pipeline.md)). A non-zero exit code raises, so the run fails. Its kernel is pinned to **Python 3.11**, the version CI tests on and Databricks runs, rather than Fabric's default 3.12; Fabric supports 3.11 until October 2027 ([kernel lifecycle](https://learn.microsoft.com/en-us/fabric/data-engineering/python-notebook-runtime-lifecycle)). `Collect` is pinned the same way |
 | Data pipeline `StavangerParkingPipeline` | Runs `RunPipeline`, and e-mails when it fails (an Office 365 Outlook activity on the *Failed* path). The notebook activity passes `_inlineInstallationEnabled = True`: pipeline runs turn `%pip install` off by default, and the notebook installs the wheel with it ([library management](https://learn.microsoft.com/en-us/fabric/data-engineering/library-management#python-inline-installation)) |
 | Notebook `Collect` | Collects a snapshot of every source that is due into `Files/`. **Not scheduled, and run by nothing**: GitHub Actions is the collector of record until the handover (ADR 011) |
 
@@ -33,6 +33,17 @@ tools/report -p fabric --prod                    # the Power BI model on the Lak
 - **The failure e-mail** goes to `FABRIC_ALERT_EMAIL`, by default the signed-in account. The activity is deployed **inactive**: an Office 365 Outlook activity needs a connection, which is signed in by a person and cannot be kept in Git. Open the pipeline once, choose the connection, and activate the activity.
 - **Not Git integration.** #16 planned the workspace's Git integration on a `fabric` branch. Deploying with fabric-cicd from the tools is the same as on Databricks: a release is deployed, not a branch, and dev and prod differ only in the workspace. The folder is in Git format, so Git integration can still sync it if that is wanted.
 
+### Dependencies from `uv.lock`
+
+`uv.lock` is the one place that says which versions run: CI tests with it, and every platform installs from it ([ADR 012](adr/012-uv-lock-everywhere.md)). `deploy.sh` exports it with [`tools/requirements.sh`](../tools/requirements.sh), as `requirements.txt` with every version pinned and every file's hash, and copies it next to the wheel. The notebooks then install in two steps:
+
+```text
+%pip install -r /lakehouse/default/Files/wheels/requirements.txt     # the locked versions, checked by hash
+%pip install --no-deps /lakehouse/default/Files/wheels/<wheel>       # the package, adding nothing
+```
+
+For dev the lock is the checkout's; for prod it is **the release tag's own** `uv.lock`, taken from the tag (`git archive <tag> pyproject.toml uv.lock`), so a revert to an older release also gets that release's versions. Microsoft recommends an Environment item over `%pip` in pipelines because unpinned installs can differ from run to run; pinned and hashed, they cannot.
+
 ## Backfill
 
 ```sh
@@ -51,7 +62,7 @@ Until there is a workspace (#16):
 
 - **The item formats** as deployed by fabric-cicd: the notebooks' Lakehouse binding, the pipeline's notebook activity, and the Outlook activity's definition.
 - **The Fabric CLI calls:** `fab deploy` with this config, `fab cp` from a local file into `Files/`, `fab job run` on the pipeline, and the SQL endpoint's connection string from `fab get`.
-- **Reproducible dependencies.** `%pip install` resolves the wheel's dependencies on every run, and the package only sets minimum versions, so a run can get newer Polars or deltalake than CI tested; Microsoft recommends an Environment item for pipelines for that reason. Two ways to pin them, to choose on the first deployment: an Environment with the wheel as a custom library, or `%pip install -r` with requirements exported from `uv.lock`.
+- **Installing the locked requirements** in a Fabric Python kernel, and how long it takes: the kernel comes with its own Polars and deltalake, which the pinned versions replace.
 - **delta-rs on the Lakehouse mount.** Databricks' volumes could not commit without `allow_unsafe_rename` (ADR 011 addendum); whether `/lakehouse/default/Tables` can is unknown. If it cannot, the notebook passes the same storage option.
 - **The report on the SQL endpoint**, and whether Direct Lake should replace import mode.
 
