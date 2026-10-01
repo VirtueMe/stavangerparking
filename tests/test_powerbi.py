@@ -21,6 +21,7 @@ from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA
 from stavanger_parking.gold.calendar import DATE_SCHEMA, TIME_SCHEMA
 from stavanger_parking.gold.facility import FACILITY_SCHEMA
 from stavanger_parking.gold.hourly import HOURLY_SCHEMA
+from stavanger_parking.gold.pricing import load_rules
 from stavanger_parking.gold.stale_period import STALE_PERIOD_SCHEMA
 from stavanger_parking.quality.check import RESULT_SCHEMA
 from stavanger_parking.tables import (
@@ -117,6 +118,15 @@ def test_measures_are_declared_on_the_facts():
         "Attribution",
     }
     assert not any(names[t] for t in (DATE_TABLE, TIME_TABLE, FACILITY_TABLE))
+
+
+def test_fresh_occupancy_uses_the_stale_share_of_the_suggested_prices():
+    text = (MODEL / "tables" / f"{HOURLY_TABLE}.tmdl").read_text()
+    share = re.search(
+        r"\[stale_minutes\] <= ([\d.]+) \* fact_parking_hourly\[covered_minutes\]", text
+    )
+
+    assert share and float(share.group(1)) == load_rules().max_stale_share
 
 
 def test_tmdl_is_indented_with_tabs_only():

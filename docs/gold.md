@@ -150,4 +150,4 @@ The source's **stale periods**, one row per period, shaped for the report from s
 | `stale_fetches` | How many fetches saw the period |
 | `ongoing` | The latest fetch still sees the period |
 
-The table describes the mechanism, not a state. It holds whatever periods the fetches show; an ongoing incident is simply a period without an end, and when the source recovers, the next run gives it one. The end is the evidence-based one silver uses, the last stale fetch, so a period's length agrees with the `stale_minutes` of the hourly fact. The [freshness page](report.md#pages) of the report shows the periods against occupancy.
+The table describes the mechanism, not a state. It holds whatever periods the fetches show; an ongoing incident is simply a period without an end, and when the source recovers, the next run gives it one. The end is the evidence-based one silver uses, the last stale fetch, so a period's length agrees with the `stale_minutes` of the hourly fact. The [freshness page](report.md#pages) of the report shows the periods, and occupancy only where the data is fresh, so a freeze shows as stale days without occupancy, not as a repeated value.

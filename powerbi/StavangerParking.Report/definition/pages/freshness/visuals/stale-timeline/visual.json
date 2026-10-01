@@ -10,7 +10,7 @@
     "tabOrder": 3000
   },
   "visual": {
-    "visualType": "lineClusteredColumnComboChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -47,11 +47,7 @@
               },
               "queryRef": "fact_parking_hourly.Stale share",
               "nativeQueryRef": "Stale share"
-            }
-          ]
-        },
-        "Y2": {
-          "projections": [
+            },
             {
               "field": {
                 "Measure": {
@@ -60,11 +56,11 @@
                       "Entity": "fact_parking_hourly"
                     }
                   },
-                  "Property": "Occupancy"
+                  "Property": "Occupancy (fresh data)"
                 }
               },
-              "queryRef": "fact_parking_hourly.Occupancy",
-              "nativeQueryRef": "Occupancy"
+              "queryRef": "fact_parking_hourly.Occupancy (fresh data)",
+              "nativeQueryRef": "Occupancy (fresh data)"
             }
           ]
         }
@@ -101,7 +97,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Stale share and occupancy by date'"
+                  "Value": "'Stale share, and occupancy where the data is fresh, by date'"
                 }
               }
             }
@@ -109,6 +105,35 @@
         }
       ]
     },
-    "drillFilterOtherVisuals": true
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "valueAxis": [
+        {
+          "properties": {
+            "start": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "end": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

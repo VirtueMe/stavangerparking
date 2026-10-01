@@ -68,6 +68,7 @@ Every column has a description (from `docs/gold.md`). Month and weekday names so
 | `Free spaces (avg)` | hourly | **Time-weighted** average per facility (hours weighted by their counted minutes, the minutes with a count), summed across facilities |
 | `Free spaces (min)`, `Free spaces (max)` | hourly | The lowest and highest single reading in the selection |
 | `Occupancy` | hourly | Share of capacity in use, over facilities with a known capacity; outside 0–100 % means the capacity is wrong |
+| `Occupancy (fresh data)` | hourly | `Occupancy` over the hours that do not rest mostly on stale data (the suggested prices' `max_stale_share`, 0.5; a test keeps the two equal): blank while the source is frozen, so a chart shows nothing, not a repeated value |
 | `Covered minutes`, `Stale minutes`, `Stale share` | hourly | How much of the time is covered by readings, and how much of it rests on stale data |
 | `Capacity` | availability | The facilities' capacity from the national parking register, summed; blank without one |
 | `Readings` | availability | Number of source readings; never average over them unweighted |
@@ -89,8 +90,12 @@ The report has five pages, each with a title and the attribution footer. The vis
 | **Availability over time** | Line chart of `Free spaces (avg)` by `dim_date[date]` and `fact_parking_hourly[hour]`, one line per `facility_name`; a card with `Free spaces (latest)`; slicers for date and facility |
 | **Weekday and hour patterns** | Matrix of `Occupancy` (or `Free spaces (avg)`) with `dim_date[weekday]` in rows and `fact_parking_hourly[hour]` in columns, conditional formatting as a heat map; slicer for facility; a toggle to exclude public holidays (`dim_date[is_public_holiday]`) |
 | **Facilities on the map** | Azure Maps bubbles at `dim_parking_facility[latitude]`, `[longitude]`, sized by `Free spaces (latest)`, tooltip with `Capacity` and `Occupancy`; beside it a table of the same figures, which also stands in for the map if the tenant has map visuals turned off |
-| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; a table of the source's stale periods (`stale_from`, `Ended`, `Stale time (days)`, `stale_fetches`); a timeline of `Stale share` (columns) against `Occupancy` (line) by date, where a freeze shows as a block of stale columns; column chart of `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
+| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; a table of the source's stale periods (`stale_from`, `Ended`, `Stale time (days)`, `stale_fetches`); a column chart of `Stale share` and `Occupancy (fresh data)` side by side by date, on a 0–100 % axis: during a freeze only the stale column is there, at 100 %, with no occupancy beside it; column chart of `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
 | **About the data** | A text box or card with `Attribution`, links to the licence and the sources, and a note on what the stale and occupancy figures mean |
+
+For readers without access to the Power BI workspace, this is the **Data freshness and quality** page as it looked on **1 October 2026**, in the dev workspace, with data collected up to 16:47 UTC that day. It is a dated picture, not the current state: the 23 September – 1 October freeze is one closed stale period, the stale share is 100 % on the days in between, with no occupancy beside it, and on 1 October the fresh data has both.
+
+![The Data freshness and quality page on 1 October 2026](images/freshness-2026-10-01.png)
 
 The **attribution** is required by the NLOD 2.0 licences of both sources (#32, #54): *Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune* (Stavanger parkering) and *by Statens vegvesen* (Parkeringsregisteret), with a link to the licence, <https://data.norge.no/nlod/en/2.0>. It belongs on the About page and, if the report is published, in a footer on every page.
 
