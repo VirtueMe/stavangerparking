@@ -50,8 +50,8 @@ One row per facility per hour of `fact_parking_hourly`.
 
 **An estimated capacity is never presented as actual capacity:** it is only a lower bound (the facility may never have been empty while we watched), so occupancy computed from it is too high, and `capacity_is_estimated` marks every such row.
 
-## On the current data
+## When the source is stale
 
-Every hour since 23 September rests on the frozen feed, so **no hour is priced**: 1,001 hours are `stale`, and the rest `no_data` (Posten and Kyrre report only "Open"). Pricing on data that is days old would be pricing on a fiction; the table says so instead.
+An hour that rests mostly on stale data is not priced: it gets `stale` and no `suggested_price`. Pricing on data that is days old would be pricing on a fiction; the table says so instead. In a run during the freeze of 23 September – 1 October 2026, **no hour was priced**: 1,001 hours were `stale`, and the rest `no_data` (Posten and Kyrre report only "Open"). Hours after the feed recovered are priced as usual.
 
 What it would take to show such prices to drivers on boards at the entrance, including the legal requirements, is discussed in [`docs/price-boards.md`](price-boards.md).

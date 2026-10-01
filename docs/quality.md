@@ -45,11 +45,11 @@ The checks look at the **latest parking snapshot** (the newest raw file, whether
 | `subject` | The facility, for checks per facility |
 | `detail` | What was found, e.g. `292 free of 289` |
 
-## Current state (2026-09-29)
+## Example run (2026-09-29)
 
-On the real data, the checks fail on one critical and one warning:
+On the real data on 29 September 2026, the checks failed on one critical and one warning:
 
 - **`free_exceeds_capacity`, Forum: 292 free of 289.** The register's capacity for Forum is too low; the operator's website says 325. The run stops until the capacity is corrected ([ADR 005](adr/005-capacity-as-reference-data.md), noted in the facility mapping).
-- **`source_stale`: the data is about 5.8 days old**, since the feed froze on 23 September.
+- **`source_stale`: the data was about 5.8 days old**, because the feed was frozen from 23 September (it recovered on 1 October). The warning appears whenever the source's own timestamp is too old, and goes away by itself when the feed updates again.
 
-Everything else passes: the schema is as expected, the snapshot has its 9 facilities, all mapped and inside the Stavanger area, and the register has every mapped area.
+Everything else passed: the schema was as expected, the snapshot had its 9 facilities, all mapped and inside the Stavanger area, and the register had every mapped area.

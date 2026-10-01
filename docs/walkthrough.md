@@ -24,7 +24,7 @@ About 15 minutes in all, then questions.
 - **Bring Databricks up to date:** `tools/backfill -p databricks --prod` copies the new raw files from the `data` branch and runs the pipeline. It ends with exit code 3 while Forum's capacity is wrong; the tables are published all the same ([`docs/databricks.md`](databricks.md#backfill)).
 - **Refresh the report** in the Power BI service (the semantic model's *Refresh now*), and check the freshness page shows today's data age.
 - **Check collection is running:** the latest commit on the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data) is minutes old, and `collect gaps` lists nothing new ([`docs/collector.md`](collector.md)).
-- **Check the source:** is the feed still frozen at 23 September, 19:16? If it has recovered, parts 4 and 9 change: the stale period now has an end.
+- **Check the source:** note the data's own timestamp and whether the feed is live or frozen today. Parts 1, 4 and 10 tell the 23 September – 1 October freeze as a past incident either way. If it is frozen again, say so, and show the open stale period in the report.
 - **Open, in tabs:** the [README](../README.md), the report in the "Stavanger Parking Case" workspace, the Databricks jobs page, [`docs/weaknesses.md`](weaknesses.md) and the [ADR index](adr/README.md).
 - The Databricks workspace is Free Edition and temporary; if it is gone, the report still shows its last refresh, and the rest runs locally.
 
@@ -37,7 +37,7 @@ About 15 minutes in all, then questions.
 - The case asked for a Fabric solution for Stavanger's open parking data: ingestion, transformation, a model, and optionally a report.
 - Fabric needs a capacity, and the own tenant is too new for a trial. Rather than wait, the solution was built so that the platform is a deployment choice: it runs on Databricks today, and Fabric is written for.
 - What runs now: collection every 5 minutes since 28 September, the whole pipeline on Databricks, and a Power BI report refreshed from it.
-- The source itself stopped updating on 23 September. The solution notices that, and shows it rather than hiding it; that is a thread through the rest.
+- The source itself can stop updating without notice: it was frozen from 23 September to 1 October, then recovered on its own. The solution notices that, and shows stale data as stale rather than hiding it; that is a thread through the rest.
 
 ## 2. Architecture and data flow
 
@@ -72,7 +72,7 @@ About 15 minutes in all, then questions.
 - The download URL is resolved through the CKAN API on every run, so a moved resource is followed.
 - **Adaptive polling:** every 5 minutes while values change, every 20 once they have stood still for 5 snapshots ([ADR 003](adr/003-polling-interval.md)). The register's capacities are collected hourly ([ADR 010](adr/010-collect-the-register-hourly.md)).
 - **GitHub's own schedule started 2 of about 145 runs** in the first 12 hours, so an external scheduler, cron-job.org, now starts each run ([ADR 008](adr/008-trigger-collection-externally.md)).
-- **How the frozen feed was found:** the file is re-uploaded every 2 minutes, and every "updated" signal moves with it: the dataset page, CKAN's timestamps, the HTTP headers, the ETag. Only comparing the content showed that the values have not changed since 23 September. Freshness is therefore judged from the data's own timestamp, never from metadata.
+- **How the frozen feed was found:** the file is re-uploaded every 2 minutes, and every "updated" signal moves with it: the dataset page, CKAN's timestamps, the HTTP headers, the ETag. Only comparing the content showed that the values had not changed since 23 September. It recovered on 1 October, unreported and unannounced, and the metadata looked just as fresh before and after. Freshness is therefore judged from the data's own timestamp, never from metadata.
 
 ## 5. One repository, two platforms
 
@@ -141,13 +141,13 @@ About 15 minutes in all, then questions.
 
 **Say** (pick three):
 
-- **The source:** frozen since 23 September, with every metadata signal saying otherwise, and no support channel beyond an e-mail address.
+- **The source:** it froze for about 8 days (23 September – 1 October) with every metadata signal saying otherwise, recovered without notice, and has no support channel beyond an e-mail address.
 - **Capacity:** a hand-maintained mapping to a register that can be wrong, as Forum shows.
 - **Collection** depends on cron-job.org, and nothing alerts if its calls stop; gaps are listed afterwards from the sidecars.
 - **The facility name as key:** a rename splits a facility's history.
 - **The platform:** Databricks Free Edition cannot reach the sources, and deploying is manual (#83).
 
-**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has only the `source_stale` warning, and Forum's occupancy is 23 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
+**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has no failed checks (at most a `source_stale` warning, if the feed happens to be frozen), and Forum's occupancy is 23 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
 
 After the meeting, `tools/report -p databricks --prod` publishes the About page's new wording on capacity; the figures are already right after the refresh.
 
@@ -157,7 +157,7 @@ After the meeting, `tools/report -p databricks --prod` publishes the About page'
 |---|---|---|
 | Why not Spark, since Databricks and Fabric are built around it? | The volume fits in memory with room to spare; Spark would cost a JVM and start-up on every run. The switch point is measured, and the tables stay the same | [ADR 001](adr/001-polars-over-pyspark.md), [ADR 006](adr/006-scalability-assessment.md) |
 | Why collect on GitHub Actions and not on the platform? | History cannot be recovered, and platform access was not there on day one. The platform takes over with a handover that keeps one collector | [ADR 007](adr/007-collect-outside-the-platform.md), [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) |
-| What happens when the feed starts updating again? | Nothing to change: the stale period gets its end, and the next readings are fresh | [`docs/silver.md`](silver.md#source-staleness) |
+| What happens when the feed freezes, or starts updating again? | Nothing to change. When it recovered on 1 October, the stale period got its end and the next readings were fresh, with no change to the code | [`docs/silver.md`](silver.md#source-staleness) |
 | Why does every run fail? | A critical quality check: Forum's registered capacity (289) is below its reported free spaces (292). It fails on purpose until the capacity is corrected; the tables are still built and published | [`docs/quality.md`](quality.md) |
 | Why a 5-minute interval, when the source publishes every 2? | 5 minutes is the scheduler's floor; the analyses use 15-minute buckets, so a finer grain would add runs and rows without adding insight | [ADR 003](adr/003-polling-interval.md) |
 | Why not Direct Lake on Fabric? | It would be the natural choice there; it needs other partitions in the model, not another function, and is planned for when Fabric exists | [`docs/report.md`](report.md#on-a-platform) |
