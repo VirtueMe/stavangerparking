@@ -9,7 +9,7 @@ The pipeline is ready to run on Microsoft Fabric from this repository, from the 
 | Item | What it is |
 |---|---|
 | Lakehouse `StavangerParking` | `Files/` holds the raw files, in the same layout as the `data` branch, and the wheel (`Files/wheels/`); `Tables/` holds every layer's Delta tables |
-| Notebook `RunPipeline` | A pure Python notebook (not Spark, ADR 001) with the Lakehouse attached: installs the wheel from `Files/wheels/`, then `run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")` ([`docs/pipeline.md`](pipeline.md)). A non-zero exit code raises, so the run fails |
+| Notebook `RunPipeline` | A pure Python notebook (not Spark, ADR 001) with the Lakehouse attached: installs the wheel from `Files/wheels/`, then `run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")` ([`docs/pipeline.md`](pipeline.md)). A non-zero exit code raises, so the run fails. Its kernel is pinned to **Python 3.11**, the version CI tests on and Databricks runs, rather than Fabric's default 3.12; Fabric supports 3.11 until October 2027 ([kernel lifecycle](https://learn.microsoft.com/en-us/fabric/data-engineering/python-notebook-runtime-lifecycle)). `Collect` is pinned the same way |
 | Data pipeline `StavangerParkingPipeline` | Runs `RunPipeline`, and e-mails when it fails (an Office 365 Outlook activity on the *Failed* path) |
 | Notebook `Collect` | Collects a snapshot of every source that is due into `Files/`. **Not scheduled, and run by nothing**: GitHub Actions is the collector of record until the handover (ADR 011) |
 

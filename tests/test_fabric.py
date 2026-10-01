@@ -307,3 +307,12 @@ def test_a_placeholder_left_unfilled_stops_the_deploy(repo):
     assert result.returncode == 2
     assert "unfilled placeholders" in result.stderr
     assert not any(c.startswith("fab deploy") for c in fab_calls(repo))
+
+
+@pytest.mark.parametrize("name", ["RunPipeline", "Collect"])
+def test_the_notebook_kernel_is_the_python_the_project_tests_on(name):
+    """Pinned, not Fabric's default (3.12): Fabric runs what CI tests and Databricks runs."""
+    version = (REPO / ".python-version").read_text().strip()
+    text = (WORKSPACE / f"{name}.Notebook" / "notebook-content.py").read_text(encoding="utf-8")
+
+    assert f'"jupyter_kernel_name": "python{version}"' in text
