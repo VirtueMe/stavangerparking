@@ -92,13 +92,14 @@ About 15 minutes in all, then questions.
 
 **Say, while doing it:**
 
-- **The finding:** the quality check has stopped every run since the first one, because Forum reports 292 free spaces and the register says 289. The field is the register's *paid* spaces; Forum also has 19 charging and 2 accessible spaces, so 310 in all. The check did its job: it found a wrong assumption, not a wrong number.
-- **The change:** one function, `capacity()`, an ADR 005 addendum that says what the reading rests on, and tests. Merge it (squash).
+- **The finding:** the quality check has stopped every run since the first one, because Forum reports 292 free spaces and the register says 289. The register records *public* parking; the garage also has **26 reserved spaces**, for Madla and Tjensvoll HBT (the municipality's home care), Kolumbus and one private holder. The feed counts them, the register does not: 289 + 26 = 315.
+- **How it was found:** the register links each area to the sign plan the operator filed, and Forum's floor 1 has 26 reserved-space signs. The first guess, that charging and accessible spaces come on top of the paid ones, was wrong: the same sign plan says they are ordinary paid spaces. The check did its job: two sources count different spaces, and it said so.
+- **The change:** `reserved_spaces: 26` in the facility mapping, with its source in the note; gold adds it to the register's count; an ADR 005 addendum and tests. Merge it (squash).
 - **What happens next, without anyone deploying by hand from a branch:**
   1. The merge makes a release, about 20 seconds: a tag, the changelog, and the wheel on the GitHub Release.
   2. `tools/deploy -p databricks --prod` installs that release, the latest by default (about a minute; `--dry-run` first shows the plan).
   3. `tools/backfill -p databricks --prod` runs the pipeline with the new wheel (about 3–4 minutes). **Leave it running and go on to part 7.**
-- **If anything goes wrong:** `tools/deploy -p databricks --prod v0.20.1` puts the previous release back.
+- **If anything goes wrong:** `tools/deploy -p databricks --prod <tag>`, with the release before the merge (the Releases page lists it), puts it back.
 
 ## 7. The report, live
 
@@ -146,7 +147,7 @@ About 15 minutes in all, then questions.
 - **The facility name as key:** a rename splits a facility's history.
 - **The platform:** Databricks Free Edition cannot reach the sources, and deploying is manual (#83).
 
-**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has only the `source_stale` warning, and Forum's occupancy is 18 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
+**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has only the `source_stale` warning, and Forum's occupancy is 23 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
 
 After the meeting, `tools/report -p databricks --prod` publishes the About page's new wording on capacity; the figures are already right after the refresh.
 
