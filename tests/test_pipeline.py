@@ -182,6 +182,23 @@ def test_the_entry_point_exits_with_the_code_of_the_run(monkeypatch, tmp_path):
     assert exit.value.code == 1
 
 
+@pytest.mark.parametrize("code", [1, 3])
+def test_the_entry_point_exits_on_a_failure(monkeypatch, code):
+    monkeypatch.setattr(pipeline, "main", lambda: code)
+
+    with pytest.raises(SystemExit) as exit:
+        pipeline.entry()
+
+    assert exit.value.code == code
+
+
+def test_the_entry_point_returns_on_success(monkeypatch):
+    """No SystemExit at all: a Databricks wheel task reports even `exit(0)` as a failure (#107)."""
+    monkeypatch.setattr(pipeline, "main", lambda: 0)
+
+    assert pipeline.entry() is None
+
+
 def test_cli_rejects_a_malformed_storage_option(tmp_path):
     with pytest.raises(SystemExit) as exit:
         cli(tmp_path, str(tmp_path), "--storage-option=no-equals-sign")

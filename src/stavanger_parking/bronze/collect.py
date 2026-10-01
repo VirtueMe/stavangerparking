@@ -105,8 +105,13 @@ def _report(lines: list[str]) -> None:
 
 
 def entry() -> None:
-    """The console script: exits with `main`'s code, however the caller starts it."""
-    sys.exit(main())
+    """The console script: exits with `main`'s code, however the caller starts it.
+
+    Success returns instead of exiting: a Databricks wheel task runs the function in IPython,
+    which reports any `SystemExit` as a failed task, even with code 0 (#107).
+    """
+    if code := main():
+        sys.exit(code)
 
 
 if __name__ == "__main__":

@@ -502,3 +502,20 @@ def test_cli_gaps_covers_every_polled_source(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "stavanger_parking: 0 gap(s)" in out
     assert "parkeringsregisteret: 0 gap(s)" in out
+
+
+@pytest.mark.parametrize("code", [1, 3])
+def test_the_entry_point_exits_on_a_failure(monkeypatch, code):
+    monkeypatch.setattr(cli, "main", lambda: code)
+
+    with pytest.raises(SystemExit) as exit:
+        cli.entry()
+
+    assert exit.value.code == code
+
+
+def test_the_entry_point_returns_on_success(monkeypatch):
+    """No SystemExit at all: a Databricks wheel task reports even `exit(0)` as a failure (#107)."""
+    monkeypatch.setattr(cli, "main", lambda: 0)
+
+    assert cli.entry() is None
