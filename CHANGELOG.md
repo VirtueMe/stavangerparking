@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.22.1] - 2026-10-01
+
+### Bug Fixes
+
+- **databricks:** A clean run succeeds: exit only on a non-zero code ([#110](https://github.com/VirtueMe/stavangerparking/pull/110))
+
 ## [0.22.0] - 2026-10-01
 
 ### Features
