@@ -21,12 +21,14 @@ from stavanger_parking.tables import (
     FACILITY_TABLE,
     HOURLY_TABLE,
     QUALITY_TABLE,
+    SOURCE_STALE_PERIOD_TABLE,
     SUGGESTED_PRICE_TABLE,
     TIME_TABLE,
     table_path,
 )
 
-# The star schema, the suggested prices, and the quality results for the report's quality page
+# The star schema, the suggested prices, and the source's stale periods and the quality results
+# for the report's freshness page
 PUBLISHED = (
     DATE_TABLE,
     TIME_TABLE,
@@ -34,6 +36,7 @@ PUBLISHED = (
     AVAILABILITY_TABLE,
     HOURLY_TABLE,
     SUGGESTED_PRICE_TABLE,
+    SOURCE_STALE_PERIOD_TABLE,
     QUALITY_TABLE,
 )
 

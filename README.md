@@ -10,7 +10,7 @@ As of 1 October 2026:
 
 - **Collection** runs every 5 minutes on GitHub Actions, started by cron-job.org, onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data): the parking feed adaptively, the national parking register hourly ([collector](docs/collector.md), [ADR 007](docs/adr/007-collect-outside-the-platform.md), [ADR 008](docs/adr/008-trigger-collection-externally.md)).
 - **Databricks** (Free Edition) runs the pipeline from this repository as an Asset Bundle, with the released wheel: bronze, silver, gold and the quality checks, then the report's tables published to Unity Catalog ([`docs/databricks.md`](docs/databricks.md)). Its data comes from the `data` branch by backfill; its own collector is deployed but paused.
-- **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). Its five pages (availability, patterns, map, data freshness and quality, about) have their visuals (#87, #89).
+- **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). Its five pages (availability, patterns, map, data freshness and quality, about) have their visuals (#87, #89); a [screenshot of the freshness page from 1 October 2026](docs/report.md#pages) shows it to readers without access.
 - **Fabric** is ready to deploy but not deployed: the Lakehouse, notebooks and pipeline are in [`platforms/fabric/`](platforms/fabric/), and the same tools deploy them, but it needs a capacity, which the own tenant cannot get (#16, [`docs/fabric.md`](docs/fabric.md)).
 - **The source feed can freeze without notice.** From 23 September 2026, 19:16 to 1 October 2026, 13:50 it repeated one reading while the file was re-published every 2 minutes, and it recovered without anyone reporting it. Everything downstream shows stale data as stale rather than hiding it ([known weaknesses](#known-weaknesses)).
 
@@ -73,10 +73,12 @@ erDiagram
     dim_parking_facility ||--o{ fact_parking_availability : facility_key
     dim_date ||--o{ fact_parking_hourly : date_key
     dim_parking_facility ||--o{ fact_parking_hourly : facility_key
+    dim_date ||--o{ fact_source_stale_period : date_key
 ```
 
 - **`fact_parking_availability`**: a periodic snapshot, one row per facility per source reading, valid until the facility's next reading. Collection is irregular, so averages over time are weighted by duration; free spaces add up across facilities at one moment, never across time.
 - **`fact_parking_hourly`**: per facility and hour, the time-weighted average, minimum and maximum, how much of the hour the readings cover and how much of it was stale.
+- **`fact_source_stale_period`**: one row per stale period of the source, with its start, end and length; the end is blank while the period is ongoing.
 - **`dim_parking_facility`**: the facility name is the natural key ([ADR 004](docs/adr/004-facility-name-as-natural-key.md)); capacity comes from the national parking register through a mapping file ([ADR 005](docs/adr/005-capacity-as-reference-data.md)). **`dim_date`** has Norwegian public holidays; **`dim_time`** has one row per minute with 15-minute buckets.
 
 ### A new facility

@@ -115,6 +115,21 @@ table fact_parking_hourly
 		formatString: 0.0 %
 		displayFolder: Availability
 
+	/// Occupancy over the hours that do not rest mostly on stale data: blank while the source is frozen, so a chart shows nothing instead of a repeated value.
+	/// "Mostly stale" is the rule of the suggested prices: stale minutes above max_stale_share (0.5, src/stavanger_parking/config/pricing_rules.json) of the covered minutes.
+	measure 'Occupancy (fresh data)' =
+			CALCULATE (
+				[Occupancy],
+				KEEPFILTERS (
+					FILTER (
+						ALL ( fact_parking_hourly[stale_minutes], fact_parking_hourly[covered_minutes] ),
+						fact_parking_hourly[stale_minutes] <= 0.5 * fact_parking_hourly[covered_minutes]
+					)
+				)
+			)
+		formatString: 0.0 %
+		displayFolder: Availability
+
 	/// Minutes covered by readings. Low coverage means "not known", not "nothing changed".
 	measure 'Covered minutes' = SUM ( fact_parking_hourly[covered_minutes] )
 		formatString: #,0
