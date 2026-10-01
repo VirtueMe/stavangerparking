@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.20.3] - 2026-10-01
+
+### Documentation
+
+- **walkthrough:** The live change is Forum's reserved spaces ([#96](https://github.com/VirtueMe/stavangerparking/pull/96))
+
 ## [0.20.2] - 2026-09-30
 
 ### Documentation
