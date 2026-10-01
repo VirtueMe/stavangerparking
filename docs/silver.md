@@ -112,7 +112,7 @@ A period is a run of consecutive stale snapshots, in fetch order, that repeat on
 | `stale_fetches` | How many fetches saw it stale |
 | `ongoing` | The latest fetch still sees the period |
 
-A period is **evidence-based**. It runs from `stale_from` to `last_stale_fetch_at`: a fetch that sees a timestamp as the source's newest proves that nothing newer was published before it, so `stale_from` may lie before our first fetch (the current outage started on 23 September; collection began on 28 September). After the last stale fetch there is no evidence either way, so a gap in collection does not extend a period.
+A period is **evidence-based**. It runs from `stale_from` to `last_stale_fetch_at`: a fetch that sees a timestamp as the source's newest proves that nothing newer was published before it, so `stale_from` may lie before our first fetch (the outage of 23 September – 1 October 2026 is covered from 23 September, although collection began on 28 September). After the last stale fetch there is no evidence either way, so a gap in collection does not extend a period.
 
 Gold uses these to mark readings as stale and to count `stale_minutes` per hour (#13, #14): the minutes of the hour inside [`stale_from`, `last_stale_fetch_at`].
 
