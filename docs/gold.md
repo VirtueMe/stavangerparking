@@ -122,7 +122,7 @@ A reading **covers** the time from its source timestamp until the facility's nex
 
 - In normal operation, readings follow each other within a polling interval, and the whole hour is covered.
 - A **gap in collection** shows as missing coverage, instead of the last value stretched across it. Low `covered_minutes` means "we don't know", not "nothing changed".
-- A reading can cover time before collection began: a fetch that sees a timestamp as the source's newest proves that nothing newer was published in between. The current outage is covered from 23 September, although collection started on 28 September; that time is all stale.
+- A reading can cover time before collection began: a fetch that sees a timestamp as the source's newest proves that nothing newer was published in between. The outage of 23 September – 1 October 2026 is covered from 23 September, although collection started on 28 September; that time is all stale.
 
 The average, minimum and maximum are taken over the covered time only.
 
