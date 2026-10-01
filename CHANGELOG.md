@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.22.0] - 2026-10-01
+
+### Features
+
+- **gold:** The source's stale periods, and an incident timeline in the report ([#108](https://github.com/VirtueMe/stavangerparking/pull/108))
+
 ## [0.21.1] - 2026-10-01
 
 ### Documentation
