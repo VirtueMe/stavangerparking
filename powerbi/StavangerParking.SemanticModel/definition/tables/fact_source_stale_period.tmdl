@@ -1,0 +1,92 @@
+/// One row per stale period of the source, with no end while it is ongoing (docs/gold.md#fact_source_stale_period).
+table fact_source_stale_period
+
+	/// The source the period is about
+	column source_id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_id
+
+	/// Local Oslo date the period started
+	column date_key
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: date_key
+
+	/// The source timestamp that stood still (UTC)
+	column source_reading_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: source_reading_at
+
+	/// When the data became too old (UTC)
+	column stale_from
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: stale_from
+
+	/// When the period ended (UTC): its last stale fetch; blank while it is ongoing
+	column stale_until
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: stale_until
+
+	/// The last fetch that saw the period (UTC), ongoing or not: the evidence
+	column last_stale_fetch_at
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: last_stale_fetch_at
+
+	/// Minutes from stale_from to the end, or to the last stale fetch while ongoing
+	column duration_minutes
+		dataType: double
+		summarizeBy: none
+		sourceColumn: duration_minutes
+
+	/// Fetches that saw the period
+	column stale_fetches
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: stale_fetches
+
+	/// The latest fetch still sees the period
+	column ongoing
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: ongoing
+
+	/// Stale periods of the source.
+	measure Incidents = COUNTROWS ( fact_source_stale_period )
+		formatString: #,0
+		displayFolder: Freshness
+
+	/// Total stale time, in days; per period, its length so far.
+	measure 'Stale time (days)' = DIVIDE ( SUM ( fact_source_stale_period[duration_minutes] ), 1440 )
+		formatString: #,0.0
+		displayFolder: Freshness
+
+	/// The longest stale period, in days.
+	measure 'Longest incident (days)' = DIVIDE ( MAX ( fact_source_stale_period[duration_minutes] ), 1440 )
+		formatString: #,0.0
+		displayFolder: Freshness
+
+	/// When a period ended (UTC), or "ongoing" while it has no end yet; blank for more than one period.
+	measure Ended =
+			IF (
+				HASONEVALUE ( fact_source_stale_period[stale_from] ),
+				IF (
+					SELECTEDVALUE ( fact_source_stale_period[ongoing] ),
+					"ongoing",
+					FORMAT ( MAX ( fact_source_stale_period[stale_until] ), "yyyy-mm-dd hh:nn" )
+				)
+			)
+		displayFolder: Freshness
+
+	partition fact_source_stale_period = m
+		mode: import
+		source = DeltaTable("fact_source_stale_period")

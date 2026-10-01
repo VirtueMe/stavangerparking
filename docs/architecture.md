@@ -130,6 +130,7 @@ erDiagram
     dim_parking_facility ||--o{ fact_parking_availability : "facility_key"
     dim_date ||--o{ fact_parking_hourly : "date_key"
     dim_parking_facility ||--o{ fact_parking_hourly : "facility_key"
+    dim_date ||--o{ fact_source_stale_period : "date_key"
 
     dim_date {
         int date_key PK "yyyymmdd"
@@ -195,6 +196,18 @@ erDiagram
         decimal counted_minutes "with a count; weight of the average"
         decimal stale_minutes
     }
+
+    fact_source_stale_period {
+        string source_id
+        int date_key FK "start, Oslo"
+        timestamp source_reading_at "the timestamp that stood still"
+        timestamp stale_from
+        timestamp stale_until "null while ongoing"
+        timestamp last_stale_fetch_at "evidence ends here"
+        decimal duration_minutes
+        int stale_fetches
+        boolean ongoing
+    }
 ```
 
 ### Facts
@@ -205,6 +218,7 @@ erDiagram
   - **`available_spaces` is semi-additive:** it can be summed across facilities at one point in time (free spaces in the city centre right now), but not across time. Across time, use time-weighted averages, minimum and maximum.
   - `status = open` (the source reports `"Open"` instead of a number) and `unknown` keep `available_spaces` null rather than inventing a value.
 - **`fact_parking_hourly`** aggregates per facility per hour: time-weighted average, minimum, maximum, the number of readings, `covered_minutes` (how much of the hour the readings cover) and `stale_minutes` (how much of it rests on stale data). Low coverage or high staleness is visible instead of hidden in an average.
+- **`fact_source_stale_period`** has one row per stale period of the source, from silver's stale periods: when the data became too old, when the period ended (**blank while it is ongoing**), and how long it lasted. It shows incidents as a whole, which the hourly stale minutes only show piece by piece ([`docs/gold.md`](gold.md#fact_source_stale_period)).
 
 ### Dimensions
 

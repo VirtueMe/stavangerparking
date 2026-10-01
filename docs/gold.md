@@ -6,7 +6,7 @@ Gold holds the dimensions and facts of the star schema described in [`docs/archi
 uv run python -m stavanger_parking.gold.build --tables-root <tables>
 ```
 
-`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions, the availability fact, the hourly fact, and the suggested prices ([`docs/pricing.md`](pricing.md)).
+`--tables-root` is the same folder or URI as for bronze and silver; silver must be built first. The build writes the date, time and facility dimensions, the availability fact, the hourly fact, the source's stale periods, and the suggested prices ([`docs/pricing.md`](pricing.md)).
 
 ## Date and time dimensions
 
@@ -133,3 +133,21 @@ The covered minutes inside a stale period of the source ([stale periods](silver.
 ### Daylight saving time
 
 The grain is the **UTC** hour. At the autumn change, the local hour 02 happens twice, so a day has 25 hourly rows per facility, two of them with the same `date_key` and `hour` but different `hour_start`; in spring, 02 does not exist and the day has 23. Grouping by `date_key` and `hour` in a report merges the two 02 hours of the autumn day, which is what a local-time report expects.
+
+## `fact_source_stale_period`
+
+The source's **stale periods**, one row per period, shaped for the report from silver's `silver_stale_period` ([stale periods](silver.md#source-staleness)): the same freshness logic behind the `source_stale` quality check ([`gold/stale_period.py`](../src/stavanger_parking/gold/stale_period.py)). Rebuilt on every run.
+
+| Column | Meaning |
+|---|---|
+| `source_id` | The source the period is about |
+| `date_key` | The local Oslo date the period started, for the date dimension |
+| `source_reading_at` | The source timestamp that stood still (UTC) |
+| `stale_from` | When the data became too old: `source_reading_at` plus the threshold |
+| `stale_until` | When the period ended: its last stale fetch. **Blank while the period is ongoing** |
+| `last_stale_fetch_at` | The last fetch that saw the period, ongoing or not: the evidence |
+| `duration_minutes` | From `stale_from` to the end, or to the last stale fetch while ongoing: how long the source is known to have been stale so far |
+| `stale_fetches` | How many fetches saw the period |
+| `ongoing` | The latest fetch still sees the period |
+
+The table describes the mechanism, not a state. It holds whatever periods the fetches show; an ongoing incident is simply a period without an end, and when the source recovers, the next run gives it one. The end is the evidence-based one silver uses, the last stale fetch, so a period's length agrees with the `stale_minutes` of the hourly fact. The [freshness page](report.md#pages) of the report shows the periods against occupancy.

@@ -50,12 +50,13 @@ tools/report -p databricks                    # dev: the dev schema, published t
 
 ## The model
 
-Three dimensions and two facts, as in the star schema, joined fact to dimension, and the quality results (`quality_check_results`, [`docs/quality.md`](quality.md)) as a table of their own, related to nothing:
+Three dimensions and three facts, as in the star schema, joined fact to dimension, and the quality results (`quality_check_results`, [`docs/quality.md`](quality.md)) as a table of their own, related to nothing:
 
 | Relationship | |
 |---|---|
 | `fact_parking_availability` → `dim_parking_facility`, `dim_date`, `dim_time` | by `facility_key`, `date_key`, `time_key` |
 | `fact_parking_hourly` → `dim_parking_facility`, `dim_date` | by `facility_key`, `date_key`; the hour is a column of the fact |
+| `fact_source_stale_period` → `dim_date` | by `date_key`, the local date the period started |
 
 Every column has a description (from `docs/gold.md`). Month and weekday names sort by their numbers; the facility's latitude and longitude are categorized for maps. Implicit measures are discouraged, so values are shown through the measures below, never by dragging a column in and letting Power BI sum it.
 
@@ -72,6 +73,8 @@ Every column has a description (from `docs/gold.md`). Month and weekday names so
 | `Readings` | availability | Number of source readings; never average over them unweighted |
 | `Data age (minutes)` | availability | How old the newest reading was at the last fetch that saw it |
 | `Source status` | availability | `Stale` if a current reading was seen stale, otherwise `Fresh` |
+| `Incidents`, `Stale time (days)`, `Longest incident (days)` | stale periods | The source's stale periods, their total length and the longest; per period, its length so far |
+| `Ended` | stale periods | When a period ended (UTC), or `ongoing` while it has no end yet |
 | `Attribution` | availability | The NLOD 2.0 attribution text for both sources |
 | `Failed checks (latest run)` | quality results | Failed checks in the latest quality run; blank for older runs, so a table of checks lists only the latest failures |
 
@@ -86,7 +89,7 @@ The report has five pages, each with a title and the attribution footer. The vis
 | **Availability over time** | Line chart of `Free spaces (avg)` by `dim_date[date]` and `fact_parking_hourly[hour]`, one line per `facility_name`; a card with `Free spaces (latest)`; slicers for date and facility |
 | **Weekday and hour patterns** | Matrix of `Occupancy` (or `Free spaces (avg)`) with `dim_date[weekday]` in rows and `fact_parking_hourly[hour]` in columns, conditional formatting as a heat map; slicer for facility; a toggle to exclude public holidays (`dim_date[is_public_holiday]`) |
 | **Facilities on the map** | Azure Maps bubbles at `dim_parking_facility[latitude]`, `[longitude]`, sized by `Free spaces (latest)`, tooltip with `Capacity` and `Occupancy`; beside it a table of the same figures, which also stands in for the map if the tenant has map visuals turned off |
-| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; column chart of `Stale share` and `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
+| **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; a table of the source's stale periods (`stale_from`, `Ended`, `Stale time (days)`, `stale_fetches`); a timeline of `Stale share` (columns) against `Occupancy` (line) by date, where a freeze shows as a block of stale columns; column chart of `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
 | **About the data** | A text box or card with `Attribution`, links to the licence and the sources, and a note on what the stale and occupancy figures mean |
 
 The **attribution** is required by the NLOD 2.0 licences of both sources (#32, #54): *Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Stavanger kommune* (Stavanger parkering) and *by Statens vegvesen* (Parkeringsregisteret), with a link to the licence, <https://data.norge.no/nlod/en/2.0>. It belongs on the About page and, if the report is published, in a footer on every page.

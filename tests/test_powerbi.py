@@ -21,6 +21,7 @@ from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA
 from stavanger_parking.gold.calendar import DATE_SCHEMA, TIME_SCHEMA
 from stavanger_parking.gold.facility import FACILITY_SCHEMA
 from stavanger_parking.gold.hourly import HOURLY_SCHEMA
+from stavanger_parking.gold.stale_period import STALE_PERIOD_SCHEMA
 from stavanger_parking.quality.check import RESULT_SCHEMA
 from stavanger_parking.tables import (
     AVAILABILITY_TABLE,
@@ -28,6 +29,7 @@ from stavanger_parking.tables import (
     FACILITY_TABLE,
     HOURLY_TABLE,
     QUALITY_TABLE,
+    SOURCE_STALE_PERIOD_TABLE,
     TIME_TABLE,
 )
 
@@ -42,6 +44,7 @@ TABLES = {
     FACILITY_TABLE: FACILITY_SCHEMA,
     AVAILABILITY_TABLE: AVAILABILITY_SCHEMA,
     HOURLY_TABLE: HOURLY_SCHEMA,
+    SOURCE_STALE_PERIOD_TABLE: STALE_PERIOD_SCHEMA,
     QUALITY_TABLE: RESULT_SCHEMA,
 }
 
@@ -92,7 +95,7 @@ def test_relationships_join_existing_columns_from_fact_to_dimension():
     text = (MODEL / "relationships.tmdl").read_text()
     pairs = re.findall(r"fromColumn: (\w+)\.(\w+)\n\ttoColumn: (\w+)\.(\w+)", text)
 
-    assert len(pairs) == 5
+    assert len(pairs) == 6
     for from_table, from_column, to_table, to_column in pairs:
         assert from_table.startswith("fact_") and to_table.startswith("dim_")
         assert from_column in TABLES[from_table] and to_column in TABLES[to_table]
@@ -107,6 +110,7 @@ def test_measures_are_declared_on_the_facts():
     }
 
     assert set(names[HOURLY_TABLE]) >= {"Free spaces (avg)", "Occupancy", "Stale share"}
+    assert set(names[SOURCE_STALE_PERIOD_TABLE]) >= {"Incidents", "Stale time (days)", "Ended"}
     assert set(names[AVAILABILITY_TABLE]) >= {
         "Free spaces (latest)",
         "Source status",

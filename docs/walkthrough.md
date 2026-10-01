@@ -110,7 +110,7 @@ About 15 minutes in all, then questions.
 - **Availability over time:** free spaces per facility, time-weighted, by date and hour; the card is the latest reading, summed across facilities.
 - **Weekday and hour patterns:** occupancy as a heat map; public holidays can be left out.
 - **The map**, with a table of the same figures beside it.
-- **Data freshness and quality:** the source is **Stale**, its data about 9,500 minutes old on the day the report was first published, and the latest quality run failed on **Forum: 292 free spaces against a registered capacity of 289**. That stops every pipeline run, on purpose: a capacity that is wrong makes occupancy wrong, and the report shows it rather than clamping it.
+- **Data freshness and quality:** the source's status and data age today, and its **stale periods**: the 23 September – 1 October freeze is one closed period of about 7.75 days, and it shows on the timeline as a block of stale days under the occupancy line. A new freeze would appear as a period with no end yet. The latest quality run failed on **Forum: 292 free spaces against a registered capacity of 289**. That stops every pipeline run, on purpose: a capacity that is wrong makes occupancy wrong, and the report shows it rather than clamping it.
 - **About:** both sources, the NLOD attribution (also in every page's footer), and what "stale" and "occupancy" mean.
 - The model and report are files in the repository, published with `tools/report`, which gives each platform its own data source so the service can refresh it ([`docs/report.md`](report.md#on-a-platform)).
 
