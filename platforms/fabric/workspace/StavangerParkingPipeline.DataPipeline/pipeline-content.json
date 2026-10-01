@@ -14,7 +14,13 @@
         },
         "typeProperties": {
           "notebookId": "a3e95b12-7c48-4d0f-b6a1-58e2c9d4f730",
-          "workspaceId": "00000000-0000-0000-0000-000000000000"
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "_inlineInstallationEnabled": {
+              "value": "True",
+              "type": "bool"
+            }
+          }
         }
       },
       {

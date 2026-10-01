@@ -10,7 +10,7 @@ The pipeline is ready to run on Microsoft Fabric from this repository, from the 
 |---|---|
 | Lakehouse `StavangerParking` | `Files/` holds the raw files, in the same layout as the `data` branch, and the wheel (`Files/wheels/`); `Tables/` holds every layer's Delta tables |
 | Notebook `RunPipeline` | A pure Python notebook (not Spark, ADR 001) with the Lakehouse attached: installs the wheel from `Files/wheels/`, then `run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")` ([`docs/pipeline.md`](pipeline.md)). A non-zero exit code raises, so the run fails. Its kernel is pinned to **Python 3.11**, the version CI tests on and Databricks runs, rather than Fabric's default 3.12; Fabric supports 3.11 until October 2027 ([kernel lifecycle](https://learn.microsoft.com/en-us/fabric/data-engineering/python-notebook-runtime-lifecycle)). `Collect` is pinned the same way |
-| Data pipeline `StavangerParkingPipeline` | Runs `RunPipeline`, and e-mails when it fails (an Office 365 Outlook activity on the *Failed* path) |
+| Data pipeline `StavangerParkingPipeline` | Runs `RunPipeline`, and e-mails when it fails (an Office 365 Outlook activity on the *Failed* path). The notebook activity passes `_inlineInstallationEnabled = True`: pipeline runs turn `%pip install` off by default, and the notebook installs the wheel with it ([library management](https://learn.microsoft.com/en-us/fabric/data-engineering/library-management#python-inline-installation)) |
 | Notebook `Collect` | Collects a snapshot of every source that is due into `Files/`. **Not scheduled, and run by nothing**: GitHub Actions is the collector of record until the handover (ADR 011) |
 
 The tables are written to `Tables/` and appear as Lakehouse tables, with no publishing step: the report reads them through the Lakehouse's SQL analytics endpoint ([`docs/report.md`](report.md#on-a-platform)).
@@ -43,7 +43,7 @@ tools/backfill -p fabric --prod --dry-run   # count the files and name the Lakeh
 
 ## Next to GitHub Actions collection
 
-GitHub Actions stays the collector of record ([`docs/collector.md`](collector.md)). `Collect` is deployed but runs only if someone starts it, so Fabric never becomes a second collector by being deployed. When Fabric takes over collection, the handover in [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) applies: backfill, an overlap of at least 24 hours with `Collect` writing to a separate comparison folder (its `--storage` argument), a comparison, and the switch. The overlap and the switch add a schedule to a pipeline that runs `Collect` every 5 minutes; that schedule is not in the repository until then.
+GitHub Actions stays the collector of record ([`docs/collector.md`](collector.md)). `Collect` is deployed but runs only if someone starts it, so Fabric never becomes a second collector by being deployed. When Fabric takes over collection, the handover in [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) applies: backfill, an overlap of at least 24 hours with `Collect` writing to a separate comparison folder (its `--storage` argument), a comparison, and the switch. The overlap and the switch add a schedule to a pipeline that runs `Collect` every 5 minutes, with `_inlineInstallationEnabled` like `StavangerParkingPipeline`; that schedule is not in the repository until then.
 
 ## Not tried yet
 
@@ -51,6 +51,7 @@ Until there is a workspace (#16):
 
 - **The item formats** as deployed by fabric-cicd: the notebooks' Lakehouse binding, the pipeline's notebook activity, and the Outlook activity's definition.
 - **The Fabric CLI calls:** `fab deploy` with this config, `fab cp` from a local file into `Files/`, `fab job run` on the pipeline, and the SQL endpoint's connection string from `fab get`.
+- **Reproducible dependencies.** `%pip install` resolves the wheel's dependencies on every run, and the package only sets minimum versions, so a run can get newer Polars or deltalake than CI tested; Microsoft recommends an Environment item for pipelines for that reason. Two ways to pin them, to choose on the first deployment: an Environment with the wheel as a custom library, or `%pip install -r` with requirements exported from `uv.lock`.
 - **delta-rs on the Lakehouse mount.** Databricks' volumes could not commit without `allow_unsafe_rename` (ADR 011 addendum); whether `/lakehouse/default/Tables` can is unknown. If it cannot, the notebook passes the same storage option.
 - **The report on the SQL endpoint**, and whether Direct Lake should replace import mode.
 

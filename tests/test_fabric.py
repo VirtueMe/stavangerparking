@@ -102,6 +102,11 @@ def test_the_pipeline_runs_the_notebook_and_alerts_when_it_fails():
     run = activities["Run the pipeline"]
     assert run["type"] == "TridentNotebook"
     assert logical_ids()[run["typeProperties"]["notebookId"]].name == "RunPipeline.Notebook"
+    # Pipeline runs turn %pip install off unless the activity asks for it, and the notebook needs it
+    assert run["typeProperties"]["parameters"]["_inlineInstallationEnabled"] == {
+        "value": "True",
+        "type": "bool",
+    }
     alert = activities["E-mail on failure"]
     assert alert["type"] == "Office365Outlook"
     assert alert["dependsOn"] == [
