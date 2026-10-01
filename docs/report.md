@@ -74,7 +74,7 @@ Every column has a description (from `docs/gold.md`). Month and weekday names so
 | `Data age (minutes)` | availability | How old the newest reading was at the last fetch that saw it |
 | `Source status` | availability | `Stale` if a current reading was seen stale, otherwise `Fresh` |
 | `Incidents`, `Stale time (days)`, `Longest incident (days)` | stale periods | The source's stale periods, their total length and the longest; per period, its length so far |
-| `Ended` | stale periods | When a period ended (UTC), or `ongoing` while it has no end yet |
+| `Ended` | stale periods | When a period ended (UTC), or `ongoing` while it has no end yet; on a period's own row only, blank on totals |
 | `Attribution` | availability | The NLOD 2.0 attribution text for both sources |
 | `Failed checks (latest run)` | quality results | Failed checks in the latest quality run; blank for older runs, so a table of checks lists only the latest failures |
 

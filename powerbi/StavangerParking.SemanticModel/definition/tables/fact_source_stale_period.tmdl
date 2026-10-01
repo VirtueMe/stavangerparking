@@ -75,10 +75,10 @@ table fact_source_stale_period
 		formatString: #,0.0
 		displayFolder: Freshness
 
-	/// When a period ended (UTC), or "ongoing" while it has no end yet; blank for more than one period.
+	/// When a period ended (UTC), or "ongoing" while it has no end yet; only on a period's own row, blank on totals.
 	measure Ended =
 			IF (
-				HASONEVALUE ( fact_source_stale_period[stale_from] ),
+				ISINSCOPE ( fact_source_stale_period[stale_from] ),
 				IF (
 					SELECTEDVALUE ( fact_source_stale_period[ongoing] ),
 					"ongoing",
