@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.21.0] - 2026-10-01
+
+### Features
+
+- **fabric:** The Fabric platform folder, ready to deploy ([#102](https://github.com/VirtueMe/stavangerparking/pull/102))
+
 ## [0.20.4] - 2026-10-01
 
 ### Documentation
