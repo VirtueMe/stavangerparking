@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "StavangerParkingPipeline",
+    "description": "Runs RunPipeline, and e-mails when it fails"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "e2b8f4c9-1d6a-4f37-b905-7a3c1e8d6f42"
+  }
+}

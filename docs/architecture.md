@@ -8,7 +8,7 @@ How open parking data from Stavanger flows from the source to a star schema, fol
 - **Collection:** adaptive polling, every 5 minutes while the values change and every 20 minutes while they don't ([ADR 003](adr/003-polling-interval.md)). The download URL is resolved through the CKAN API on every run.
 - **Storage:** raw responses are kept unchanged and are the source of truth; every table can be rebuilt from them.
 - **Engine:** Polars and delta-rs, not Spark ([ADR 001](adr/001-polars-over-pyspark.md)). The logic lives in the `stavanger_parking` package, installed as a wheel; the platform only calls its entry point (a Databricks job task, a Fabric notebook), so the same code runs and is tested locally ([ADR 011](adr/011-one-repository-two-platforms.md)).
-- **Platforms:** one repository deploys to Databricks (running) and Microsoft Fabric (written for, pending a capacity).
+- **Platforms:** one repository deploys to Databricks (running) and Microsoft Fabric (ready to deploy, pending a capacity: [`docs/fabric.md`](fabric.md)).
 - **Model:** a periodic snapshot fact of availability per facility and reading, an hourly aggregate fact, and date, time and facility dimensions.
 
 ## Data flow on Databricks (deployed)
@@ -36,7 +36,9 @@ flowchart LR
 
 Both tasks belong to one job, `stavanger_parking_pipeline`, which allows one run at a time. The pipeline writes Delta tables with delta-rs into a volume, because on this workspace volumes are the only writable paths; `publish` copies the tables the report reads into Unity Catalog, which is what Power BI's Databricks connector reads. The collection job is deployed but paused: GitHub Actions stays the collector of record ([`docs/databricks.md`](databricks.md)). `tools/report` generates the Power BI model with the Databricks data source and publishes it ([`docs/report.md`](report.md#on-a-platform)).
 
-## Data flow on Microsoft Fabric (planned)
+## Data flow on Microsoft Fabric (ready, not yet run)
+
+The items below are in [`platforms/fabric/workspace/`](../platforms/fabric/workspace/), deployed with `tools/deploy -p fabric` ([`docs/fabric.md`](fabric.md)). The notebooks are pure Python, and one notebook runs the whole pipeline, so the steps below are its stages rather than separate notebooks.
 
 ```mermaid
 flowchart LR
@@ -222,15 +224,15 @@ erDiagram
 
 Both platforms run the same package, the same entry point and the same Power BI model; only the items around them differ ([ADR 011](adr/011-one-repository-two-platforms.md)). Polars stays the engine on Databricks too: a job task installs the wheel on serverless compute, and Spark is used only by the small `publish` task.
 
-| Concern | Databricks (deployed) | Microsoft Fabric (planned) |
+| Concern | Databricks (deployed) | Microsoft Fabric (ready, not yet run) |
 |---|---|---|
 | Raw files | Unity Catalog volume `raw` | Lakehouse `Files/` |
 | Tables | Volume `tables` (Delta, written by delta-rs), the report's tables published to the Unity Catalog schema | Lakehouse `Tables/` (Delta) |
-| Transformations | Job task running the wheel's `stavanger-parking-pipeline` | Notebook calling `run_pipeline` |
-| Orchestration and alerts | Lakeflow Jobs, e-mail on failure; schedules paused | Data pipeline with an alert |
-| Deployment | Asset Bundle, `tools/deploy -p databricks [--prod]` | Git integration |
+| Transformations | Job task running the wheel's `stavanger-parking-pipeline` | Pure Python notebook `RunPipeline`, installing the wheel from `Files/wheels/` and calling `run_pipeline` |
+| Orchestration and alerts | Lakeflow Jobs, e-mail on failure; schedules paused | Data pipeline `StavangerParkingPipeline`, e-mail on failure (Office 365 Outlook, activated once by hand); no schedule |
+| Deployment | Asset Bundle, `tools/deploy -p databricks [--prod]` | fabric-cicd (`fab deploy`), `tools/deploy -p fabric [--prod]` |
 | Reporting | Power BI, Databricks connector through a SQL warehouse, `tools/report` | Power BI, SQL analytics endpoint (or Direct Lake) |
-| Collection | Deployed, paused; outbound internet blocked on Free Edition | Not built |
+| Collection | Deployed, paused; outbound internet blocked on Free Edition | Notebook `Collect`, run by nothing until the handover |
 
 ## Related documents
 

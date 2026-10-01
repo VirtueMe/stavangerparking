@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Lakehouse",
+    "displayName": "StavangerParking",
+    "description": "Raw files in Files/, the Delta tables of every layer in Tables/ (docs/fabric.md)"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "6f1c2e8a-4b7d-4e19-9a35-2d8c7f0b1e64"
+  }
+}
