@@ -6,7 +6,9 @@
 #   platforms/databricks/deploy.sh prod v0.16.0      # a given release, e.g. to revert
 #   platforms/databricks/deploy.sh --dry-run prod    # validate and show the plan, deploy nothing
 #
-# The jobs install whatever wheel is in dist/ (databricks.yml), so dist/ holds exactly one.
+# The jobs install whatever wheel is in dist/ (databricks.yml), so dist/ holds exactly one, together
+# with its dependencies at the versions in uv.lock (dist/requirements.txt: the checkout's lock for dev,
+# the release tag's for prod; ADR 012).
 # A dry run still fills dist/, locally, because the plan needs the wheel; the workspace is untouched.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -19,12 +21,18 @@ target=${1:?usage: deploy.sh [--dry-run] dev | deploy.sh [--dry-run] prod [relea
 repo=VirtueMe/stavangerparking
 
 rm -rf dist
+# Without hashes: the job environment installs the requirements and the wheel in one pip run, and the
+# wheel has no hash to check; the versions are pinned all the same
 case "$target" in
-  dev) uv build --wheel -o dist ../.. ;;
+  dev)
+    uv build --wheel -o dist ../..
+    ../../tools/requirements.sh dist/requirements.txt --no-hashes
+    ;;
   prod)
     tag=${2:-$(gh release view --repo "$repo" --json tagName --jq .tagName)}
     echo "release $tag"
     gh release download "$tag" --repo "$repo" --pattern '*.whl' --dir dist
+    ../../tools/requirements.sh dist/requirements.txt "$tag" --no-hashes
     ;;
   *) echo "unknown target: $target (dev or prod)" >&2; exit 2 ;;
 esac

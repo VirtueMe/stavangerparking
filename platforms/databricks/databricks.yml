@@ -7,6 +7,11 @@
 bundle:
   name: stavanger_parking
 
+# dist/ is ignored by git, so the bundle would not sync it; the jobs read the requirements from it
+sync:
+  include:
+    - dist/requirements.txt
+
 variables:
   catalog:
     description: The Unity Catalog catalog; Free Edition has one, `workspace`
@@ -53,6 +58,9 @@ resources:
           spec:
             environment_version: "2"
             dependencies:
+              # uv.lock's versions first (ADR 012); an absolute path, as bundles cannot resolve -r
+              # with a relative one (databricks/cli#2849)
+              - -r ${workspace.file_path}/dist/requirements.txt
               - ./dist/*.whl
       tasks:
         - task_key: pipeline
@@ -108,6 +116,9 @@ resources:
           spec:
             environment_version: "2"
             dependencies:
+              # uv.lock's versions first (ADR 012); an absolute path, as bundles cannot resolve -r
+              # with a relative one (databricks/cli#2849)
+              - -r ${workspace.file_path}/dist/requirements.txt
               - ./dist/*.whl
       tasks:
         - task_key: collect

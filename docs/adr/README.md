@@ -19,3 +19,4 @@ Each significant decision is recorded as an ADR: the context, the decision, the 
 | [009](009-silver-model.md) | Silver keeps every fetch and derives readings, conflicts and staleness from them | Accepted |
 | [010](010-collect-the-register-hourly.md) | Collect the parking register hourly with the parking feed, keeping only the mapped areas | Accepted |
 | [011](011-one-repository-two-platforms.md) | One repository deploys to Fabric and Databricks; only a thin platform layer differs | Accepted |
+| [012](012-uv-lock-everywhere.md) | uv.lock is the one source of dependency versions on every platform | Accepted |

@@ -31,8 +31,10 @@
 
 # CELL ********************
 
-# The wheel deploy.sh copied into the Lakehouse: the released version on prod, this checkout on dev
-%pip install /lakehouse/default/Files/wheels/{{wheel}} --quiet
+# What deploy.sh copied into the Lakehouse: the dependencies at the versions in uv.lock, checked by
+# hash, then the wheel without resolving anything else (the release on prod, this checkout on dev)
+%pip install -r /lakehouse/default/Files/wheels/requirements.txt --quiet
+%pip install --no-deps /lakehouse/default/Files/wheels/{{wheel}} --quiet
 
 # METADATA ********************
 

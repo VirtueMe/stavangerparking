@@ -131,7 +131,7 @@ This installs the pinned Python version and dependencies into `.venv` and runs t
 
 ## Deploying
 
-Every platform is deployed with the same three commands in [`tools/`](tools/), which run that platform's scripts in `platforms/<platform>/`. They work on **dev** by default; `--prod` targets production, and `--dry-run` (`-n`) shows what would happen without changing anything.
+Every platform is deployed with the same three commands in [`tools/`](tools/), which run that platform's scripts in `platforms/<platform>/`. They work on **dev** by default; `--prod` targets production, and `--dry-run` (`-n`) shows what would happen without changing anything. On every platform the dependencies are installed at the versions in `uv.lock`, the release's own for prod, so what runs is what CI tested ([ADR 012](docs/adr/012-uv-lock-everywhere.md)).
 
 ### Databricks
 

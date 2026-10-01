@@ -82,7 +82,9 @@ def test_the_notebooks_are_pure_python_on_the_lakehouse(name):
 def test_the_notebooks_install_the_deployed_wheel_and_use_only_the_package(name):
     install, *code = code_cells(WORKSPACE / f"{name}.Notebook")
 
-    assert "%pip install /lakehouse/default/Files/wheels/{{wheel}}" in install
+    # The locked dependencies first, checked by hash, then the wheel, which adds nothing to them
+    assert "%pip install -r /lakehouse/default/Files/wheels/requirements.txt" in install
+    assert "%pip install --no-deps /lakehouse/default/Files/wheels/{{wheel}}" in install
     imports = set(re.findall(r"^(?:from|import) (\w+)", "\n".join(code), re.M))
     assert imports <= {"stavanger_parking", "datetime"}
     assert all("raise RuntimeError" in cell for cell in code[-1:])
@@ -144,10 +146,17 @@ case "$(basename "$0") $1 $2" in
   "gh release view") echo v0.20.0 ;;
   "gh release download") touch "${@: -1}/stavanger_parking-0.20.0-py3-none-any.whl" ;;
   "uv build"*) touch "$4/stavanger_parking-0.21.0.dev0-py3-none-any.whl" ;;
+  "uv export"*) for a in "$@"; do [ "$prev" = -o ] && echo "polars==1.44.2" > "$a"; prev=$a; done ;;
   "git rev-parse"*) echo "$REPO_ROOT" ;;
 esac
-# backfill.sh calls git -C <root> archive …
-if [ "$(basename "$0")" = git ] && [[ " $* " == *" archive "* ]]; then tar -C "$RAW" -c bronze; fi
+# git -C <root> archive …: the raw files for backfill.sh, a tag's lock file for deploy.sh
+if [ "$(basename "$0")" = git ] && [[ " $* " == *" archive "* ]]; then
+  if [[ " $* " == *" bronze "* ]]; then
+    tar -C "$RAW" -c bronze
+  else
+    tar -C "$LOCK" -c pyproject.toml uv.lock
+  fi
+fi
 # uv runs the report's helper with this interpreter
 if [ "$(basename "$0")" = uv ] && [ "$1" = run ]; then
   while [ "$1" != python ]; do shift; done
@@ -163,12 +172,17 @@ def repo(tmp_path):
     shutil.copytree(FABRIC, tmp_path / "platforms" / "fabric")
     shutil.copytree(REPO / "powerbi", tmp_path / "powerbi")
     (tmp_path / "tools").mkdir()
-    shutil.copy2(REPO / "tools" / "powerbi.py", tmp_path / "tools" / "powerbi.py")
+    for tool in ["powerbi.py", "requirements.sh"]:
+        shutil.copy2(REPO / "tools" / tool, tmp_path / "tools" / tool)
     for cli in ["fab", "uv", "gh", "git"]:
         path = tmp_path / "bin" / cli
         path.parent.mkdir(exist_ok=True)
         path.write_text(FAKE)
         path.chmod(0o755)
+    lock = tmp_path / "lock"
+    lock.mkdir()
+    (lock / "pyproject.toml").write_text("[project]\n")
+    (lock / "uv.lock").write_text("version = 1\n")
     raw = tmp_path / "data"
     for name in ["bronze/parking/2026/09/30/1.json", "bronze/parking/2026/09/30/1.meta.json"]:
         (raw / name).parent.mkdir(parents=True, exist_ok=True)
@@ -185,6 +199,7 @@ def run(repo: Path, script: str, *args: str, **env: str) -> subprocess.Completed
             "PATH": f"{repo / 'bin'}{os.pathsep}{os.environ['PATH']}",
             "CALLS": str(repo / "calls.log"),
             "RAW": str(repo / "data"),
+            "LOCK": str(repo / "lock"),
             "REPO_ROOT": str(repo),
             "SQL_ENDPOINT": "abc.datawarehouse.fabric.microsoft.com",
             "FABRIC_WORKSPACE": "Parking",
@@ -195,6 +210,10 @@ def run(repo: Path, script: str, *args: str, **env: str) -> subprocess.Completed
         text=True,
         check=False,
     )
+
+
+def calls(repo: Path) -> str:
+    return (repo / "calls.log").read_text()
 
 
 def fab_calls(repo: Path) -> list[str]:
@@ -223,8 +242,16 @@ def test_a_prod_deploy_installs_the_latest_release_with_fabric_cicd(repo):
     )
     assert fab_calls(repo)[1:] == [
         f"fab deploy --config {out}/workspace/config.yml --target_env prod -f",
+        f"fab cp {out}/wheel/requirements.txt {LAKEHOUSE}/Files/wheels/requirements.txt -f",
         f"fab cp {out}/wheel/{WHEEL} {LAKEHOUSE}/Files/wheels/{WHEEL} -f",
     ]
+    # The dependencies come from the release's own uv.lock, not this checkout's
+    assert f"git -C {repo} archive v0.20.0 pyproject.toml uv.lock" in calls(repo)
+    export = next(c for c in calls(repo).splitlines() if c.startswith("uv export"))
+    project = export.split("--project ")[1].split()[0]
+    assert "--frozen" in export and "--no-dev" in export
+    assert project not in (str(repo), str(REPO)), "prod exported the checkout's lock, not the tag's"
+    assert (out / "wheel" / "requirements.txt").read_text() == "polars==1.44.2\n"
     # The repository keeps its placeholders
     assert "{{wheel}}" in (WORKSPACE / "RunPipeline.Notebook" / "notebook-content.py").read_text()
 
@@ -238,6 +265,9 @@ def test_a_dev_deploy_builds_the_wheel_and_uses_the_dev_workspace(repo):
         / "dist/fabric-dev/workspace/StavangerParkingPipeline.DataPipeline/pipeline-content.json"
     )
     assert '"To": "team@example.com"' in pipeline.read_text()
+    export = next(c for c in calls(repo).splitlines() if c.startswith("uv export"))
+    assert export.endswith(f"--project {repo} -o {repo}/dist/fabric-dev/wheel/requirements.txt")
+    assert "--no-hashes" not in export  # two pip runs: the requirements are checked by hash
     assert any(c.startswith("fab deploy") and "--target_env dev" in c for c in fab_calls(repo))
     assert any("Parking dev.Workspace/StavangerParking.Lakehouse" in c for c in fab_calls(repo))
 

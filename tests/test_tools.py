@@ -197,6 +197,8 @@ def databricks(tmp_path):
     folder.mkdir(parents=True)
     for script in ["deploy.sh", "backfill.sh"]:
         shutil.copy2(REPO / "platforms" / "databricks" / script, folder / script)
+    (tmp_path / "tools").mkdir()
+    shutil.copy2(REPO / "tools" / "requirements.sh", tmp_path / "tools" / "requirements.sh")
     bin_dir = tmp_path / "bin"
     for cli in ["uv", "gh", "databricks"]:
         write_script(bin_dir / cli, FAKE_CLI)
@@ -250,17 +252,53 @@ def test_a_prod_deploy_installs_the_latest_release(tmp_path, databricks):
 def test_a_prod_deploy_installs_the_release_given(tmp_path, databricks):
     run_databricks(tmp_path, databricks, "deploy.sh", "prod", "v0.16.0")
 
-    assert calls(tmp_path) == [
+    assert [call for call in calls(tmp_path) if call.startswith(("gh", "databricks"))] == [
         "gh release download v0.16.0 --repo VirtueMe/stavangerparking --pattern *.whl --dir dist",
         "databricks bundle deploy --target prod",
     ]
+
+
+def export_call(tmp_path) -> str:
+    return next(call for call in calls(tmp_path) if call.startswith("uv export"))
+
+
+def test_a_prod_deploy_pins_the_dependencies_to_the_releases_own_lock(tmp_path, databricks):
+    """ADR 012: the versions in that release's uv.lock, so a revert gets its versions too."""
+    run_databricks(tmp_path, databricks, "deploy.sh", "prod", "v0.16.0")
+
+    assert f"git -C {tmp_path} archive v0.16.0 pyproject.toml uv.lock" in calls(tmp_path)
+    export = export_call(tmp_path)
+    project = export.split("--project ")[1].split()[0]
+    assert project != str(tmp_path), "prod exported the checkout's lock, not the release's"
+    # One pip run installs the requirements and the wheel, which has no hash to check
+    assert "--frozen" in export and "--no-dev" in export and "--no-hashes" in export
+    assert export.endswith("-o dist/requirements.txt")
+
+
+def test_a_dev_deploy_pins_the_dependencies_to_the_checkouts_lock(tmp_path, databricks):
+    run_databricks(tmp_path, databricks, "deploy.sh", "dev")
+
+    assert f"--project {tmp_path} -o dist/requirements.txt" in export_call(tmp_path)
+
+
+def test_the_jobs_install_the_locked_requirements_before_the_wheel():
+    bundle = (REPO / "platforms" / "databricks" / "databricks.yml").read_text()
+
+    assert (
+        bundle.count(
+            "              - -r ${workspace.file_path}/dist/requirements.txt\n"
+            "              - ./dist/*.whl\n"
+        )
+        == 2
+    )
+    assert "sync:\n  include:\n    - dist/requirements.txt\n" in bundle
 
 
 def test_a_dry_run_deploy_plans_and_deploys_nothing(tmp_path, databricks):
     result = run_databricks(tmp_path, databricks, "deploy.sh", "--dry-run", "dev")
 
     assert result.returncode == 0, result.stderr
-    assert calls(tmp_path)[1:] == [
+    assert [call for call in calls(tmp_path) if call.startswith("databricks")] == [
         "databricks bundle validate --target dev",
         "databricks bundle plan --target dev",
     ]
