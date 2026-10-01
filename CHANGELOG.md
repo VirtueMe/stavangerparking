@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.21.1] - 2026-10-01
+
+### Documentation
+
+- The source feed's freeze as a dated past incident ([#106](https://github.com/VirtueMe/stavangerparking/pull/106))
+
 ## [0.21.0] - 2026-10-01
 
 ### Features
