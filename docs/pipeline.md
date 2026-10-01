@@ -52,6 +52,8 @@ Collection is not part of the pipeline. It has one collector of record, schedule
 | 2 | The command line was wrong | Fix the job definition |
 | 3 | A critical check failed; the results are in `quality_check_results` | Alert; the tables are built, but the data needs a look before it is trusted |
 
+The console script exits only with a non-zero code; on success it returns. A Databricks wheel task runs the entry point in IPython, which reports any `SystemExit` as a failed task, even with code 0, so a clean run used to show as failed (#107). The same holds for the collector's `stavanger-parking-collect`.
+
 ## The per-step commands
 
 Each step still has its own command, for running or debugging one layer: `bronze.load`, `silver.build` (with `--rebuild`), `gold.build` and `quality.check`. The pipeline calls the same functions they do.
