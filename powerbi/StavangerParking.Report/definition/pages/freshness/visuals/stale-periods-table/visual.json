@@ -1,0 +1,119 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "stale-periods-table",
+  "position": {
+    "x": 648,
+    "y": 60,
+    "z": 2200,
+    "height": 132,
+    "width": 616,
+    "tabOrder": 2200
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_source_stale_period"
+                    }
+                  },
+                  "Property": "stale_from"
+                }
+              },
+              "queryRef": "fact_source_stale_period.stale_from",
+              "nativeQueryRef": "stale_from"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_source_stale_period"
+                    }
+                  },
+                  "Property": "Ended"
+                }
+              },
+              "queryRef": "fact_source_stale_period.Ended",
+              "nativeQueryRef": "Ended"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_source_stale_period"
+                    }
+                  },
+                  "Property": "Stale time (days)"
+                }
+              },
+              "queryRef": "fact_source_stale_period.Stale time (days)",
+              "nativeQueryRef": "Stale time (days)"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_source_stale_period"
+                    }
+                  },
+                  "Property": "stale_fetches"
+                }
+              },
+              "queryRef": "fact_source_stale_period.stale_fetches",
+              "nativeQueryRef": "stale_fetches"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "fact_source_stale_period"
+                  }
+                },
+                "Property": "stale_from"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Stale periods of the source (UTC)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

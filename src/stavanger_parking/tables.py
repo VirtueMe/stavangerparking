@@ -29,6 +29,7 @@ FACILITY_TABLE = "dim_parking_facility"
 AVAILABILITY_TABLE = "fact_parking_availability"
 HOURLY_TABLE = "fact_parking_hourly"
 SUGGESTED_PRICE_TABLE = "fact_suggested_price"
+SOURCE_STALE_PERIOD_TABLE = "fact_source_stale_period"
 
 # Quality
 QUALITY_TABLE = "quality_check_results"
@@ -48,5 +49,6 @@ PIPELINE_TABLES = (
     AVAILABILITY_TABLE,
     HOURLY_TABLE,
     SUGGESTED_PRICE_TABLE,
+    SOURCE_STALE_PERIOD_TABLE,
     QUALITY_TABLE,
 )

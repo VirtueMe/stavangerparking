@@ -17,6 +17,8 @@ Under `--tables-root`:
 - `fact_parking_hourly` is rebuilt from the availability fact and silver's stale periods
   (`gold.hourly`); a reading covers at most the parking source's slow polling interval past its
   last fetch.
+- `fact_source_stale_period` is rebuilt from silver's stale periods (`gold.stale_period`), with
+  no end while a period is ongoing.
 """
 
 import argparse
@@ -46,6 +48,7 @@ from stavanger_parking.gold.pricing import (
     load_tariffs,
     suggested_prices,
 )
+from stavanger_parking.gold.stale_period import stale_periods
 from stavanger_parking.silver.register import AREA_SCHEMA
 from stavanger_parking.tables import (
     AREA_TABLE,
@@ -56,6 +59,7 @@ from stavanger_parking.tables import (
     HOURLY_TABLE,
     PARKING_SOURCE_ID,
     READING_TABLE,
+    SOURCE_STALE_PERIOD_TABLE,
     STALE_PERIOD_TABLE,
     SUGGESTED_PRICE_TABLE,
     TIME_TABLE,
@@ -88,7 +92,17 @@ def build(
     written[SUGGESTED_PRICE_TABLE] = build_prices(
         tables_root, tariffs_path, rules_path, storage_options
     )
+    written[SOURCE_STALE_PERIOD_TABLE] = build_stale_periods(tables_root, storage_options)
     return written
+
+
+def build_stale_periods(tables_root: str, storage_options=None) -> int:
+    """Replace `fact_source_stale_period`; returns its number of rows."""
+    rows = stale_periods(
+        pl.read_delta(table_path(tables_root, STALE_PERIOD_TABLE), storage_options=storage_options)
+    )
+    _overwrite(rows, table_path(tables_root, SOURCE_STALE_PERIOD_TABLE), storage_options)
+    return rows.height
 
 
 def build_prices(tables_root: str, tariffs_path, rules_path, storage_options=None) -> int:

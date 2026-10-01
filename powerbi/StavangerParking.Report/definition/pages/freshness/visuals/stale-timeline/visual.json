@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
-  "name": "stale-share-column",
+  "name": "stale-timeline",
   "position": {
     "x": 16,
     "y": 208,
@@ -47,6 +47,20 @@
               },
               "queryRef": "fact_parking_hourly.Stale share",
               "nativeQueryRef": "Stale share"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_hourly"
+                    }
+                  },
+                  "Property": "Occupancy (fresh data)"
+                }
+              },
+              "queryRef": "fact_parking_hourly.Occupancy (fresh data)",
+              "nativeQueryRef": "Occupancy (fresh data)"
             }
           ]
         }
@@ -83,7 +97,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Stale share by date'"
+                  "Value": "'Stale share, and occupancy where the data is fresh, by date'"
                 }
               }
             }
@@ -91,6 +105,35 @@
         }
       ]
     },
-    "drillFilterOtherVisuals": true
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "valueAxis": [
+        {
+          "properties": {
+            "start": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "end": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

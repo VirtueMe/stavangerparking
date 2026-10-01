@@ -17,3 +17,7 @@ relationship hourly_facility
 relationship hourly_date
 	fromColumn: fact_parking_hourly.date_key
 	toColumn: dim_date.date_key
+
+relationship stale_period_date
+	fromColumn: fact_source_stale_period.date_key
+	toColumn: dim_date.date_key
