@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "Collect",
+    "description": "Collects raw snapshots into the Lakehouse. Not scheduled: GitHub Actions is the collector of record until the handover (ADR 011)"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c71d4f26-9e03-4b58-8a7c-0f3b6e2d9a15"
+  }
+}

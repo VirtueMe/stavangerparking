@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "RunPipeline",
+    "description": "Runs bronze, silver, gold and the quality checks with the released wheel (docs/pipeline.md)"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a3e95b12-7c48-4d0f-b6a1-58e2c9d4f730"
+  }
+}

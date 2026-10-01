@@ -1,0 +1,50 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Run the pipeline",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "typeProperties": {
+          "notebookId": "a3e95b12-7c48-4d0f-b6a1-58e2c9d4f730",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        }
+      },
+      {
+        "name": "E-mail on failure",
+        "description": "Inactive until an Office 365 Outlook connection is set on it once in the workspace (docs/fabric.md)",
+        "type": "Office365Outlook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Run the pipeline",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "inputs": {
+            "method": "post",
+            "path": "/v2/Mail",
+            "body": {
+              "To": "{{alert_email}}",
+              "Subject": "Stavanger Parking: the pipeline failed",
+              "Body": "<p>The pipeline failed in @{pipeline().DataFactory}.</p><p>@{activity('Run the pipeline').error.message}</p>",
+              "Sensitivity": "",
+              "Importance": "High"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+# fabric-cicd's find-and-replace at deploy time (docs/fabric.md): the notebooks' default Lakehouse
+# and workspace are the ones in the target workspace, whatever the placeholders in the repository say.
+# The pipeline's reference to the notebook (its logicalId) is replaced by fabric-cicd itself.
+find_replace:
+    - find_value: \#\s*META\s+"default_lakehouse":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+        dev: "$items.Lakehouse.StavangerParking.$id"
+        prod: "$items.Lakehouse.StavangerParking.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+    - find_value: \#\s*META\s+"default_lakehouse_workspace_id":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      replace_value:
+        dev: "$workspace.$id"
+        prod: "$workspace.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+    - find_value: '"known_lakehouses":\s*\[\s*# META\s*\{\s*# META\s*"id":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"'
+      replace_value:
+        dev: "$items.Lakehouse.StavangerParking.$id"
+        prod: "$items.Lakehouse.StavangerParking.$id"
+      is_regex: "true"
+      item_type: "Notebook"
+    - find_value: "00000000-0000-0000-0000-000000000000"
+      replace_value:
+        dev: "$workspace.$id"
+        prod: "$workspace.$id"
+      item_type: "DataPipeline"
