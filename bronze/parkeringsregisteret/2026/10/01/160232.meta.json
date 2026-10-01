@@ -1,0 +1,19 @@
+{
+  "source_id": "parkeringsregisteret",
+  "ingested_at": "2026-10-01T16:02:32.978564+00:00",
+  "source_url": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade?orgnr=974782766&datafelter=alle",
+  "resource_id": null,
+  "run_id": "36888935660-1",
+  "content_hash": "sha256:6f66e24cbeb0f4cda08301e11f812675e5bc85ce74b831cfe5d2981509250996",
+  "values_fingerprint": "sha256:4322fe1fbf84035663f8290ce6789b7d51b341e2365e04d0301583ba9b755ccc",
+  "polling_mode": "slow",
+  "next_due": "2026-10-01T17:02:32.978564+00:00",
+  "filter": {
+    "field": "id",
+    "response_hash": "sha256:f43a1a72924a229b359cfb14f4d6c0858b5b634571751c2aee818a915662dc67",
+    "applied": true,
+    "response_records": 178,
+    "kept_records": 9,
+    "missing": []
+  }
+}
