@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.20.4] - 2026-10-01
+
+### Documentation
+
+- Deploying in the README ([#100](https://github.com/VirtueMe/stavangerparking/pull/100))
+
 ## [0.20.3] - 2026-10-01
 
 ### Documentation
