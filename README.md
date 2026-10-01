@@ -11,7 +11,7 @@ As of 30 September 2026:
 - **Collection** runs every 5 minutes on GitHub Actions, started by cron-job.org, onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data): the parking feed adaptively, the national parking register hourly ([collector](docs/collector.md), [ADR 007](docs/adr/007-collect-outside-the-platform.md), [ADR 008](docs/adr/008-trigger-collection-externally.md)).
 - **Databricks** (Free Edition) runs the pipeline from this repository as an Asset Bundle, with the released wheel: bronze, silver, gold and the quality checks, then the report's tables published to Unity Catalog ([`docs/databricks.md`](docs/databricks.md)). Its data comes from the `data` branch by backfill; its own collector is deployed but paused.
 - **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). The pages have no visuals yet (#87).
-- **Fabric** is written for but not deployed: it needs a capacity, which the own tenant cannot get (#16).
+- **Fabric** is ready to deploy but not deployed: the Lakehouse, notebooks and pipeline are in [`platforms/fabric/`](platforms/fabric/), and the same tools deploy them, but it needs a capacity, which the own tenant cannot get (#16, [`docs/fabric.md`](docs/fabric.md)).
 - **The source feed has not updated since 23 September 2026, 19:16**, although the file is re-published every 2 minutes. Everything downstream shows it as stale rather than hiding it ([known weaknesses](#known-weaknesses)).
 
 ## Architecture
@@ -156,7 +156,17 @@ Without `--prod`, `tools/deploy` builds the wheel from your checkout and deploys
 
 ### Fabric
 
-The same commands with `-p fabric`, once [#98](https://github.com/VirtueMe/stavangerparking/issues/98) has built `platforms/fabric/`; it needs a Fabric capacity, which is pending (#16).
+The same commands with `-p fabric`. The items and scripts are ready, but not yet run: they need a Fabric capacity, which is pending (#16). Needs the Fabric CLI, signed in (above), and the workspace names:
+
+```sh
+export FABRIC_WORKSPACE="<prod workspace>"   # and FABRIC_DEV_WORKSPACE for dev
+tools/deploy -p fabric --prod --dry-run      # prepare the items and check the workspace
+tools/deploy -p fabric --prod                # the Lakehouse, the notebooks and the pipeline, with fabric-cicd
+tools/backfill -p fabric --prod              # copy the raw files into the Lakehouse, and run the pipeline
+tools/report -p fabric --prod                # the report, on the Lakehouse's SQL endpoint
+```
+
+The details, and what has not been tried: [`docs/fabric.md`](docs/fabric.md).
 
 ## Repository layout
 
@@ -170,6 +180,7 @@ The same commands with `-p fabric`, once [#98](https://github.com/VirtueMe/stava
 | `src/stavanger_parking/config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/pipeline.md` | [Pipeline](docs/pipeline.md): the one entry point that runs every layer, its parameters and exit codes |
 | `platforms/databricks/` | [Databricks deployment](docs/databricks.md): the Asset Bundle, its jobs, deploying and backfilling |
+| `platforms/fabric/` | [Fabric deployment](docs/fabric.md): the Lakehouse, notebooks and pipeline as files, deployed with fabric-cicd; ready, not yet run |
 | `tools/` | `deploy`, `backfill` and `report` for any platform: `tools/deploy -p databricks [--prod] [--dry-run]`, or with `PLATFORM` in `.env` ([deploying](docs/databricks.md#deploying), [the report per platform](docs/report.md#on-a-platform)) |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |

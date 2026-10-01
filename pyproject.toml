@@ -41,6 +41,8 @@ addopts = ["--strict-markers"]
 
 [tool.ruff]
 line-length = 100
+# Fabric notebooks in their Git format: cells with %pip magics, not Python modules (#98)
+extend-exclude = ["platforms/fabric/workspace"]
 target-version = "py311"
 
 [tool.ruff.lint]
