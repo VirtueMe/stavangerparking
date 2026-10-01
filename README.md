@@ -6,11 +6,11 @@ For the 22 October meeting, the [walkthrough](docs/walkthrough.md) goes through 
 
 ## Status
 
-As of 30 September 2026:
+As of 1 October 2026:
 
 - **Collection** runs every 5 minutes on GitHub Actions, started by cron-job.org, onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data): the parking feed adaptively, the national parking register hourly ([collector](docs/collector.md), [ADR 007](docs/adr/007-collect-outside-the-platform.md), [ADR 008](docs/adr/008-trigger-collection-externally.md)).
 - **Databricks** (Free Edition) runs the pipeline from this repository as an Asset Bundle, with the released wheel: bronze, silver, gold and the quality checks, then the report's tables published to Unity Catalog ([`docs/databricks.md`](docs/databricks.md)). Its data comes from the `data` branch by backfill; its own collector is deployed but paused.
-- **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). The pages have no visuals yet (#87).
+- **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). Its five pages (availability, patterns, map, data freshness and quality, about) have their visuals (#87, #89).
 - **Fabric** is ready to deploy but not deployed: the Lakehouse, notebooks and pipeline are in [`platforms/fabric/`](platforms/fabric/), and the same tools deploy them, but it needs a capacity, which the own tenant cannot get (#16, [`docs/fabric.md`](docs/fabric.md)).
 - **The source feed can freeze without notice.** From 23 September 2026, 19:16 to 1 October 2026, 13:50 it repeated one reading while the file was re-published every 2 minutes, and it recovered without anyone reporting it. Everything downstream shows stale data as stale rather than hiding it ([known weaknesses](#known-weaknesses)).
 
@@ -117,7 +117,7 @@ The full log is [`docs/weaknesses.md`](docs/weaknesses.md), kept as trade-offs a
 | **Polars on one node** holds all fetches in memory during the derivation | Fine for decades of this feed; derive by date window or switch to Spark near 20 million fetch rows; the Delta tables are engine-neutral ([ADR 001](docs/adr/001-polars-over-pyspark.md), [ADR 006](docs/adr/006-scalability-assessment.md)) |
 | **On Databricks, delta-rs cannot commit to a volume safely** and uses a plain rename | Safe with one writer: the pipeline job allows one run at a time, and anything else that writes the tables must be a task of that job ([`docs/databricks.md`](docs/databricks.md)) |
 | **Databricks Free Edition blocks outbound internet** except trusted domains, so its collector cannot reach the sources yet | Databricks gets its data by backfill from the `data` branch; GitHub Actions stays the collector of record |
-| **The report has no visuals yet**, and the Fabric data source has not been tried | The model refreshes on Databricks and every measure evaluates in the service; the pages are specified in [`docs/report.md`](docs/report.md) (#87, #16) |
+| **The report's Fabric data source has not been tried** | The model and its five pages refresh on Databricks and every measure evaluates in the service; the Fabric source is checked when Fabric is deployed ([`docs/report.md`](docs/report.md), #16) |
 
 ## Getting started
 
