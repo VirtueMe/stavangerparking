@@ -129,6 +129,35 @@ uv run pytest
 
 This installs the pinned Python version and dependencies into `.venv` and runs the test suite. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow.
 
+## Deploying
+
+Every platform is deployed with the same three commands in [`tools/`](tools/), which run that platform's scripts in `platforms/<platform>/`. They work on **dev** by default; `--prod` targets production, and `--dry-run` (`-n`) shows what would happen without changing anything.
+
+### Databricks
+
+Needs the [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/install), [uv](https://docs.astral.sh/uv/) and the [GitHub CLI](https://cli.github.com/). Once:
+
+```sh
+databricks auth login --host https://<workspace>.cloud.databricks.com   # the workspace stays out of the repository
+uv run --only-group powerbi fab auth login                              # the Fabric CLI, for publishing the report
+echo PLATFORM=databricks >> .env                                        # or pass -p databricks to every command
+```
+
+Then:
+
+```sh
+tools/deploy --prod --dry-run   # the plan, and the release it would install
+tools/deploy --prod             # the bundle, with the latest release's wheel (or give a tag, to revert)
+tools/backfill --prod           # copy the raw files from the data branch, and run the pipeline
+tools/report --prod             # publish the Power BI model and report; set the credentials once in the service
+```
+
+Without `--prod`, `tools/deploy` builds the wheel from your checkout and deploys a dev copy, with every schedule paused. The details: [`docs/databricks.md`](docs/databricks.md) for the bundle, its jobs and backfill, and [`docs/report.md`](docs/report.md#on-a-platform) for the report.
+
+### Fabric
+
+The same commands with `-p fabric`, once [#98](https://github.com/VirtueMe/stavangerparking/issues/98) has built `platforms/fabric/`; it needs a Fabric capacity, which is pending (#16).
+
 ## Repository layout
 
 | Path | Contents |
