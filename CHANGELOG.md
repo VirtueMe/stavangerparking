@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.23.2] - 2026-10-02
+
+### Documentation
+
+- **walkthrough:** Refresh order, and no assumed state in the meeting demo ([#118](https://github.com/VirtueMe/stavangerparking/pull/118))
+
 ## [0.23.1] - 2026-10-02
 
 ### Bug Fixes
