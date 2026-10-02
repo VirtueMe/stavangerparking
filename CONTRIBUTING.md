@@ -28,6 +28,7 @@ git worktree add .worktrees/{type}-{issue}-{slug} -b {type}/{issue}_{slug} main
 - PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/), for example `feat(silver): typed parsing of snapshots`. The `PR title` check blocks the merge otherwise.
 - The `Lint and test` check (ruff and pytest) must pass, and the branch must be up to date with `main` before merging, so that what was tested is what lands on `main`.
 - Link the issue with a closing keyword in the PR description (`Closes #N`), so the issue moves on the project board and closes on merge.
+- A change to silver's parsing or deduplication applies only to bronze rows parsed after it. Its PR ends the test plan with the step that brings the platforms' history along: after the merge, `tools/deploy --prod`, then `tools/rebuild --prod` ([`docs/databricks.md`](docs/databricks.md#rebuilding-silver)).
 
 ## Architecture decisions and weaknesses
 

@@ -29,11 +29,12 @@ if result.exit_code:
 | `--tables-root` | Where the tables are: a folder, `/lakehouse/default/Tables`, or a URI delta-rs writes to, such as `abfss://…/Tables` |
 | `--storage-option KEY=VALUE` | A delta-rs storage option for the tables root, such as credentials for an `abfss://` URI; repeat for more. `storage_options={...}` in `run_pipeline` |
 | `--config`, `--mapping`, `--tariffs`, `--rules` | The configuration files; by default those shipped in the package (`stavanger_parking/config/`) |
+| `--rebuild-silver true\|false` | `true` rebuilds silver from all of bronze instead of parsing only the new rows, after a change to the parsing or deduplication; default `false`. A value rather than a flag, so a job can set it from a parameter (`rebuild_silver=True` in `run_pipeline`). On a platform: `tools/rebuild` |
 
 ## Order, and what stops a run
 
 1. **bronze**: every source's new raw files ([`docs/bronze.md`](bronze.md)). No new files is not a failure.
-2. **silver**: incremental; the register's areas once it is collected ([`docs/silver.md`](silver.md)).
+2. **silver**: incremental, or rebuilt from all of bronze with `--rebuild-silver true`; the register's areas once it is collected ([`docs/silver.md`](silver.md)).
 3. **gold**: the dimensions and facts ([`docs/gold.md`](gold.md)).
 4. **quality**: the checks, with their results appended to `quality_check_results` ([`docs/quality.md`](quality.md)).
 

@@ -31,6 +31,7 @@ tools/report -p fabric --prod                    # the Power BI model on the Lak
 
 - **dev and prod are two workspaces**, `FABRIC_DEV_WORKSPACE` and `FABRIC_WORKSPACE`, the way fabric-cicd separates environments.
 - **The failure e-mail** goes to `FABRIC_ALERT_EMAIL`, by default the signed-in account. The activity is deployed **inactive**: an Office 365 Outlook activity needs a connection, which is signed in by a person and cannot be kept in Git. Open the pipeline once, choose the connection, and activate the activity.
+- **No `tools/rebuild` yet.** Rebuilding silver after a parsing change ([`docs/databricks.md`](databricks.md#rebuilding-silver)) needs the `RunPipeline` notebook to take a `rebuild_silver` parameter from the pipeline; that waits until the deployment has run (#16). `tools/rebuild -p fabric` says so.
 - **Not Git integration.** #16 planned the workspace's Git integration on a `fabric` branch. Deploying with fabric-cicd from the tools is the same as on Databricks: a release is deployed, not a branch, and dev and prod differ only in the workspace. The folder is in Git format, so Git integration can still sync it if that is wanted.
 
 ### Dependencies from `uv.lock`
