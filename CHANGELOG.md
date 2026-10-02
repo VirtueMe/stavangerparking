@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.23.1] - 2026-10-02
+
+### Bug Fixes
+
+- **report:** Occupancy visuals leave out the hours of a frozen source ([#117](https://github.com/VirtueMe/stavangerparking/pull/117))
+
 ## [0.23.0] - 2026-10-02
 
 ### Features
