@@ -67,7 +67,8 @@ Every column has a description (from `docs/gold.md`). Month and weekday names so
 | `Free spaces (latest)` | availability | Each facility's latest reading in the selection, **summed across facilities**: "free spaces now" in the city, without summing over time |
 | `Free spaces (avg)` | hourly | **Time-weighted** average per facility (hours weighted by their counted minutes, the minutes with a count), summed across facilities |
 | `Free spaces (min)`, `Free spaces (max)` | hourly | The lowest and highest single reading in the selection |
-| `Occupancy` | hourly | Share of capacity in use, over facilities with a known capacity; outside 0–100 % means the capacity is wrong |
+| `Occupancy` | hourly | Share of capacity in use, over facilities with a known capacity; outside 0–100 % means the capacity is wrong. It includes the hours of a frozen source, as a repeated value, so no visual shows it directly (a test checks): over time use `Occupancy (fresh data)`, for now `Occupancy (latest)` |
+| `Occupancy (latest)` | availability | The occupancy of each facility's latest reading, over facilities with a known capacity and a count: the share that goes with `Free spaces (latest)`. Show it with `Data age (minutes)`, since a frozen source keeps its last reading |
 | `Occupancy (fresh data)` | hourly | `Occupancy` over the hours that do not rest mostly on stale data (the suggested prices' `max_stale_share`, 0.5; a test keeps the two equal): blank while the source is frozen, so a chart shows nothing, not a repeated value |
 | `Covered minutes`, `Stale minutes`, `Stale share` | hourly | How much of the time is covered by readings, and how much of it rests on stale data |
 | `Capacity` | availability | The facilities' capacity from the national parking register, summed; blank without one |
@@ -88,8 +89,8 @@ The report has five pages, each with a title and the attribution footer. The vis
 | Page | Visuals |
 |---|---|
 | **Availability over time** | Line chart of `Free spaces (avg)` by `dim_date[date]` and `fact_parking_hourly[hour]`, one line per `facility_name`; a card with `Free spaces (latest)`; slicers for date and facility |
-| **Weekday and hour patterns** | Matrix of `Occupancy` (or `Free spaces (avg)`) with `dim_date[weekday]` in rows and `fact_parking_hourly[hour]` in columns, conditional formatting as a heat map; slicer for facility; a toggle to exclude public holidays (`dim_date[is_public_holiday]`) |
-| **Facilities on the map** | Azure Maps bubbles at `dim_parking_facility[latitude]`, `[longitude]`, sized by `Free spaces (latest)`, tooltip with `Capacity` and `Occupancy`; beside it a table of the same figures, which also stands in for the map if the tenant has map visuals turned off |
+| **Weekday and hour patterns** | Matrix of `Occupancy (fresh data)` (or `Free spaces (avg)`) with `dim_date[weekday]` in rows and `fact_parking_hourly[hour]` in columns, conditional formatting as a heat map; slicer for facility; a toggle to exclude public holidays (`dim_date[is_public_holiday]`) |
+| **Facilities on the map** | Azure Maps bubbles at `dim_parking_facility[latitude]`, `[longitude]`, sized by `Free spaces (latest)`, tooltip with `Capacity`, `Occupancy (latest)` and `Data age (minutes)`: the current situation, not an average over the history; beside it a table of the same figures, which also stands in for the map if the tenant has map visuals turned off |
 | **Data freshness and quality** | Cards for `Source status` and `Data age (minutes)`; a table of the source's stale periods (`stale_from`, `Ended`, `Stale time (days)`, `stale_fetches`); a column chart of `Stale share` and `Occupancy (fresh data)` side by side by date, on a 0–100 % axis: during a freeze only the stale column is there, at 100 %, with no occupancy beside it; column chart of `Covered minutes` by date; table of the failed checks in the latest quality run (`quality_check_results`, with the measure `Failed checks (latest run)`) |
 | **About the data** | A text box or card with `Attribution`, links to the licence and the sources, and a note on what the stale and occupancy figures mean |
 
