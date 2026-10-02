@@ -48,3 +48,15 @@ The names differ between all three sources (ADR 004), so no source can be joined
 - The mapping must be updated by hand when a facility is added or renamed; until then, that facility has no capacity. A facility in the feed without a mapping is easy to detect (#21).
 - The register can be wrong or late. The discrepancies for Jernbanen and Forum are recorded, not resolved, and `free spaces > capacity` is an obvious symptom the quality checks can test (#21).
 - Recorded in [`docs/weaknesses.md`](../weaknesses.md).
+
+## Addendum 2026-09-30: reserved spaces the register leaves out
+
+Forum's 292 free spaces, against 289 in the register, stopped every pipeline run from the start (`free_exceeds_capacity`, #21). The cause is what each source counts:
+
+- **The register records public parking** (*vilkårsparkering for allmennheten*): 289 paid spaces at P-Forum.
+- **The garage also has 26 reserved spaces**, which the feed counts: the sign plan the operator filed in the register (area 46816, version 2, sign plan 100557, March 2023) has 26 × sign 850.0 on floor 1, one at each reserved space, for Madla and Tjensvoll HBT (the municipality's home-based care), Kolumbus (2) and one private holder. The reservation holders were read from the signs by the owner of this repository. 289 + 26 = **315**, and the feed's 292 fits.
+- **Charging and accessible spaces are not the explanation.** They are ordinary paid spaces: the same sign plan's information sign says the whole garage is "Avgiftsplasser m/skiltgjenkjenning" and that people with reduced mobility pay too (§33), and the register's history shows charging spaces growing (7 to 46 at P-Jernbanen) while paid spaces stay the same. Adding them on top of the paid count, the first reading of #91, would count them twice.
+
+**Decision:** the facility mapping gets `reserved_spaces`, the spaces the register leaves out because they are not public parking, with a note giving the source; capacity is the register's paid spaces plus these (`gold/facility.py`). The register stays the source of the public count, so a change there still arrives within the hour. Forum has 26; no other facility has any recorded.
+
+**Still open:** the operator's website says 325 for Forum, 10 more than 315, and Stavanger Parkering has not confirmed the reserved count. Jernbanen's website figure (500) is the register's own version from 2017, replaced by 390 in 2024, so that website is out of date.

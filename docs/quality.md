@@ -51,7 +51,7 @@ The checks look at the **latest parking snapshot** (the newest raw file, whether
 
 On the real data on 29 September 2026, the checks failed on one critical and one warning:
 
-- **`free_exceeds_capacity`, Forum: 292 free of 289.** The register's capacity for Forum is too low; the operator's website says 325. The run stops until the capacity is corrected ([ADR 005](adr/005-capacity-as-reference-data.md), noted in the facility mapping).
+- **`free_exceeds_capacity`, Forum: 292 free of 289** (until #91). The register only covers public parking, and P-Forum also has 26 reserved spaces (Madla and Tjensvoll HBT, Kolumbus, one private) that the feed counts. The check stopped every run until the facility mapping added them: 315 ([ADR 005](adr/005-capacity-as-reference-data.md#addendum-2026-09-30-reserved-spaces-the-register-leaves-out)). It is the check working as meant: two sources counted different spaces, and it said so.
 - **`source_stale`: the data was about 5.8 days old**, because the feed was frozen from 23 September (it recovered on 1 October). The warning appears whenever the source's own timestamp is too old, and goes away by itself when the feed updates again.
 
 Everything else passed: the schema was as expected, the snapshot had its 9 facilities, all mapped and inside the Stavanger area, and the register had every mapped area.

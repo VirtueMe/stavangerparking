@@ -6,9 +6,11 @@ The natural key is the feed's name, `facility_name` (ADR 004); facts use the sur
 
 - `latitude`, `longitude`: from the facility's latest fetch that had them
 - `register_id`, `capacity`, `capacity_changed_at`: the register area the mapping links the name to
-  (ADR 005), from the latest register snapshot: its paid spaces and when the register last changed
-  the area. Unknown (null) when the facility is not in the mapping, the register has not been
-  collected, the area is missing from the snapshot, or the provider has deactivated it
+  (ADR 005), from the latest register snapshot: its paid spaces, plus the spaces the mapping says
+  are reserved for others (`reserved_spaces`, which the register leaves out and the feed counts),
+  and when the register last changed the area. Unknown (null) when the facility is not in the
+  mapping, the register has not been collected, the area is missing from the snapshot or has no
+  paid count, or the provider has deactivated it
 - `first_seen`, `last_seen`: the first and last fetch that included the facility
 - `is_active`: the facility is in the latest fetched snapshot
 
@@ -57,17 +59,22 @@ def facility_attributes(
     )
 
     links = pl.DataFrame(
-        [{"facility": m.facility, "register_id": m.register_id} for m in mapping],
-        schema={"facility": pl.String, "register_id": pl.Int64},
+        [
+            {"facility": m.facility, "register_id": m.register_id, "reserved": m.reserved_spaces}
+            for m in mapping
+        ],
+        schema={"facility": pl.String, "register_id": pl.Int64, "reserved": pl.Int64},
     )
     latest_areas = areas.filter(pl.col("ingested_at") == pl.col("ingested_at").max()).select(
         "register_id",
-        pl.when(pl.col("deactivated_at").is_null()).then("paid_spaces").alias("capacity"),
+        pl.when(pl.col("deactivated_at").is_null()).then("paid_spaces").alias("paid"),
         pl.col("changed_at").alias("capacity_changed_at"),
     )
     return (
         seen.join(links, on="facility", how="left")
         .join(latest_areas, on="register_id", how="left")
+        # Without the register's paid count the capacity stays unknown, reserved spaces or not
+        .with_columns((pl.col("paid") + pl.col("reserved")).alias("capacity"))
         .rename({"facility": "facility_name"})
         .select(pl.col(c).cast(FACILITY_SCHEMA[c]) for c in ATTRIBUTES)
         .sort("first_seen", "facility_name")

@@ -5,6 +5,9 @@ its parking area in the national parking register (Parkeringsregisteret), where 
 from, and records the names used by the register and the operator for reference (ADR 005). It is
 maintained by hand: names differ between all three sources, so nothing is matched automatically.
 
+The register records public parking only. Spaces reserved for others, which the feed still counts,
+are added as `reserved_spaces`, with their source in the note (#91).
+
 The mapping is validated on load, and every problem is reported at once.
 """
 
@@ -28,6 +31,9 @@ class FacilityMapping:
     operator_name: str
     # Anything a reader should know, such as sources that disagree
     note: str | None = None
+    # Spaces the register leaves out because they are not public parking, such as spaces reserved
+    # for the municipality's services, which the feed counts all the same; added to its capacity
+    reserved_spaces: int = 0
 
 
 REQUIRED_TEXT = ("facility", "register_name", "operator_name")
@@ -76,6 +82,11 @@ def parse_facility_mapping(data, origin: str = "facility mapping") -> tuple[Faci
         note = entry.get("note")
         if note is not None and not isinstance(note, str):
             problems.append(f"{label}: note must be a string")
+        reserved = entry.get("reserved_spaces", 0)
+        if not isinstance(reserved, int) or isinstance(reserved, bool) or reserved < 0:
+            problems.append(f"{label}: reserved_spaces must be a non-negative integer")
+        elif reserved and not (isinstance(note, str) and note.strip()):
+            problems.append(f"{label}: reserved_spaces needs a note giving its source")
         if len(problems) == before:
             mappings.append(FacilityMapping(**entry))
 

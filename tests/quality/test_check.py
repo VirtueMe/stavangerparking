@@ -100,15 +100,15 @@ def test_healthy_data_passes_and_the_results_are_stored(tables, capsys):
 
 
 def test_a_critical_failure_stops_the_run_but_its_results_are_kept(tables, capsys):
-    # Forum reports more free spaces than the register's 289
-    root = tables(T0, [record(f, "292" if f == "Forum" else "100") for f in NINE])
+    # Forum reports more free spaces than its 315 (289 public and 26 reserved)
+    root = tables(T0, [record(f, "400" if f == "Forum" else "100") for f in NINE])
 
     assert run(root) == 1
 
     assert failed(root).select("check", "severity", "subject", "detail").rows() == [
-        ("free_exceeds_capacity", "critical", "Forum", "292 free of 289")
+        ("free_exceeds_capacity", "critical", "Forum", "400 free of 315")
     ]
-    assert "CRITICAL free_exceeds_capacity Forum: 292 free of 289" in capsys.readouterr().out
+    assert "CRITICAL free_exceeds_capacity Forum: 400 free of 315" in capsys.readouterr().out
 
 
 def test_a_warning_alone_does_not_stop_the_run(tables):
