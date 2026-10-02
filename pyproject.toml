@@ -1,6 +1,6 @@
 [project]
 name = "stavanger-parking"
-version = "0.22.1"
+version = "0.22.2"
 description = "Ingestion, transformation and modelling of Stavanger parking open data (bronze → silver → gold)"
 readme = "README.md"
 license = "MIT"
