@@ -14,8 +14,6 @@ concurrency:
 permissions:
   # Push snapshots to the data branch; main stays protected by its ruleset
   contents: write
-  # Read the workflow's failed runs, to record those that left no record of their own (#119)
-  actions: read
 
 jobs:
   collect:
@@ -51,14 +49,6 @@ jobs:
           cd data
           git add DATA-LICENCE.md
           git diff --cached --quiet || git commit -m "data: update NLOD 2.0 attribution"
-
-      # A failed push or a crash leaves no record; this run records earlier ones. Never blocks
-      # collection: a failure here is reported, and the next run tries again
-      - name: Record earlier failed runs
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .github/scripts/record-failed-runs.sh data
 
       - name: Collect
         id: collect

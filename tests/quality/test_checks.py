@@ -276,30 +276,37 @@ def test_no_glitches_pass():
     assert (result.passed, result.detail) == (True, "0 glitch(es) in the last 24 hours")
 
 
-def collect_issue_rows(*rows: tuple[str, datetime]) -> pl.DataFrame:
-    """bronze_collect_issues rows: (issue, occurred at)."""
+def failed_run_rows(*rows: tuple[str | None, datetime]) -> pl.DataFrame:
+    """bronze_collect_runs rows: (failed step, started at)."""
     return pl.DataFrame(
         rows,
-        schema={"issue": pl.String, "occurred_at": pl.Datetime("us", "UTC")},
+        schema={"failed_step": pl.String, "started_at": pl.Datetime("us", "UTC")},
         orient="row",
     )
 
 
-def test_failed_collection_attempts_in_the_last_day_are_a_warning():
-    issues = collect_issue_rows(
-        ("run_failed", T0 - timedelta(hours=20)),
-        ("fetch_failed", T0 - timedelta(hours=2)),
-        ("fetch_failed", T0 + timedelta(minutes=30)),  # after the latest fetch: still counted
-        ("run_failed", T0 - timedelta(hours=30)),  # older than a day
+def test_failed_collector_runs_in_the_last_day_are_a_warning():
+    runs = failed_run_rows(
+        ("Commit and push snapshots", T0 - timedelta(hours=20)),
+        ("Fail the run if a source failed", T0 - timedelta(hours=2)),
+        ("Fail the run if a source failed", T0 + timedelta(minutes=30)),  # after the latest fetch
+        (None, T0 - timedelta(hours=1)),
+        ("Commit and push snapshots", T0 - timedelta(hours=30)),  # older than a day
     )
 
-    result = checks.collect_failures(issues, T0)
+    result = checks.collect_failures(runs, T0)
 
     assert (result.severity, result.passed) == (WARNING, False)
-    assert result.detail == "3 failed attempt(s) in the last 24 hours: fetch_failed 2, run_failed 1"
+    assert result.detail == (
+        "4 failed collector run(s) in the last 24 hours: Commit and push snapshots 1, "
+        "Fail the run if a source failed 2, no step reported 1"
+    )
 
 
-def test_no_failed_collection_attempts_pass():
-    result = checks.collect_failures(collect_issue_rows(), T0)
+def test_no_failed_collector_runs_pass():
+    result = checks.collect_failures(failed_run_rows(), T0)
 
-    assert (result.passed, result.detail) == (True, "0 failed attempt(s) in the last 24 hours")
+    assert (result.passed, result.detail) == (
+        True,
+        "0 failed collector run(s) in the last 24 hours",
+    )

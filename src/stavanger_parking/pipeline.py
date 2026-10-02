@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from stavanger_parking.bronze import load
+from stavanger_parking.bronze import collect_runs, load
 from stavanger_parking.config import DEFAULT_CONFIG
 from stavanger_parking.facilities import DEFAULT_MAPPING
 from stavanger_parking.gold import build as gold_build
@@ -93,6 +93,7 @@ def run_pipeline(
     tariffs_path=DEFAULT_TARIFFS,
     rules_path=DEFAULT_RULES,
     now: datetime | None = None,
+    collector_path=collect_runs.DEFAULT_COLLECTOR,
     rebuild_silver: bool = False,
 ) -> PipelineResult:
     """Run every step in order, stopping at the first that cannot run; returns what each did."""
@@ -100,7 +101,10 @@ def run_pipeline(
 
     # Each step is named after its function
     def bronze() -> Step:
-        return Step("bronze", load.run(config_path, raw_root, tables_root, now, storage_options))
+        lines = load.run(config_path, raw_root, tables_root, now, storage_options)
+        # The collector's failed runs; an unreadable history is reported, never a failed step
+        lines += collect_runs.run(collector_path, tables_root, now, storage_options)
+        return Step("bronze", lines)
 
     def silver() -> Step:
         return Step(

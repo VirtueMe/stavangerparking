@@ -14,8 +14,8 @@ def table_path(tables_root: str, name: str) -> str:
 # The source the model is built on; its bronze table is named in the source configuration
 PARKING_SOURCE_ID = "stavanger_parking"
 
-# Bronze: failed collection attempts, from the records the collector stores (#119)
-COLLECT_ISSUES_TABLE = "bronze_collect_issues"
+# Bronze: the collector's failed runs, read from its run history (#119)
+COLLECT_RUNS_TABLE = "bronze_collect_runs"
 
 # Silver
 FETCH_TABLE = "silver_parking_fetch"
@@ -40,7 +40,7 @@ QUALITY_TABLE = "quality_check_results"
 # Every table the pipeline writes besides the bronze tables (those are named in the source
 # configuration). Maintenance works through this list; a test checks it against a full run.
 PIPELINE_TABLES = (
-    COLLECT_ISSUES_TABLE,
+    COLLECT_RUNS_TABLE,
     FETCH_TABLE,
     READING_TABLE,
     QUARANTINE_TABLE,

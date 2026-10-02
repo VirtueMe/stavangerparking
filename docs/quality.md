@@ -27,7 +27,7 @@ The checks look at the **latest parking snapshot** (the newest raw file, whether
 | `register_missing_areas` | warning | Mapped areas are missing from the latest register snapshot, or there is none |
 | `source_stale` | warning | The snapshot's data is older than the staleness threshold ([source staleness](silver.md#source-staleness)) |
 | `low_coverage` | warning | Facility-hours in the last 24 full hours covered for less than 30 minutes; an hour with no reading at all counts as uncovered |
-| `collect_failures` | warning | Collection attempts of the last 24 hours that failed, by kind ([`docs/collector.md`](collector.md#failed-attempts)); a failed run without a record of its own is recorded by the next run |
+| `collect_failures` | warning | Collector runs that started in the last 24 hours and failed, by failed step ([`docs/collector.md`](collector.md#failed-runs)); runs after the latest fetch count too, since a broken collector stops the fetches |
 | `source_glitches` | warning | Readings of the last 24 hours that were [glitches in the source](gold.md#source-glitches), per facility; a reading is judged when the next one arrives, so a glitch in the latest snapshot is reported by the next run |
 
 **Why these are critical:** each means that what follows is wrong or incomplete, not just unusual. Schema drift or an empty snapshot means readings are missing or silently null; a facility count that differs from the mapping means a facility was added, renamed or removed, and its capacity and history need attention; and more free spaces than capacity means the capacity is wrong, so occupancy is wrong.

@@ -22,7 +22,7 @@ Warnings, to be looked at:
 - `source_stale`: the latest snapshot's data is older than the staleness threshold
 - `low_coverage`: hours in the last day that the readings cover for less than half
 - `source_glitches`: readings in the last day that were glitches in the source (`gold.availability`)
-- `collect_failures`: collection attempts in the last day that failed (`bronze.collect_issues`)
+- `collect_failures`: collector runs in the last day that failed (`bronze.collect_runs`)
 """
 
 from dataclasses import dataclass
@@ -234,19 +234,20 @@ def source_glitches(availability: pl.DataFrame, facilities: pl.DataFrame, until)
     return _result("source_glitches", WARNING, glitches.is_empty(), detail)
 
 
-def collect_failures(issues: pl.DataFrame, until) -> Result:
-    """Failed collection attempts that happened in the last 24 hours before `until`, by kind.
+def collect_failures(runs: pl.DataFrame, until) -> Result:
+    """Collector runs that started in the last 24 hours before `until` and failed, by failed step.
 
-    A failed run that left no record of its own is recorded by a later run, so it is counted from
-    then on, by when it happened.
+    Runs after `until`, the latest fetch, count too: when collection fails, the latest fetch stops
+    moving while the failures go on.
     """
     recent = (
-        issues.filter(pl.col("occurred_at") > until - timedelta(hours=24))
-        .group_by("issue")
+        runs.filter(pl.col("started_at") > until - timedelta(hours=24))
+        .with_columns(pl.col("failed_step").fill_null("no step reported"))
+        .group_by("failed_step")
         .len()
-        .sort("issue")
+        .sort("failed_step")
     )
-    detail = f"{recent['len'].sum()} failed attempt(s) in the last 24 hours"
+    detail = f"{recent['len'].sum()} failed collector run(s) in the last 24 hours"
     if recent.height:
-        detail += ": " + ", ".join(f"{issue} {n}" for issue, n in recent.rows())
+        detail += ": " + ", ".join(f"{step} {n}" for step, n in recent.rows())
     return _result("collect_failures", WARNING, recent.is_empty(), detail)

@@ -27,6 +27,10 @@ Every source is described in [`src/stavanger_parking/config/sources.json`](../sr
 
 **Relative on purpose:** the storage root (a local folder, the Lakehouse `Files/` area or a Unity Catalog volume) and the catalog or schema of the tables belong to the runtime environment, not to the source. The same config works locally and on the platform.
 
+## The collector
+
+[`config/collector.json`](../src/stavanger_parking/config/collector.json) names the collector whose failed runs the pipeline reads (`github_actions.repository`, `github_actions.workflow`; [`docs/collector.md`](collector.md#failed-runs)). Only GitHub Actions has a reader today.
+
 ## Adding a source
 
 Add an entry to `sources` with a new `id`, its CKAN location or URL, its own `raw_path` and `bronze_table`, and its licence; add `polling` if it should be collected on the schedule. No code changes are needed. `uv run pytest` validates the repository config as part of the test suite, so an invalid entry fails in the pull request.
