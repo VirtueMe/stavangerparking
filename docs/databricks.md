@@ -52,6 +52,8 @@ tools/backfill -p databricks --prod --dry-run    # count the files and name the 
 
 Copies the raw files from the `data` branch into the raw volume and runs the pipeline job once, which loads every file bronze does not have yet, brings silver up to date and rebuilds gold. Raw files never change, so running it again copies the same files and loads only new ones. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.
 
+A refresh of the Power BI model reads the published tables: start it after the run's `publish` task has succeeded, never while it runs ([`docs/report.md`](report.md#on-a-platform)).
+
 ## Rebuilding silver
 
 ```sh
