@@ -19,13 +19,20 @@ About 15 minutes in all, then questions.
 
 ## Before the meeting
 
-- **The change for part 6:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91) (capacity counts every kind of space) is open, its checks are green, and it merges without conflicts; rebase it if `main` has moved. Do not merge it before the meeting.
+- **The change for part 6:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91), [#97](https://github.com/VirtueMe/stavangerparking/pull/97) (Forum's 26 reserved spaces), is open, its checks are green, and it merges without conflicts; rebase it if `main` has moved. Do not merge it before the meeting.
 - **Logins for part 6:** `gh auth status`, `databricks auth describe` and `uv run --only-group powerbi fab auth status` all say you are signed in, and `tools/deploy -p databricks --prod --dry-run` plans without errors.
-- **Bring Databricks up to date:** `tools/backfill -p databricks --prod` copies the new raw files from the `data` branch and runs the pipeline. It ends with exit code 3 while Forum's capacity is wrong; the tables are published all the same ([`docs/databricks.md`](databricks.md#backfill)).
-- **Refresh the report** in the Power BI service (the semantic model's *Refresh now*), and check the freshness page shows today's data age.
+- **Bring Databricks and the report up to date, in this order:**
+  1. `tools/deploy -p databricks --prod`, if a release came out since the last deploy (`--dry-run` shows which release it would install).
+  2. `tools/backfill -p databricks --prod` copies the new raw files from the `data` branch and runs the pipeline job ([`docs/databricks.md`](databricks.md#backfill)).
+  3. **Wait until the run has ended and its `publish` task succeeded**: the Databricks jobs page, or `databricks jobs list-runs`. The job's overall state is not the signal: a failed critical check ends the `pipeline` task with exit code 3 and the job with `SUCCESS_WITH_FAILURES`, and `publish` runs all the same.
+  4. `tools/report -p databricks --prod`, only if the report changed since it was last published.
+  5. Refresh the semantic model in the Power BI service (*Refresh now*, under two minutes), and check the freshness page shows today's data age.
+
+  **Never refresh while a run is publishing.** `publish` replaces every table, so a refresh that reads them meanwhile can mix tables from before and after the run, or find one missing: on 1 October a refresh started 25 seconds before a run and hung for many minutes.
+- **Whether a check fails today depends on the hour,** so nothing below promises either way: Forum exceeds its registered 289 only when it is nearly empty, and Jernbanen its 390 at night ([#112](https://github.com/VirtueMe/stavangerparking/issues/112)).
 - **Check collection is running:** the latest commit on the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data) is minutes old, and `collect gaps` lists nothing new ([`docs/collector.md`](collector.md)).
 - **Check the source:** note the data's own timestamp and whether the feed is live or frozen today. Parts 1, 4 and 10 tell the 23 September – 1 October freeze as a past incident either way. If it is frozen again, say so, and show the open stale period in the report.
-- **Open, in tabs:** the [README](../README.md), the report in the "Stavanger Parking Case" workspace, the Databricks jobs page, [`docs/weaknesses.md`](weaknesses.md) and the [ADR index](adr/README.md).
+- **Open, in tabs:** the [README](../README.md), the report in the "Stavanger Parking Case" workspace, the Databricks jobs page, the Databricks SQL editor with [the query for part 6](#the-reading-for-part-6), [`docs/weaknesses.md`](weaknesses.md) and the [ADR index](adr/README.md).
 - The Databricks workspace is Free Edition and temporary; if it is gone, the report still shows its last refresh, and the rest runs locally.
 
 ## 1. The case and where it stands
@@ -88,11 +95,11 @@ About 15 minutes in all, then questions.
 
 ## 6. A change, live
 
-**Show:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91), then GitHub Actions, then a terminal.
+**Show:** the pull request for [#91](https://github.com/VirtueMe/stavangerparking/issues/91), the query below in the Databricks SQL editor (Forum's occupied spaces: −3), then GitHub Actions, then a terminal.
 
 **Say, while doing it:**
 
-- **The finding:** the quality check has stopped every run since the first one, because Forum reports 292 free spaces and the register says 289. The register records *public* parking; the garage also has **26 reserved spaces**, for Madla and Tjensvoll HBT (the municipality's home care), Kolumbus and one private holder. The feed counts them, the register does not: 289 + 26 = 315.
+- **The finding:** on 23 September at 19:16, Forum reported 292 free spaces, and the register says 289: occupancy −3. While that was the newest reading, through the freeze, the quality check stopped every run. With live data it depends on the hour: Forum exceeds 289 only when it is nearly empty. The register records *public* parking; the garage also has **26 reserved spaces**, for Madla and Tjensvoll HBT (the municipality's home care), Kolumbus and one private holder. The feed counts them, the register does not: 289 + 26 = 315.
 - **How it was found:** the register links each area to the sign plan the operator filed, and Forum's floor 1 has 26 reserved-space signs. The first guess, that charging and accessible spaces come on top of the paid ones, was wrong: the same sign plan says they are ordinary paid spaces. The check did its job: two sources count different spaces, and it said so.
 - **The change:** `reserved_spaces: 26` in the facility mapping, with its source in the note; gold adds it to the register's count; an ADR 005 addendum and tests. Merge it (squash).
 - **What happens next, without anyone deploying by hand from a branch:**
@@ -100,6 +107,17 @@ About 15 minutes in all, then questions.
   2. `tools/deploy -p databricks --prod` installs that release, the latest by default (about a minute; `--dry-run` first shows the plan).
   3. `tools/backfill -p databricks --prod` runs the pipeline with the new wheel (about 3–4 minutes). **Leave it running and go on to part 7.**
 - **If anything goes wrong:** `tools/deploy -p databricks --prod <tag>`, with the release before the merge (the Releases page lists it), puts it back.
+
+### The reading for part 6
+
+The 23 September 19:16 reading (17:16 UTC) stays in `fact_parking_availability` whatever the feed does on the day, so it shows the change the same way every time: before the merge, capacity 289 and **−3** occupied; after it, 315 and **23**.
+
+```sql
+SELECT f.facility_name, f.capacity, a.available_spaces, a.occupied_spaces
+FROM workspace.stavanger_parking.fact_parking_availability a
+JOIN workspace.stavanger_parking.dim_parking_facility f USING (facility_key)
+WHERE f.facility_name = 'Forum' AND a.valid_from = TIMESTAMP '2026-09-23 17:16:00 UTC'
+```
 
 ## 7. The report, live
 
@@ -110,7 +128,7 @@ About 15 minutes in all, then questions.
 - **Availability over time:** free spaces per facility, time-weighted, by date and hour; the card is the latest reading, summed across facilities.
 - **Weekday and hour patterns:** occupancy as a heat map, leaving out the hours when the source was frozen; public holidays can be left out.
 - **The map**: each facility's latest reading, its occupancy and how old it is, with a table of the same figures beside it.
-- **Data freshness and quality:** the source's status and data age today, and its **stale periods**: the 23 September – 1 October freeze is one closed period of about 7.75 days, and it shows as a run of days where the stale column is at 100 % and there is no occupancy column beside it: a frozen value is not shown as if it were occupancy. A new freeze would appear as a period with no end yet. The latest quality run failed on **Forum: 292 free spaces against a registered capacity of 289**. That stops every pipeline run, on purpose: a capacity that is wrong makes occupancy wrong, and the report shows it rather than clamping it.
+- **Data freshness and quality:** the source's status and data age today, and its **stale periods**: the 23 September – 1 October freeze is one closed period of about 7.75 days, and it shows as a run of days where the stale column is at 100 % and there is no occupancy column beside it: a frozen value is not shown as if it were occupancy. A new freeze would appear as a period with no end yet. The failed checks of the latest run are listed, if there are any: a capacity that is wrong makes occupancy wrong, so more free spaces than capacity is a critical check that fails the run, and the report shows it rather than clamping it.
 - **About:** both sources, the NLOD attribution (also in every page's footer), and what "stale" and "occupancy" mean.
 - The model and report are files in the repository, published with `tools/report`, which gives each platform its own data source so the service can refresh it ([`docs/report.md`](report.md#on-a-platform)).
 
@@ -147,7 +165,7 @@ About 15 minutes in all, then questions.
 - **The facility name as key:** a rename splits a facility's history.
 - **The platform:** Databricks Free Edition cannot reach the sources, and deploying is manual (#83).
 
-**Then show the change landing:** check that the backfill from part 6 has finished, refresh the semantic model in the service (about 30 seconds), and open **Data freshness and quality**: the latest run has no failed checks (at most a `source_stale` warning, if the feed happens to be frozen), and Forum's occupancy is 23 spaces, not −3. The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
+**Then show the change landing:** check that the run from part 6 has ended and its `publish` task succeeded (a refresh before that reads half-replaced tables), then run [the query](#the-reading-for-part-6) again: Forum's capacity is 315 and the same reading has **23** occupied spaces, not −3. Refresh the semantic model in the service (under two minutes): the report has the new capacity. Forum no longer fails the check; the latest run's failed checks are not a promise either way, since Jernbanen can still exceed its 390 at night ([#112](https://github.com/VirtueMe/stavangerparking/issues/112)). The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
 
 After the meeting, `tools/report -p databricks --prod` publishes the About page's new wording on capacity; the figures are already right after the refresh.
 
@@ -158,7 +176,7 @@ After the meeting, `tools/report -p databricks --prod` publishes the About page'
 | Why not Spark, since Databricks and Fabric are built around it? | The volume fits in memory with room to spare; Spark would cost a JVM and start-up on every run. The switch point is measured, and the tables stay the same | [ADR 001](adr/001-polars-over-pyspark.md), [ADR 006](adr/006-scalability-assessment.md) |
 | Why collect on GitHub Actions and not on the platform? | History cannot be recovered, and platform access was not there on day one. The platform takes over with a handover that keeps one collector | [ADR 007](adr/007-collect-outside-the-platform.md), [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) |
 | What happens when the feed freezes, or starts updating again? | Nothing to change. When it recovered on 1 October, the stale period got its end and the next readings were fresh, with no change to the code | [`docs/silver.md`](silver.md#source-staleness) |
-| Why does every run fail? | A critical quality check: Forum's registered capacity (289) is below its reported free spaces (292). It fails on purpose until the capacity is corrected; the tables are still built and published | [`docs/quality.md`](quality.md) |
+| Why did runs fail? | A critical quality check: a facility reported more free spaces than its registered capacity, Forum at 292 against 289 on 23 September. A run fails on purpose while that holds; the tables are still built and published. Since the freeze ended it depends on the hour | [`docs/quality.md`](quality.md) |
 | Why a 5-minute interval, when the source publishes every 2? | 5 minutes is the scheduler's floor; the analyses use 15-minute buckets, so a finer grain would add runs and rows without adding insight | [ADR 003](adr/003-polling-interval.md) |
 | Why not Direct Lake on Fabric? | It would be the natural choice there; it needs other partitions in the model, not another function, and is planned for when Fabric exists | [`docs/report.md`](report.md#on-a-platform) |
 | How much of it is tested? | The package, the entry point, the wheel, the tools and the report's files, on every pull request; the deployments are checked by hand on the platform | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
