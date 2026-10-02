@@ -70,6 +70,18 @@ class Freshness:
 
 
 @dataclass(frozen=True)
+class Glitch:
+    """When a single reading is a glitch in the source, not a real change (`gold.availability`).
+
+    Its previous and next readings differ by at most `max_neighbour_difference` free spaces, and it
+    is at least `min_jump` away from both.
+    """
+
+    max_neighbour_difference: int
+    min_jump: int
+
+
+@dataclass(frozen=True)
 class RecordFilter:
     """Store only the records whose `field` matches a `mapping_field` in the facility mapping.
 
@@ -92,6 +104,8 @@ class Source:
     # Only for sources collected on a schedule, and only for sources with a data timestamp
     polling: Polling | None = None
     freshness: Freshness | None = None
+    # Only for sources with a count per facility
+    glitch: Glitch | None = None
     filter: RecordFilter | None = None
 
 
@@ -210,6 +224,21 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
             )
         )
 
+    glitch = None
+    if "glitch" in entry:
+        section = _section(entry, "glitch", Glitch, label, problems)
+        glitch = Glitch(
+            max_neighbour_difference=_positive_int(
+                section, "max_neighbour_difference", label, problems, section="glitch"
+            ),
+            min_jump=_positive_int(section, "min_jump", label, problems, section="glitch"),
+        )
+        close, jump = glitch.max_neighbour_difference, glitch.min_jump
+        if close and jump and jump <= close:
+            problems.append(
+                f"{label}: glitch.min_jump must be larger than glitch.max_neighbour_difference"
+            )
+
     record_filter = None
     if "filter" in entry:
         section = _section(entry, "filter", RecordFilter, label, problems)
@@ -234,6 +263,7 @@ def _parse_source(entry, label: str, problems: list[str]) -> Source | None:
         location=location,
         polling=polling,
         freshness=freshness,
+        glitch=glitch,
         filter=record_filter,
     )
 

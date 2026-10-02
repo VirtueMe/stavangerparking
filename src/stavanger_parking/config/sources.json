@@ -25,6 +25,10 @@
       },
       "freshness": {
         "stale_after_minutes": 15
+      },
+      "glitch": {
+        "max_neighbour_difference": 10,
+        "min_jump": 50
       }
     },
     {

@@ -279,6 +279,34 @@ def test_unknown_freshness_field_is_named(config):
     assert "unknown field 'freshness.stale_after'" in problems_of(config)
 
 
+def test_repository_config_has_glitch_thresholds():
+    source = parking()
+
+    assert (source.glitch.max_neighbour_difference, source.glitch.min_jump) == (10, 50)
+
+
+def test_glitch_is_optional(config):
+    del config["sources"][0]["glitch"]
+
+    assert parse_sources(config)[0].glitch is None
+
+
+@pytest.mark.parametrize("field", ["max_neighbour_difference", "min_jump"])
+@pytest.mark.parametrize("value", [0, -1, "10", 1.5, None])
+def test_glitch_thresholds_must_be_positive_integers(config, field, value):
+    config["sources"][0]["glitch"][field] = value
+
+    assert f"glitch.{field} is required and must be a positive integer" in problems_of(config)
+
+
+def test_a_glitch_jump_must_be_larger_than_the_neighbour_difference(config):
+    config["sources"][0]["glitch"] = {"max_neighbour_difference": 50, "min_jump": 50}
+
+    assert "glitch.min_jump must be larger than glitch.max_neighbour_difference" in (
+        problems_of(config)
+    )
+
+
 @pytest.mark.parametrize(
     "raw_path",
     [

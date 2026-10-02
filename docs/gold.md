@@ -79,6 +79,7 @@ A periodic snapshot fact: **one row per facility per source reading**, from silv
 | `available_spaces`, `status` | As in silver: a count, or null with `status` `open` or `unknown` |
 | `occupied_spaces` | The facility's capacity minus its free spaces, when both are known |
 | `is_stale` | The source was seen stale while this was its newest reading ([stale periods](silver.md#source-staleness)) |
+| `is_source_glitch` | A single reading that does not fit between its neighbours: a failure in the source, left out of the hourly fact ([source glitches](#source-glitches)) |
 | `first_ingested_at`, `last_fetched_at` | The first and last fetch that saw the reading |
 
 ### Time-weighting
@@ -86,6 +87,17 @@ A periodic snapshot fact: **one row per facility per source reading**, from silv
 Collection is adaptive, every 5 or 20 minutes ([ADR 003](adr/003-polling-interval.md)), so readings are irregular. Each reading holds **from `valid_from` until `valid_to`**, and any average over time must be **weighted by `duration_minutes`**: a plain average of rows over-weights short readings. Readings of 100 free spaces for 20 minutes and 50 for 5 minutes average 90, not 75.
 
 `valid_to` assumes a value held until the next reading, also across a gap in collection. `last_fetched_at` is where the evidence ends, so coverage (`covered_minutes` in the hourly fact, #14) can be counted from evidence rather than assumption.
+
+### Source glitches
+
+Sometimes the source publishes a single reading that cannot be real. On 1 October 2026 at 22:40 local, one snapshot had Jernbanen, Jorenholmen, Parketten, St Olav and Valberget "Fullt", and Kyrre and Posten, which always report "Open", at 0; five minutes later every value was back where it was. `is_source_glitch` marks such a reading, using the parking source's `glitch` thresholds ([config](config.md#fields)):
+
+- **The neighbours agree:** the facility's previous and next readings are counts at most `max_neighbour_difference` (10) apart, or both `open`.
+- **The reading is far from both:** a count at least `min_jump` (50) away from each neighbour, or, between two `open` readings, any count.
+
+The thresholds come from the collected data: between 28 September and 2 October 2026, a real reading with two close neighbours was at most 9 spaces away from them, and the glitches were 96 to 413 away. A real fast change, such as Forum emptying by about 220 cars in an hour, moves on with each reading and is not a glitch; nor is a full car park, such as Siddis on the evening of 1 October, which stays full for many readings.
+
+A glitch is **flagged, not removed**: the row stays in the availability fact, the hourly fact counts its time as covered but not counted, and the quality check `source_glitches` reports it. A facility's first and current readings have a neighbour on one side only and are never glitches; the current reading is judged when the next one arrives.
 
 ### Semi-additive measures
 
@@ -109,11 +121,11 @@ Availability **per facility per hour**, aggregated from `fact_parking_availabili
 | `facility_key` | As in the availability fact |
 | `hour_start` | The start of the hour in UTC: the grain, with `facility_key` |
 | `date_key`, `hour` | The hour's local Oslo date and hour, for the date dimension and reports |
-| `avg_available_spaces` | Time-weighted average over the counted minutes; null if the hour only has `open` or `unknown` time |
-| `min_available_spaces`, `max_available_spaces` | Over the readings with a count in the hour |
+| `avg_available_spaces` | Time-weighted average over the counted minutes; null if the hour only has `open`, `unknown` or glitch time |
+| `min_available_spaces`, `max_available_spaces` | Over the counted readings in the hour |
 | `observation_count` | Readings overlapping the hour |
 | `covered_minutes` | How much of the hour the readings cover (0 to 60) |
-| `counted_minutes` | The covered minutes with a count, not `open` or `unknown`: the weight of `avg_available_spaces` when hours are combined |
+| `counted_minutes` | The covered minutes with a count, not `open`, `unknown` or a [source glitch](#source-glitches): the weight of `avg_available_spaces` when hours are combined |
 | `stale_minutes` | How much of the covered time rests on stale data |
 
 ### Coverage

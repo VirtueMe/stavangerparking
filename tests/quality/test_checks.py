@@ -232,3 +232,45 @@ def test_hours_without_any_reading_count_as_low_coverage():
 
     assert (result.severity, result.passed) == (WARNING, False)
     assert result.detail == "4 of 48 facility-hour(s) under 30 minutes"
+
+
+def glitch_rows(*rows: tuple[int, datetime, bool]) -> pl.DataFrame:
+    """Availability rows: (facility key, valid from, is a glitch)."""
+    return pl.DataFrame(
+        rows,
+        schema={
+            "facility_key": pl.Int32,
+            "valid_from": pl.Datetime("us", "UTC"),
+            "is_source_glitch": pl.Boolean,
+        },
+        orient="row",
+    )
+
+
+FACILITY_NAMES = pl.DataFrame(
+    {"facility_key": [1, 2], "facility_name": ["Forum", "Jernbanen"]},
+    schema_overrides={"facility_key": pl.Int32},
+)
+
+
+def test_glitches_in_the_last_day_are_a_warning_per_facility():
+    availability = glitch_rows(
+        (2, T0 - timedelta(hours=6), True),
+        (2, T0 - timedelta(hours=1), True),
+        (1, T0 - timedelta(hours=6), True),
+        (1, T0 - timedelta(hours=25), True),  # older than a day: not counted
+        (1, T0 - timedelta(hours=2), False),
+    )
+
+    result = checks.source_glitches(availability, FACILITY_NAMES, T0)
+
+    assert (result.severity, result.passed) == (WARNING, False)
+    assert result.detail == "3 glitch(es) in the last 24 hours: Forum 1, Jernbanen 2"
+
+
+def test_no_glitches_pass():
+    availability = glitch_rows((1, T0 - timedelta(hours=1), False))
+
+    result = checks.source_glitches(availability, FACILITY_NAMES, T0)
+
+    assert (result.passed, result.detail) == (True, "0 glitch(es) in the last 24 hours")

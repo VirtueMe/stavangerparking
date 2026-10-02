@@ -11,7 +11,8 @@ Under `--tables-root`:
   table; capacities come from `silver_parking_area` through the facility mapping, and are unknown
   until the register has been collected.
 - `fact_parking_availability` is rebuilt from silver's readings and the dimensions
-  (`gold.availability`); a reading whose date is outside `dim_date` stops the build.
+  (`gold.availability`), with glitches flagged by the parking source's `glitch` thresholds; a
+  reading whose date is outside `dim_date` stops the build.
 - `fact_suggested_price` is rebuilt from the hourly fact, the tariffs and the pricing rules
   (`gold.pricing`).
 - `fact_parking_hourly` is rebuilt from the availability fact and silver's stale periods
@@ -29,7 +30,7 @@ from pathlib import Path
 import polars as pl
 from deltalake import DeltaTable
 
-from stavanger_parking.config import DEFAULT_CONFIG, load_sources
+from stavanger_parking.config import DEFAULT_CONFIG, Glitch, load_sources
 from stavanger_parking.facilities import DEFAULT_MAPPING, load_facility_mapping
 from stavanger_parking.gold.availability import availability
 from stavanger_parking.gold.calendar import FIRST_DATE, LAST_DATE, dim_date, dim_time
@@ -85,8 +86,8 @@ def build(
         _overwrite(frame, table_path(tables_root, name), storage_options)
         written[name] = frame.height
     written[FACILITY_TABLE] = build_facilities(tables_root, mapping_path, storage_options)
-    written[AVAILABILITY_TABLE] = build_availability(tables_root, storage_options)
     parking = next(s for s in load_sources(config_path) if s.id == PARKING_SOURCE_ID)
+    written[AVAILABILITY_TABLE] = build_availability(tables_root, parking.glitch, storage_options)
     max_gap = timedelta(minutes=parking.polling.slow_interval_minutes)
     written[HOURLY_TABLE] = build_hourly(tables_root, max_gap, storage_options)
     written[SUGGESTED_PRICE_TABLE] = build_prices(
@@ -130,14 +131,18 @@ def build_hourly(tables_root: str, max_gap: timedelta, storage_options=None) -> 
     return rows.height
 
 
-def build_availability(tables_root: str, storage_options=None) -> int:
+def build_availability(tables_root: str, glitch: Glitch | None, storage_options=None) -> int:
     """Replace `fact_parking_availability`; returns its number of rows."""
 
     def read(name: str) -> pl.DataFrame:
         return pl.read_delta(table_path(tables_root, name), storage_options=storage_options)
 
     fact = availability(
-        read(READING_TABLE), read(FETCH_TABLE), read(FACILITY_TABLE), read(STALE_PERIOD_TABLE)
+        read(READING_TABLE),
+        read(FETCH_TABLE),
+        read(FACILITY_TABLE),
+        read(STALE_PERIOD_TABLE),
+        glitch,
     )
     first, last = (int(d.strftime("%Y%m%d")) for d in (FIRST_DATE, LAST_DATE))
     outside = fact.filter(~pl.col("date_key").is_between(first, last))

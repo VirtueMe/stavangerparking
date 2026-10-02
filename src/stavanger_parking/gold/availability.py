@@ -15,6 +15,13 @@
 - `is_stale`: the source was seen stale while this reading was its newest (silver's stale periods).
 - `occupied_spaces`: the facility's capacity minus its free spaces, when both are known. It is not
   hidden when negative: a negative value means the capacity is wrong, which the quality checks flag.
+- `is_source_glitch`: a single reading that does not fit between its neighbours, a failure in the
+  source rather than a real change (the source's `glitch` thresholds). The facility's previous and
+  next readings agree, and this one is far from both: they are counts at most
+  `max_neighbour_difference` apart and this one is a count at least `min_jump` away from both, or
+  they are both `open` and this one is a count. The row stays, so nothing is dropped silently; the
+  hourly fact leaves it out. A facility's first and current readings have no neighbour on one side
+  and are never glitches; the current one is judged when the next reading arrives.
 
 `available_spaces` and `occupied_spaces` are semi-additive: they can be summed across facilities
 at one point in time, but not across time; across time, use time-weighted averages, minimum and
@@ -23,7 +30,9 @@ maximum.
 
 import polars as pl
 
+from stavanger_parking.config import Glitch
 from stavanger_parking.gold.facility import UNKNOWN_KEY
+from stavanger_parking.silver.parse import NUMERIC, OPEN
 
 AVAILABILITY_SCHEMA = {
     "facility_key": pl.Int32,
@@ -36,6 +45,7 @@ AVAILABILITY_SCHEMA = {
     "status": pl.String,
     "occupied_spaces": pl.Int32,
     "is_stale": pl.Boolean,
+    "is_source_glitch": pl.Boolean,
     "first_ingested_at": pl.Datetime("us", "UTC"),
     "last_fetched_at": pl.Datetime("us", "UTC"),
 }
@@ -46,8 +56,12 @@ def availability(
     fetches: pl.DataFrame,
     facilities: pl.DataFrame,
     stale_periods: pl.DataFrame,
+    glitch: Glitch | None,
 ) -> pl.DataFrame:
-    """The fact rows for silver's readings, keyed to the dimensions."""
+    """The fact rows for silver's readings, keyed to the dimensions.
+
+    Without `glitch` thresholds, no reading is a glitch.
+    """
     last_fetched = fetches.group_by("facility", "reading_at").agg(
         pl.col("ingested_at").max().alias("last_fetched_at")
     )
@@ -81,8 +95,32 @@ def availability(
             ),
             (pl.col("capacity") - pl.col("available_spaces")).alias("occupied_spaces"),
             pl.col("is_stale").fill_null(False),
+            _is_glitch(glitch).alias("is_source_glitch"),
             pl.col("ingested_at").alias("first_ingested_at"),
         )
         .select(pl.col(c).cast(t) for c, t in AVAILABILITY_SCHEMA.items())
         .sort("facility_key", "valid_from")
     )
+
+
+def _is_glitch(glitch: Glitch | None) -> pl.Expr:
+    """Whether a reading is a glitch, judged against the facility's previous and next readings."""
+    if glitch is None:
+        return pl.lit(False)
+    spaces, status = pl.col("available_spaces"), pl.col("status")
+
+    def neighbour(column: pl.Expr, n: int) -> pl.Expr:
+        return column.shift(n).over("facility", order_by="reading_at")
+
+    # A missing neighbour or count compares as null: never a glitch on its own
+    before, after = neighbour(spaces, 1), neighbour(spaces, -1)
+    jump = (
+        ((before - after).abs() <= glitch.max_neighbour_difference)
+        & ((spaces - before).abs() >= glitch.min_jump)
+        & ((spaces - after).abs() >= glitch.min_jump)
+    )
+    # 01.10.2026 22:40: Kyrre and Posten, always "Open", reported 0 in a single snapshot
+    count_between_open = (
+        (status == NUMERIC) & (neighbour(status, 1) == OPEN) & (neighbour(status, -1) == OPEN)
+    )
+    return (jump | count_between_open).fill_null(False)

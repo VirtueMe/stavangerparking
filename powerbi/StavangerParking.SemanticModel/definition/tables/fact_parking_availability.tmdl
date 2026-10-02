@@ -66,6 +66,12 @@ table fact_parking_availability
 		summarizeBy: none
 		sourceColumn: is_stale
 
+	/// A single reading far from two close neighbours: a failure in the source, left out of the hourly fact
+	column is_source_glitch
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: is_source_glitch
+
 	/// First fetch that saw the reading (UTC)
 	column first_ingested_at
 		dataType: dateTime
