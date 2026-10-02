@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.23.0] - 2026-10-02
+
+### Features
+
+- **pipeline:** Rebuild silver on a platform with tools/rebuild ([#116](https://github.com/VirtueMe/stavangerparking/pull/116))
+
 ## [0.22.2] - 2026-10-02
 
 ### Bug Fixes
