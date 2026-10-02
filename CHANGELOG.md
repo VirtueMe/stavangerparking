@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.24.0] - 2026-10-02
+
+### Features
+
+- **bronze:** Read the collector's failed runs from its run history ([#120](https://github.com/VirtueMe/stavangerparking/pull/120))
+
 ## [0.23.2] - 2026-10-02
 
 ### Documentation
