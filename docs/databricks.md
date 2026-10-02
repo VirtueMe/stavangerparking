@@ -73,4 +73,10 @@ GitHub Actions stays the collector of record ([`docs/collector.md`](collector.md
 
 ### Free Edition
 
-The workspace is Databricks Free Edition. It has serverless compute only, and at most five job tasks run at once per account, both fine for these jobs. **Outbound internet is limited to a set of trusted domains** until the account's identity is verified, so the collection job cannot reach the sources (opencom.no, parkreg-open.atlas.vegvesen.no). Identity verification is meant to lift that, but after verifying on 2026-09-30 both jobs and notebooks still could not resolve them, while `pypi.org` and `github.com` resolved: check again before the handover's overlap. Exceeding the fair-use quota shuts compute down for the rest of the day, which is one more reason the schedules stay paused until they are needed.
+The workspace is Databricks Free Edition. It has serverless compute only, and at most five job tasks run at once per account, both fine for these jobs. **Outbound internet is limited to a set of trusted domains until the account's identity is verified.** After verifying on 2026-09-30, jobs and notebooks still could not resolve the sources (`opencom.no`, `parkreg-open.atlas.vegvesen.no`), while `pypi.org` and `github.com` resolved. By 2026-10-02 the restriction was lifted: a notebook resolved both sources and `api.github.com`, and a run of the dev collection job, with its storage pointed at a test folder (`raw/connectivity-check`, run id `connectivity-check-121`), fetched a snapshot and a sidecar from each source (#121). The collection job therefore works on Free Edition; it stays paused because collection has one collector of record until the handover, not because it is blocked. Exceeding the fair-use quota shuts compute down for the rest of the day, which is one more reason the schedules stay paused until they are needed.
+
+A test run like that one overrides only the run's parameters, never the job's: the storage must be a folder outside `bronze/` in the raw volume, so that bronze never loads it.
+
+```sh
+databricks jobs run-now --json '{"job_id": <dev collect job id>, "python_params": ["run", "--storage", "/Volumes/<catalog>/<dev schema>/raw/connectivity-check", "--run-id", "connectivity-check-<n>"]}'
+```
