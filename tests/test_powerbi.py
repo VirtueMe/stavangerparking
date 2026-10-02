@@ -114,6 +114,7 @@ def test_measures_are_declared_on_the_facts():
     assert set(names[SOURCE_STALE_PERIOD_TABLE]) >= {"Incidents", "Stale time (days)", "Ended"}
     assert set(names[AVAILABILITY_TABLE]) >= {
         "Free spaces (latest)",
+        "Occupancy (latest)",
         "Source status",
         "Attribution",
     }
@@ -237,6 +238,15 @@ def test_visuals_use_only_fields_in_the_model(path):
     used = fields_used(json.loads(path.read_text(encoding="utf-8")))
 
     assert [(kind, t, n) for kind, t, n in used if fields.get((t, n)) != kind] == []
+
+
+@pytest.mark.parametrize("path", VISUALS, ids=lambda p: f"{p.parents[2].name}/{p.parent.name}")
+def test_no_visual_shows_occupancy_that_includes_stale_hours(path):
+    """The plain [Occupancy] averages in the hours of a frozen source, as a flat repeated value
+    (#111): a visual shows [Occupancy (fresh data)] over time, or [Occupancy (latest)] for now."""
+    used = fields_used(json.loads(path.read_text(encoding="utf-8")))
+
+    assert ("Measure", HOURLY_TABLE, "Occupancy") not in used
 
 
 @pytest.mark.parametrize("path", VISUALS, ids=lambda p: f"{p.parents[2].name}/{p.parent.name}")

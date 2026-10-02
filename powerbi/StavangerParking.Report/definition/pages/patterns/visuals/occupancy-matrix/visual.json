@@ -59,11 +59,11 @@
                       "Entity": "fact_parking_hourly"
                     }
                   },
-                  "Property": "Occupancy"
+                  "Property": "Occupancy (fresh data)"
                 }
               },
-              "queryRef": "fact_parking_hourly.Occupancy",
-              "nativeQueryRef": "Occupancy"
+              "queryRef": "fact_parking_hourly.Occupancy (fresh data)",
+              "nativeQueryRef": "Occupancy (fresh data)"
             }
           ]
         }
@@ -85,7 +85,7 @@
                               "Entity": "fact_parking_hourly"
                             }
                           },
-                          "Property": "Occupancy"
+                          "Property": "Occupancy (fresh data)"
                         }
                       },
                       "FillRule": {
@@ -127,7 +127,7 @@
                 }
               }
             ],
-            "metadata": "fact_parking_hourly.Occupancy"
+            "metadata": "fact_parking_hourly.Occupancy (fresh data)"
           }
         }
       ]
