@@ -22,6 +22,7 @@ Warnings, to be looked at:
 - `source_stale`: the latest snapshot's data is older than the staleness threshold
 - `low_coverage`: hours in the last day that the readings cover for less than half
 - `source_glitches`: readings in the last day that were glitches in the source (`gold.availability`)
+- `collect_failures`: collection attempts in the last day that failed (`bronze.collect_issues`)
 """
 
 from dataclasses import dataclass
@@ -231,3 +232,21 @@ def source_glitches(availability: pl.DataFrame, facilities: pl.DataFrame, until)
     if glitches.height:
         detail += ": " + ", ".join(f"{name} {n}" for name, n in glitches.rows())
     return _result("source_glitches", WARNING, glitches.is_empty(), detail)
+
+
+def collect_failures(issues: pl.DataFrame, until) -> Result:
+    """Failed collection attempts that happened in the last 24 hours before `until`, by kind.
+
+    A failed run that left no record of its own is recorded by a later run, so it is counted from
+    then on, by when it happened.
+    """
+    recent = (
+        issues.filter(pl.col("occurred_at") > until - timedelta(hours=24))
+        .group_by("issue")
+        .len()
+        .sort("issue")
+    )
+    detail = f"{recent['len'].sum()} failed attempt(s) in the last 24 hours"
+    if recent.height:
+        detail += ": " + ", ".join(f"{issue} {n}" for issue, n in recent.rows())
+    return _result("collect_failures", WARNING, recent.is_empty(), detail)

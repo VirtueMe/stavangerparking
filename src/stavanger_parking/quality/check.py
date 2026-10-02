@@ -22,7 +22,12 @@ from pathlib import Path
 import polars as pl
 from deltalake import DeltaTable
 
-from stavanger_parking.bronze.load import ISSUE_SCHEMA, bronze_path, issues_path
+from stavanger_parking.bronze.load import (
+    COLLECT_ISSUE_SCHEMA,
+    ISSUE_SCHEMA,
+    bronze_path,
+    issues_path,
+)
 from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 from stavanger_parking.facilities import DEFAULT_MAPPING, load_facility_mapping
 from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA
@@ -31,6 +36,7 @@ from stavanger_parking.quality.checks import CRITICAL, Result
 from stavanger_parking.tables import (
     AREA_TABLE,
     AVAILABILITY_TABLE,
+    COLLECT_ISSUES_TABLE,
     FACILITY_TABLE,
     FETCH_TABLE,
     FRESHNESS_TABLE,
@@ -108,6 +114,8 @@ def run_checks(tables_root: str, mapping_path, config_path, storage_options=None
         results.append(checks.low_coverage(hourly, active_keys, latest_fetch))
         availability = read(table_path(tables_root, AVAILABILITY_TABLE), AVAILABILITY_SCHEMA)
         results.append(checks.source_glitches(availability, facilities, latest_fetch))
+        collect_issues = read(table_path(tables_root, COLLECT_ISSUES_TABLE), COLLECT_ISSUE_SCHEMA)
+        results.append(checks.collect_failures(collect_issues, latest_fetch))
     return snapshot, results
 
 

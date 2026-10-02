@@ -13,9 +13,11 @@ The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/c
    - decides whether to fetch, from the latest sidecars (adaptive polling, below);
    - resolves the download URL through CKAN and downloads the snapshot;
    - stores the response unchanged at the source's `raw_path` and writes a sidecar next to it.
-3. Commits and pushes whatever was stored to `data`.
+3. Commits and pushes whatever was stored to `data`, retrying a failed push twice on top of the remote branch.
 
-The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept.
+Before step 2, it records earlier failed runs ([below](#failed-attempts)).
+
+The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept, and so is a record of the failure.
 
 ## Trigger
 
@@ -104,6 +106,21 @@ uv run python -m stavanger_parking.bronze.collect gaps --storage ../stavangerpar
 ```
 
 `--tolerance-minutes` (default 10) sets how late a snapshot may be before it counts as a gap.
+
+## Failed attempts
+
+A snapshot that was never stored leaves no file, and the run's log expires. So every failed attempt is stored as data too, a small JSON record under `bronze/collect_issues/<yyyy>/<mm>/<dd>/` on the `data` branch, which bronze loads into `bronze_collect_issues` ([`docs/bronze.md`](bronze.md#failed-collection-attempts)) (#119):
+
+| `issue` | When | Recorded by |
+|---|---|---|
+| `fetch_failed` | A source could not be fetched or stored: the error, such as an HTTP status or a timeout | The run itself, pushed with its other files, even when no source succeeded |
+| `run_failed` | A run failed without a record of its own: a failed push, or a crash or timeout | The next run: [`record-failed-runs.sh`](../.github/scripts/record-failed-runs.sh) asks the GitHub API for the workflow's failed runs, and records those without a record, with the step that failed |
+
+The step that records failed runs never blocks collection (`continue-on-error`): if the API is unavailable, the next run tries again. It costs one API call, plus one per run not yet recorded. Run ids are `<run id>-<attempt>`, as in the sidecars.
+
+`collect gaps` says *that* a snapshot is missing; a record says *why*. The quality warning `collect_failures` counts the last day's records ([`docs/quality.md`](quality.md)).
+
+**What is not recorded:** a failed attempt that a re-run of the same run replaced (GitHub lists a run by its latest attempt); and, on Databricks, a failed collection job: its sources' fetch failures are recorded, but the job's own failure only reaches the owner by e-mail.
 
 ## Parkeringsregisteret
 

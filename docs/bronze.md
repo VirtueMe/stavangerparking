@@ -35,3 +35,18 @@ For every source, raw files not yet handled are appended to bronze in **one Delt
 | `no_records` | The response is an empty list |
 
 Rows are written before issues; if a load stops in between, the issues are simply found again on the next run.
+
+## Failed collection attempts
+
+`bronze_collect_issues` holds the records of failed collection attempts that the collector stores next to the raw files ([`docs/collector.md`](collector.md#failed-attempts)): one row per record, for every source, loaded once each by its path (`record_file`), like the raw files. The table exists from the first run on, empty until something fails.
+
+| Column | Meaning |
+|---|---|
+| `record_file` | The record's path under the raw root; the key |
+| `issue` | `fetch_failed` (a source could not be fetched or stored) or `run_failed` (a run failed without a record of its own, such as a failed push) |
+| `run_id` | The collection run, `<run id>-<attempt>` on GitHub Actions |
+| `source_id` | The source, for `fetch_failed`; null for `run_failed` |
+| `occurred_at` | When the attempt failed (UTC); for `run_failed`, when the run started |
+| `detail` | The error, or the step that failed |
+| `url` | The run's page, for `run_failed` |
+| `recorded_at`, `loaded_at` | When the record was written, and loaded into bronze |

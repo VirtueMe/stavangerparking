@@ -274,3 +274,32 @@ def test_no_glitches_pass():
     result = checks.source_glitches(availability, FACILITY_NAMES, T0)
 
     assert (result.passed, result.detail) == (True, "0 glitch(es) in the last 24 hours")
+
+
+def collect_issue_rows(*rows: tuple[str, datetime]) -> pl.DataFrame:
+    """bronze_collect_issues rows: (issue, occurred at)."""
+    return pl.DataFrame(
+        rows,
+        schema={"issue": pl.String, "occurred_at": pl.Datetime("us", "UTC")},
+        orient="row",
+    )
+
+
+def test_failed_collection_attempts_in_the_last_day_are_a_warning():
+    issues = collect_issue_rows(
+        ("run_failed", T0 - timedelta(hours=20)),
+        ("fetch_failed", T0 - timedelta(hours=2)),
+        ("fetch_failed", T0 + timedelta(minutes=30)),  # after the latest fetch: still counted
+        ("run_failed", T0 - timedelta(hours=30)),  # older than a day
+    )
+
+    result = checks.collect_failures(issues, T0)
+
+    assert (result.severity, result.passed) == (WARNING, False)
+    assert result.detail == "3 failed attempt(s) in the last 24 hours: fetch_failed 2, run_failed 1"
+
+
+def test_no_failed_collection_attempts_pass():
+    result = checks.collect_failures(collect_issue_rows(), T0)
+
+    assert (result.passed, result.detail) == (True, "0 failed attempt(s) in the last 24 hours")

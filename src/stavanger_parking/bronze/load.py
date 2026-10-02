@@ -12,6 +12,9 @@ Bronze is append-only. A raw file is loaded once: files already in bronze, or al
 a load issue, are skipped. Files that cannot be loaded (no sidecar, or a payload that is not a
 JSON list of records) are recorded in `<bronze_table>_load_issues` and reported, never loaded or
 skipped silently. All new rows of a run go into one Delta commit.
+
+The records of failed collection attempts (`bronze.collect_issues`) are loaded the same way, once
+each, into `bronze_collect_issues`: one row per record, for every source.
 """
 
 import argparse
@@ -24,9 +27,10 @@ from pathlib import Path
 import polars as pl
 from deltalake import DeltaTable
 
+from stavanger_parking.bronze.collect_issues import read_issues
 from stavanger_parking.bronze.collector import SIDECAR_SUFFIX, raw_glob, sidecar_path
 from stavanger_parking.config import DEFAULT_CONFIG, Source, load_sources
-from stavanger_parking.tables import table_path
+from stavanger_parking.tables import COLLECT_ISSUES_TABLE, table_path
 
 # Metadata columns added to every bronze row; source fields keep their own names
 METADATA_SCHEMA = {
@@ -207,6 +211,47 @@ def load_source(
     return result
 
 
+COLLECT_ISSUE_SCHEMA = {
+    "record_file": pl.String,
+    "issue": pl.String,
+    "run_id": pl.String,
+    "source_id": pl.String,
+    "occurred_at": pl.Datetime("us", "UTC"),
+    "detail": pl.String,
+    "url": pl.String,
+    "recorded_at": pl.Datetime("us", "UTC"),
+    "loaded_at": pl.Datetime("us", "UTC"),
+}
+
+
+def load_collect_issues(raw_root: Path, tables_root: str, now: datetime, storage_options=None):
+    """Append the records of failed collection attempts not yet in bronze; returns how many."""
+    path = table_path(tables_root, COLLECT_ISSUES_TABLE)
+    handled = set()
+    if DeltaTable.is_deltatable(path, storage_options=storage_options):
+        handled = set(
+            pl.read_delta(path, columns=["record_file"], storage_options=storage_options)[
+                "record_file"
+            ]
+        )
+    rows = [
+        {
+            **{k: record.get(k) for k in COLLECT_ISSUE_SCHEMA},
+            "record_file": record_file,
+            "occurred_at": datetime.fromisoformat(record["occurred_at"]),
+            "recorded_at": datetime.fromisoformat(record["recorded_at"]),
+            "loaded_at": now,
+        }
+        for record_file, record in read_issues(raw_root)
+        if record_file not in handled
+    ]
+    frame = pl.DataFrame(rows, schema=COLLECT_ISSUE_SCHEMA)
+    # Written even when empty on the first run, so the table exists for the checks and the report
+    if rows or not DeltaTable.is_deltatable(path, storage_options=storage_options):
+        _append(frame, path, storage_options)
+    return frame.height
+
+
 def _append(frame: pl.DataFrame, path: str, storage_options) -> None:
     # Append only; new source fields become new columns instead of failing the load
     frame.write_delta(
@@ -227,6 +272,8 @@ def run(config_path, raw_root: Path, tables_root: str, now: datetime, storage_op
             f"skipped {r.skipped} already handled; {len(r.issues)} issue(s)"
         )
         lines += [f"  {i.issue}: {i.raw_file} ({i.detail})" for i in r.issues]
+    loaded = load_collect_issues(raw_root, tables_root, now, storage_options)
+    lines.append(f"collect issues: loaded {loaded} record(s) of failed collection attempts")
     return lines
 
 
