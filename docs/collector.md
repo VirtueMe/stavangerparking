@@ -13,7 +13,7 @@ The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/c
    - decides whether to fetch, from the latest sidecars (adaptive polling, below);
    - resolves the download URL through CKAN and downloads the snapshot;
    - stores the response unchanged at the source's `raw_path` and writes a sidecar next to it.
-3. Commits and pushes whatever was stored to `data`.
+3. Commits and pushes whatever was stored to `data`, retrying a failed push twice on top of the remote branch.
 
 The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept.
 
@@ -104,6 +104,14 @@ uv run python -m stavanger_parking.bronze.collect gaps --storage ../stavangerpar
 ```
 
 `--tolerance-minutes` (default 10) sets how late a snapshot may be before it counts as a gap.
+
+## Failed runs
+
+A snapshot that was never stored leaves no file: the run that failed is the only trace, and its log expires. The workflow's run history is therefore a data source of its own: when the pipeline loads bronze, it reads the Collect workflow's failed runs from the GitHub REST API into `bronze_collect_runs` ([`docs/bronze.md`](bronze.md#the-collectors-failed-runs)), with the step that failed: `Commit and push snapshots` for a lost push, `Fail the run if a source failed` for a source that could not be fetched. The quality warning `collect_failures` counts the last day's ([`docs/quality.md`](quality.md)).
+
+`collect gaps` says *that* a snapshot is missing; the failed run says *why*.
+
+Reading the history is the collector's integration, named in [`config/collector.json`](../src/stavanger_parking/config/collector.json): GitHub Actions today. A platform that takes over collection (ADR 011) needs its own reader for its job history.
 
 ## Parkeringsregisteret
 

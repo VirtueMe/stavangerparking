@@ -33,7 +33,7 @@ if result.exit_code:
 
 ## Order, and what stops a run
 
-1. **bronze**: every source's new raw files ([`docs/bronze.md`](bronze.md)). No new files is not a failure.
+1. **bronze**: every source's new raw files ([`docs/bronze.md`](bronze.md)), then the collector's failed runs from its run history. No new files is not a failure, and neither is a history that cannot be read.
 2. **silver**: incremental, or rebuilt from all of bronze with `--rebuild-silver true`; the register's areas once it is collected ([`docs/silver.md`](silver.md)).
 3. **gold**: the dimensions and facts ([`docs/gold.md`](gold.md)).
 4. **quality**: the checks, with their results appended to `quality_check_results` ([`docs/quality.md`](quality.md)).

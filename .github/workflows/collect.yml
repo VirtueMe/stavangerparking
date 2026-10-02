@@ -68,7 +68,15 @@ jobs:
             exit 0
           fi
           git commit -m "data: snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ) (run ${{ github.run_id }})"
-          git push origin data
+          # A push can fail for a moment; a snapshot that never reaches the branch is lost (#119)
+          for attempt in 1 2 3; do
+            git push origin data && exit 0
+            echo "push failed (attempt $attempt); trying again on top of the remote branch"
+            sleep $((attempt * 5))
+            git fetch origin data
+            git rebase FETCH_HEAD
+          done
+          exit 1
 
       - name: Fail the run if a source failed
         if: steps.collect.outputs.status != '0'

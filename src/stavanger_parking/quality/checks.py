@@ -22,6 +22,7 @@ Warnings, to be looked at:
 - `source_stale`: the latest snapshot's data is older than the staleness threshold
 - `low_coverage`: hours in the last day that the readings cover for less than half
 - `source_glitches`: readings in the last day that were glitches in the source (`gold.availability`)
+- `collect_failures`: collector runs in the last day that failed (`bronze.collect_runs`)
 """
 
 from dataclasses import dataclass
@@ -231,3 +232,22 @@ def source_glitches(availability: pl.DataFrame, facilities: pl.DataFrame, until)
     if glitches.height:
         detail += ": " + ", ".join(f"{name} {n}" for name, n in glitches.rows())
     return _result("source_glitches", WARNING, glitches.is_empty(), detail)
+
+
+def collect_failures(runs: pl.DataFrame, until) -> Result:
+    """Collector runs that started in the last 24 hours before `until` and failed, by failed step.
+
+    Runs after `until`, the latest fetch, count too: when collection fails, the latest fetch stops
+    moving while the failures go on.
+    """
+    recent = (
+        runs.filter(pl.col("started_at") > until - timedelta(hours=24))
+        .with_columns(pl.col("failed_step").fill_null("no step reported"))
+        .group_by("failed_step")
+        .len()
+        .sort("failed_step")
+    )
+    detail = f"{recent['len'].sum()} failed collector run(s) in the last 24 hours"
+    if recent.height:
+        detail += ": " + ", ".join(f"{step} {n}" for step, n in recent.rows())
+    return _result("collect_failures", WARNING, recent.is_empty(), detail)

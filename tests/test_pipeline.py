@@ -103,7 +103,9 @@ def test_a_second_run_adds_nothing_but_new_quality_results(roots):
     again = run(raw, tables)
 
     assert again.exit_code == 0
-    assert all("loaded 0 file(s)" in line for line in again.steps[0].report)
+    *sources, runs = again.steps[0].report
+    assert all("loaded 0 file(s)" in line for line in sources)
+    assert runs == "collect runs: 0 failed run(s) of VirtueMe/stavangerparking collect.yml"
     assert pl.read_delta(table_path(tables, FETCH_TABLE)).height == 9
     assert pl.read_delta(table_path(tables, QUALITY_TABLE)).height == 2 * results
 

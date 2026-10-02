@@ -1,0 +1,6 @@
+{
+  "github_actions": {
+    "repository": "VirtueMe/stavangerparking",
+    "workflow": "collect.yml"
+  }
+}

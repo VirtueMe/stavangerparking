@@ -88,6 +88,7 @@ def test_healthy_data_passes_and_the_results_are_stored(tables, capsys):
         "free_exceeds_capacity",
         "low_coverage",
         "source_glitches",
+        "collect_failures",
     } <= set(stored["check"])
     # The first snapshot has no history before it: the last day is uncovered, a warning only
     coverage = stored.filter(pl.col("check") == "low_coverage").row(0, named=True)
