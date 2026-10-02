@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -1087,7 +1087,7 @@ wheels = [
 
 [[package]]
 name = "stavanger-parking"
-version = "0.22.1"
+version = "0.22.2"
 source = { editable = "." }
 dependencies = [
     { name = "deltalake" },
