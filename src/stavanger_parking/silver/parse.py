@@ -11,7 +11,8 @@ One bronze row is one facility's reading in one fetched snapshot. Parsing gives 
   reading is quarantined.
 - `Latitude` and `Longitude` become decimals with 7 places (about 1 cm; more places are rounded).
 - `Antall_ledige_plasser` becomes `available_spaces` (a nullable integer) and `status`: `numeric`
-  for a count, `open` for the source's `"Open"`, `unknown` for anything else.
+  for a count, `open` for the source's `"Open"`, `unknown` for anything else. The source's
+  `"Fullt"` (full) is a count: 0 free spaces, `numeric`.
 
 Every value that cannot be parsed becomes a quarantine row with the field, the raw value and the
 reason; nothing is dropped silently. A reading stays in silver with the bad value as null, unless
@@ -24,6 +25,7 @@ import polars as pl
 OSLO = "Europe/Oslo"
 COORDINATE = pl.Decimal(10, 7)
 OPEN_VALUE = "Open"
+FULL_VALUE = "Fullt"
 
 NUMERIC = "numeric"
 OPEN = "open"
@@ -99,6 +101,8 @@ def parse_readings(bronze: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
     spaces = (
         pl.when(pl.col("Antall_ledige_plasser").str.contains(r"^[0-9]+$"))
         .then(pl.col("Antall_ledige_plasser").cast(pl.Int32, strict=False))
+        .when(pl.col("Antall_ledige_plasser") == FULL_VALUE)
+        .then(pl.lit(0, pl.Int32))
         .otherwise(None)
     )
     frame = frame.with_columns(

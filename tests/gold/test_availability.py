@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 import polars as pl
 import pytest
 
+from stavanger_parking.config import Glitch
 from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA, availability
 from stavanger_parking.gold.facility import FACILITY_SCHEMA, UNKNOWN_KEY
 from stavanger_parking.silver.freshness import PERIOD_SCHEMA
@@ -58,10 +59,26 @@ FACILITIES = frame(
     FACILITY_SCHEMA,
 )
 NO_STALE = pl.DataFrame(schema=PERIOD_SCHEMA)
+GLITCH = Glitch(max_neighbour_difference=10, min_jump=50)
 
 
-def build(rows: pl.DataFrame, fetch_rows=None, stale=NO_STALE) -> pl.DataFrame:
-    return availability(rows, fetch_rows if fetch_rows is not None else rows, FACILITIES, stale)
+def build(rows: pl.DataFrame, fetch_rows=None, stale=NO_STALE, glitch=GLITCH) -> pl.DataFrame:
+    fetch_rows = fetch_rows if fetch_rows is not None else rows
+    return availability(rows, fetch_rows, FACILITIES, stale, glitch)
+
+
+def series(*values, facility="Jernbanen", status="numeric") -> pl.DataFrame:
+    """One facility's readings 5 minutes apart; None is an `open` reading."""
+    return readings(
+        *(
+            reading(facility, minutes(5 * i), v, status if v is not None else "open")
+            for i, v in enumerate(values)
+        )
+    )
+
+
+def glitches(fact: pl.DataFrame) -> list[bool]:
+    return fact.sort("valid_from")["is_source_glitch"].to_list()
 
 
 def test_keys_come_from_the_dimensions_and_local_time():
@@ -169,3 +186,56 @@ def test_the_local_date_follows_oslo_time_not_utc():
     fact = build(readings(reading("Jernbanen", timedelta(hours=11, minutes=30))))
 
     assert (fact["date_key"][0], fact["time_key"][0]) == (20260929, 130)
+
+
+def test_a_single_reading_far_from_two_close_neighbours_is_a_glitch():
+    # 01.10.2026 22:40: Jernbanen ~395 free, then "Fullt" (0), then ~395 again
+    fact = build(series(395, 0, 396))
+
+    assert glitches(fact) == [False, True, False]
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (395, 346, 396),  # 49 away: below min_jump
+        (395, 0, 384),  # neighbours 11 apart: not close
+        (300, 250, 200),  # a real fast change: each step moves on
+        (395, 0, 0, 396),  # two readings in a row: a run, not a single reading
+    ],
+)
+def test_a_reading_that_moves_with_its_neighbours_is_not_a_glitch(values):
+    assert not any(glitches(build(series(*values))))
+
+
+def test_the_thresholds_are_inclusive():
+    # Neighbours exactly 10 apart, the reading exactly 50 away from the nearer one
+    assert glitches(build(series(100, 160, 110))) == [False, True, False]
+
+
+def test_a_single_count_between_two_open_readings_is_a_glitch():
+    # 01.10.2026 22:40: Kyrre, always "Open", reported 0 in one snapshot
+    assert glitches(build(series(None, 0, None))) == [False, True, False]
+
+
+def test_counts_after_open_readings_are_not_glitches():
+    # A facility that starts counting: a run of counts, not a single one
+    assert not any(glitches(build(series(None, 0, 5, None))))
+
+
+@pytest.mark.parametrize("values", [(0, 395), (395, 0), (395, None, 0, 396), (395, 0, None)])
+def test_a_reading_without_a_count_on_both_sides_is_not_a_glitch(values):
+    # The first and current readings, and readings next to an `open` one, cannot be judged
+    assert not any(glitches(build(series(*values))))
+
+
+def test_neighbours_are_the_same_facilitys_readings():
+    rows = pl.concat([series(395, 0, 396), series(10, 12, 11, facility="Forum")])
+
+    fact = build(rows)
+
+    assert fact.filter(pl.col("is_source_glitch"))["facility_key"].to_list() == [2]
+
+
+def test_without_thresholds_no_reading_is_a_glitch():
+    assert not any(glitches(build(series(395, 0, 396), glitch=None)))

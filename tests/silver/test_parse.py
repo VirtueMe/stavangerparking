@@ -107,7 +107,17 @@ def test_zero_free_spaces_is_a_count():
     assert readings["status"][0] == NUMERIC
 
 
-@pytest.mark.parametrize("value", ["open", "-3", "12.5", " 12", "Full", "99999999999"])
+def test_full_is_zero_free_spaces_not_a_quarantined_value():
+    readings, quarantine = parse(record(Antall_ledige_plasser="Fullt"))
+
+    assert readings["available_spaces"][0] == 0
+    assert readings["status"][0] == NUMERIC
+    assert quarantine.is_empty()
+
+
+@pytest.mark.parametrize(
+    "value", ["open", "-3", "12.5", " 12", "Full", "fullt", "Fullt ", "99999999999"]
+)
 def test_other_values_are_unknown_and_quarantined(value):
     readings, quarantine = parse(record(Antall_ledige_plasser=value))
 

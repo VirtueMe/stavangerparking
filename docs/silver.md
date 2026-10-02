@@ -47,7 +47,7 @@ Both tables have the same columns. A fetch row is one facility in one fetched sn
 | `dst_resolved` | boolean | | The local time occurred twice (autumn DST change) and was resolved from `ingested_at` |
 | `latitude`, `longitude` | decimal(10, 7) | `Latitude`, `Longitude` | Degrees; more than 7 decimal places (about 1 cm) are rounded |
 | `available_spaces` | int32, nullable | `Antall_ledige_plasser` | Free spaces when the source gives a count |
-| `status` | string | `Antall_ledige_plasser` | `numeric` for a count, `open` for the source's `"Open"`, `unknown` for anything else |
+| `status` | string | `Antall_ledige_plasser` | `numeric` for a count (the source's `"Fullt"` is 0), `open` for the source's `"Open"`, `unknown` for anything else |
 
 ### Oslo time
 
@@ -60,7 +60,7 @@ Daylight saving time makes two hours special:
 
 ### `status` and `available_spaces`
 
-`"Open"` is a known value of the source: the facility reports that it is open instead of a count. It gives `status = open` and a null count, and is not quarantined. Any other value that is not a whole number of zero or more, such as `"open"`, `"-3"` or `"12.5"`, gives `status = unknown` and a null count, and is quarantined.
+`"Open"` is a known value of the source: the facility reports that it is open instead of a count. It gives `status = open` and a null count, and is not quarantined. `"Fullt"` (full) is also a known value: it is a count of **0 free spaces**, `status = numeric`, not a status of its own and not quarantined (#113). Any other value that is not a whole number of zero or more, such as `"open"`, `"-3"` or `"12.5"`, gives `status = unknown` and a null count, and is quarantined.
 
 ## `silver_quarantine`
 
@@ -80,7 +80,7 @@ One row per value that could not be parsed. Nothing is dropped silently.
 | `invalid_date_time` | `Dato` and `Klokkeslett` are not `DD.MM.YYYY` and `HH:MM` |
 | `nonexistent_local_time` | The local time was skipped by the spring DST change |
 | `not_a_decimal` | A coordinate is not a decimal number |
-| `not_a_count` | `Antall_ledige_plasser` is neither a whole number nor `"Open"` |
+| `not_a_count` | `Antall_ledige_plasser` is neither a whole number, `"Fullt"` nor `"Open"` |
 | `conflicting_duplicate` | A later fetch of the same reading has a different value; `raw_value` is the value as parsed (null if it could not be parsed) |
 
 A fetch with a bad value stays in silver with that value null. Only a reading that has lost its identity, with no valid time or no facility, is left out; all of its bad values are still quarantined.
