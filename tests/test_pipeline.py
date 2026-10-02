@@ -108,6 +108,18 @@ def test_a_second_run_adds_nothing_but_new_quality_results(roots):
     assert pl.read_delta(table_path(tables, QUALITY_TABLE)).height == 2 * results
 
 
+def test_a_silver_rebuild_parses_all_of_bronze_again(roots):
+    """After a change to the parsing, every bronze row is parsed again, not appended twice."""
+    raw, tables = roots([record(f) for f in NINE])
+    run(raw, tables)
+
+    again = run_pipeline(raw, tables, now=T0, rebuild_silver=True, **FILES)
+
+    assert again.exit_code == 0
+    assert again.steps[1].report[0].startswith("stavanger_parking: rebuilt from 9 bronze row(s)")
+    assert pl.read_delta(table_path(tables, FETCH_TABLE)).height == 9
+
+
 def test_a_step_that_cannot_run_stops_the_pipeline(tmp_path):
     raw, tables = tmp_path / "raw", str(tmp_path / "tables")
 
@@ -151,7 +163,7 @@ def test_cli_exit_codes(roots, tmp_path, capsys):
 def test_cli_passes_storage_options(monkeypatch, tmp_path):
     seen = {}
 
-    def fake(raw_root, tables_root, storage_options, *files):
+    def fake(raw_root, tables_root, storage_options, *files, **options):
         seen.update(tables_root=tables_root, storage_options=storage_options)
         return pipeline.PipelineResult([])
 
@@ -169,6 +181,31 @@ def test_cli_passes_storage_options(monkeypatch, tmp_path):
 
     assert code == 0
     assert seen["storage_options"] == {"bearer_token": "abc=", "use_fabric_endpoint": "true"}
+
+
+@pytest.mark.parametrize(
+    ("extra", "rebuild"),
+    [([], False), (["--rebuild-silver", "false"], False), (["--rebuild-silver", "true"], True)],
+)
+def test_cli_passes_the_silver_rebuild(monkeypatch, extra, rebuild):
+    seen = {}
+
+    def fake(*args, rebuild_silver):
+        seen["rebuild_silver"] = rebuild_silver
+        return pipeline.PipelineResult([])
+
+    monkeypatch.setattr(pipeline, "run_pipeline", fake)
+
+    assert pipeline.main(["run", "--raw-root=r", "--tables-root=t", *extra]) == 0
+    assert seen["rebuild_silver"] is rebuild
+
+
+@pytest.mark.parametrize("value", ["yes", "True", "1", ""])
+def test_cli_rejects_another_rebuild_value(tmp_path, value):
+    """A job parameter with a typo must not quietly run without the rebuild."""
+    with pytest.raises(SystemExit) as exit:
+        cli(tmp_path, str(tmp_path), f"--rebuild-silver={value}")
+    assert exit.value.code == 2
 
 
 def test_the_entry_point_exits_with_the_code_of_the_run(monkeypatch, tmp_path):

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Rebuild silver from all of bronze on a platform, then gold and quality: dev by default, --prod for prod
+#
+#   tools/rebuild -p databricks
+#   tools/rebuild -p databricks --prod --dry-run
+#
+# Options and how the platform is chosen: tools/platform.sh
+exec "$(dirname "$0")/platform.sh" rebuild "$@"

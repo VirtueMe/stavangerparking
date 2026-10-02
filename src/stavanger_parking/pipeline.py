@@ -2,7 +2,7 @@
 
     python -m stavanger_parking.pipeline run --raw-root DIR --tables-root DIR
         [--storage-option KEY=VALUE ...] [--config FILE] [--mapping FILE] [--tariffs FILE]
-        [--rules FILE]
+        [--rules FILE] [--rebuild-silver true|false]
 
 The one thing a platform calls (ADR 011). Notebooks call `run_pipeline(...)`; jobs and the command
 line call `run`. The raw root is a local path (`/lakehouse/default/Files`, a Unity Catalog volume, a
@@ -13,6 +13,11 @@ A step that cannot run stops the pipeline: the steps after it do not run. A crit
 does not stop anything before it, since quality runs last, and its results are stored before the
 run is reported as failed (#21). Collection is not part of the pipeline: it has one collector of
 record, scheduled on its own (ADR 007, ADR 011).
+
+`--rebuild-silver true` rebuilds silver from all of bronze instead of parsing only the new rows,
+after a change to the parsing or deduplication (`silver.build --rebuild`); gold and quality follow
+as usual. It takes a value rather than being a flag so that a job can set it from a parameter: the
+scheduled runs keep the default, `false`.
 
 Exit codes, for the orchestrator:
 
@@ -88,6 +93,7 @@ def run_pipeline(
     tariffs_path=DEFAULT_TARIFFS,
     rules_path=DEFAULT_RULES,
     now: datetime | None = None,
+    rebuild_silver: bool = False,
 ) -> PipelineResult:
     """Run every step in order, stopping at the first that cannot run; returns what each did."""
     raw_root, now = Path(raw_root), now or datetime.now(UTC)
@@ -97,7 +103,9 @@ def run_pipeline(
         return Step("bronze", load.run(config_path, raw_root, tables_root, now, storage_options))
 
     def silver() -> Step:
-        return Step("silver", silver_build.run(config_path, tables_root, False, storage_options))
+        return Step(
+            "silver", silver_build.run(config_path, tables_root, rebuild_silver, storage_options)
+        )
 
     def gold() -> Step:
         lines = gold_build.run(
@@ -144,6 +152,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--mapping", type=Path, default=DEFAULT_MAPPING)
     run.add_argument("--tariffs", type=Path, default=DEFAULT_TARIFFS)
     run.add_argument("--rules", type=Path, default=DEFAULT_RULES)
+    run.add_argument(
+        "--rebuild-silver",
+        choices=["true", "false"],
+        default="false",
+        help="rebuild silver from all of bronze, after a change to the parsing",
+    )
     args = parser.parse_args(argv)
 
     result = run_pipeline(
@@ -154,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         args.mapping,
         args.tariffs,
         args.rules,
+        rebuild_silver=args.rebuild_silver == "true",
     )
     print(result.report())
     if result.failed_step is not None:

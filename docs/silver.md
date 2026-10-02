@@ -24,7 +24,7 @@ uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild
 
 `silver_parking_reading`, the conflicts and the freshness tables are then derived from all fetches, so the tables after any sequence of incremental runs, in any order and with files arriving late, are the same as after a rebuild. The tests check exactly that.
 
-**Rebuild (`--rebuild`).** Replaces all silver tables from all of bronze. Use it after a change to the parsing or deduplication, or if a silver table is lost; bronze, and the raw files behind it, are the source of truth.
+**Rebuild (`--rebuild`).** Replaces all silver tables from all of bronze. Use it after a change to the parsing or deduplication, or if a silver table is lost; bronze, and the raw files behind it, are the source of truth. The pipeline does the same with `--rebuild-silver true`, and on a platform `tools/rebuild` runs it ([`docs/databricks.md`](databricks.md#rebuilding-silver)).
 
 ## Deduplication
 
