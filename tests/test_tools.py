@@ -195,7 +195,7 @@ def databricks(tmp_path):
     """The Databricks scripts in a copy of their folder, with fake uv, gh, databricks and git."""
     folder = tmp_path / "platforms" / "databricks"
     folder.mkdir(parents=True)
-    for script in ["deploy.sh", "backfill.sh"]:
+    for script in ["deploy.sh", "backfill.sh", "rebuild.sh"]:
         shutil.copy2(REPO / "platforms" / "databricks" / script, folder / script)
     (tmp_path / "tools").mkdir()
     shutil.copy2(REPO / "tools" / "requirements.sh", tmp_path / "tools" / "requirements.sh")
@@ -325,3 +325,47 @@ def test_a_dry_run_backfill_copies_and_runs_nothing(tmp_path, databricks):
     assert [call for call in calls(tmp_path) if call.startswith("databricks")] == [
         "databricks bundle validate --target prod --output json"
     ]
+
+
+def test_a_rebuild_runs_the_pipeline_with_silver_rebuilt_and_copies_nothing(tmp_path, databricks):
+    result = run_databricks(tmp_path, databricks, "rebuild.sh", "prod")
+
+    assert result.returncode == 0, result.stderr
+    assert [call for call in calls(tmp_path) if call.startswith(("databricks", "git"))] == [
+        "databricks bundle run --target prod pipeline --params rebuild_silver=true"
+    ]
+
+
+def test_a_dry_run_rebuild_runs_nothing(tmp_path, databricks):
+    result = run_databricks(tmp_path, databricks, "rebuild.sh", "--dry-run", "prod")
+
+    assert result.returncode == 0, result.stderr
+    assert "dry run: would run the pipeline job (prod) with rebuild_silver=true" in result.stdout
+    assert calls(tmp_path) == []
+
+
+def test_the_pipeline_job_rebuilds_silver_only_when_asked():
+    """The parameter defaults to false, so the scheduled runs never rebuild."""
+    bundle = (REPO / "platforms" / "databricks" / "databricks.yml").read_text()
+
+    assert (
+        '      parameters:\n        - name: rebuild_silver\n          default: "false"\n' in bundle
+    )
+    assert (
+        '              - --rebuild-silver\n              - "{{job.parameters.rebuild_silver}}"\n'
+        in (bundle)
+    )
+
+
+def test_fabric_has_no_rebuild_yet():
+    """Until Fabric runs (#16): tools/rebuild -p fabric says so instead of doing something else."""
+    result = subprocess.run(
+        [REPO / "tools" / "rebuild", "-p", "fabric", "--dry-run"],
+        env=environment(REPO),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "platform 'fabric' has no rebuild (platforms with rebuild: databricks)" in result.stderr

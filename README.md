@@ -49,7 +49,7 @@ flowchart LR
 
 - **The raw files are the source of truth.** Every snapshot is stored as fetched, next to a sidecar that says when and how it was fetched. Every table can be rebuilt from them, on any platform.
 - **Collection stays outside the platform** until one takes over, with a handover that keeps a single collector of record, so every period of history has exactly one ([ADR 011](docs/adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover)).
-- **One package, thin platforms.** The logic is the `stavanger_parking` package ([`src/`](src/stavanger_parking/)), on Polars and delta-rs rather than Spark ([ADR 001](docs/adr/001-polars-over-pyspark.md)), tested locally and in CI; it imports nothing platform-specific. `platforms/<platform>/` holds only what differs: where storage is, how runs are scheduled, how Power BI connects. `tools/deploy`, `tools/backfill` and `tools/report` run the same operations on either platform.
+- **One package, thin platforms.** The logic is the `stavanger_parking` package ([`src/`](src/stavanger_parking/)), on Polars and delta-rs rather than Spark ([ADR 001](docs/adr/001-polars-over-pyspark.md)), tested locally and in CI; it imports nothing platform-specific. `platforms/<platform>/` holds only what differs: where storage is, how runs are scheduled, how Power BI connects. `tools/deploy`, `tools/backfill` and `tools/report` run the same operations on either platform; `tools/rebuild` is Databricks only until Fabric has run (#16).
 
 [`docs/architecture.md`](docs/architecture.md) has the full design: each layer's tables and grain, the star schema's columns, and the platform mapping.
 
@@ -93,7 +93,7 @@ Bronze loads only the raw files it does not have, and silver derives its reading
 uv run python -m stavanger_parking.pipeline run --raw-root <data branch checkout> --tables-root <empty folder>
 ```
 
-To rebuild only silver from bronze, after a change to parsing or deduplication: `uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild`. On Databricks, `tools/backfill -p databricks` copies the raw files into the volume and runs the pipeline job.
+To rebuild only silver from bronze, after a change to parsing or deduplication: `uv run python -m stavanger_parking.silver.build --tables-root <tables> --rebuild`. On Databricks, `tools/backfill -p databricks` copies the raw files into the volume and runs the pipeline job, and `tools/rebuild -p databricks` runs it with silver rebuilt from bronze.
 
 ### How it scales
 
@@ -151,6 +151,7 @@ Then:
 tools/deploy --prod --dry-run   # the plan, and the release it would install
 tools/deploy --prod             # the bundle, with the latest release's wheel (or give a tag, to revert)
 tools/backfill --prod           # copy the raw files from the data branch, and run the pipeline
+tools/rebuild --prod            # after a parsing change: run the pipeline with silver rebuilt from bronze
 tools/report --prod             # publish the Power BI model and report; set the credentials once in the service
 ```
 

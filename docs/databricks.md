@@ -50,7 +50,20 @@ tools/backfill -p databricks                     # dev
 tools/backfill -p databricks --prod --dry-run    # count the files and name the volume, copy nothing
 ```
 
-Copies the raw files from the `data` branch into the raw volume and runs the pipeline job once, which loads every file bronze does not have yet and rebuilds silver and gold. Raw files never change, so running it again copies the same files and loads only new ones. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.
+Copies the raw files from the `data` branch into the raw volume and runs the pipeline job once, which loads every file bronze does not have yet, brings silver up to date and rebuilds gold. Raw files never change, so running it again copies the same files and loads only new ones. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.
+
+## Rebuilding silver
+
+```sh
+tools/rebuild -p databricks --prod --dry-run    # name the job and the parameter, run nothing
+tools/rebuild -p databricks --prod
+```
+
+Silver parses only the bronze rows it has not seen ([`docs/silver.md`](silver.md#runs-and-rebuilds)), so a change to the parsing applies only to rows that arrive after it. `tools/rebuild` runs the pipeline job once with the job parameter `rebuild_silver=true`: silver is rebuilt from all of bronze, then gold, quality and publish run as usual. It copies no raw files; run `tools/backfill` first if the volume is behind.
+
+The parameter defaults to `false`, so the scheduled runs, and `tools/backfill`, stay incremental. After a release that changes the parsing: `tools/deploy --prod`, then `tools/rebuild --prod`. The first time was #113, when the source's `"Fullt"` became 0 free spaces.
+
+Fabric has no rebuild yet: `tools/rebuild -p fabric` says so, until the Fabric deployment has run (#16).
 
 ## Next to GitHub Actions collection
 

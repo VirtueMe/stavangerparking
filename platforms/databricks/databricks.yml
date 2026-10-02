@@ -50,6 +50,10 @@ resources:
         timezone_id: Europe/Oslo
         pause_status: PAUSED
       max_concurrent_runs: 1
+      # The scheduled runs keep the default; `tools/rebuild` sets it to rebuild silver from bronze
+      parameters:
+        - name: rebuild_silver
+          default: "false"
       email_notifications:
         on_failure:
           - ${workspace.current_user.userName}
@@ -83,6 +87,8 @@ resources:
               # writes these tables (maintenance, docs/maintenance.md) must be a task of this job
               - --storage-option
               - allow_unsafe_rename=true
+              - --rebuild-silver
+              - "{{job.parameters.rebuild_silver}}"
         # Also after a failed pipeline: a critical check (exit 3) leaves every table built, and
         # the tables up to a failed step are consistent. The job still fails, and notifies.
         - task_key: publish
