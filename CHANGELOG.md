@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.24.1] - 2026-10-02
+
+### Documentation
+
+- **databricks:** Free Edition reaches the sources; the collector works ([#123](https://github.com/VirtueMe/stavangerparking/pull/123))
+
 ## [0.24.0] - 2026-10-02
 
 ### Features
