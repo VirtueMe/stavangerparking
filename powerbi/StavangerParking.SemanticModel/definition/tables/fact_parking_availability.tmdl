@@ -110,6 +110,23 @@ table fact_parking_availability
 		formatString: #,0
 		displayFolder: Availability
 
+	/// Share of capacity in use in each facility's latest reading, over the facilities with a known capacity and a count.
+	/// The occupancy that goes with 'Free spaces (latest)'; how old it is: 'Data age (minutes)'. Outside 0–100 % means the capacity is wrong.
+	measure 'Occupancy (latest)' =
+			VAR facilities =
+				FILTER (
+					ADDCOLUMNS (
+						VALUES ( dim_parking_facility[facility_key] ),
+						"@capacity", CALCULATE ( MAX ( dim_parking_facility[capacity] ) ),
+						"@free", [Free spaces (latest)]
+					),
+					NOT ISBLANK ( [@capacity] ) && NOT ISBLANK ( [@free] )
+				)
+			RETURN
+				DIVIDE ( SUMX ( facilities, [@capacity] - [@free] ), SUMX ( facilities, [@capacity] ) )
+		formatString: 0.0 %
+		displayFolder: Availability
+
 	/// Number of source readings. Readings are irregular (ADR 003): never average over them unweighted.
 	measure Readings = COUNTROWS ( fact_parking_availability )
 		formatString: #,0

@@ -62,14 +62,28 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fact_parking_hourly"
+                      "Entity": "fact_parking_availability"
                     }
                   },
-                  "Property": "Occupancy"
+                  "Property": "Occupancy (latest)"
                 }
               },
-              "queryRef": "fact_parking_hourly.Occupancy",
-              "nativeQueryRef": "Occupancy"
+              "queryRef": "fact_parking_availability.Occupancy (latest)",
+              "nativeQueryRef": "Occupancy (latest)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_parking_availability"
+                    }
+                  },
+                  "Property": "Data age (minutes)"
+                }
+              },
+              "queryRef": "fact_parking_availability.Data age (minutes)",
+              "nativeQueryRef": "Data age (minutes)"
             }
           ]
         }
