@@ -96,3 +96,7 @@ The rest holds: one package and one entry point, thin platform folders (now with
 ## Addendum 2026-10-01: as prepared for Fabric
 
 The Fabric deployment (#98) is written before there is a capacity to run it on, and differs from the text above in one point: **it is deployed with fabric-cicd, not synced by Git integration.** `tools/deploy -p fabric` deploys the items in `platforms/fabric/workspace/` with `fab deploy`, as `tools/deploy -p databricks` deploys the bundle, so on both platforms a release is deployed, not a branch, and dev and prod differ only in where they go (two workspaces on Fabric). fabric-cicd fills in the IDs that exist only after deployment, such as the notebooks' default Lakehouse. The folder is in Git format, so Git integration remains possible. As on Databricks, the platform folder holds no logic: one pure Python notebook installs the wheel and calls `run_pipeline`. What has not been tried is listed in [`docs/fabric.md`](../fabric.md#not-tried-yet).
+
+## Addendum 2026-10-02: Databricks reaches the sources
+
+The outbound restriction that blocked the handover (addendum of 2026-09-30) was lifted by 2026-10-02: a run of the dev collection job, with its storage pointed at a test folder, fetched a snapshot and a sidecar from both sources (#121, [`docs/databricks.md`](../databricks.md#free-edition)). Nothing else changes: GitHub Actions stays the collector of record, and the Databricks collection job stays paused until the handover above is decided and carried out.

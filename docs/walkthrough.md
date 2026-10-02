@@ -91,7 +91,7 @@ About 15 minutes in all, then questions.
 - **On Databricks:** the released wheel runs as a job task on serverless compute, into Unity Catalog volumes; a second task publishes the report's tables to Unity Catalog. The tasks depend on each other, the publish runs even when a critical check fails (so the tables with the failure are still there), and a failed run e-mails the owner.
 - **On Fabric** the same entry point runs from a notebook in a Data pipeline, with the Lakehouse's `Files/` and `Tables/`: the mapping is written, and waits for a capacity (#16).
 - `tools/deploy`, `tools/backfill` and `tools/report` do the same thing on either platform, with a dry run first.
-- **Collection stays in one place** until a platform takes over with a handover, so every period of history has exactly one collector. Databricks' collector is deployed but paused: Free Edition blocks the sources.
+- **Collection stays in one place** until a platform takes over with a handover, so every period of history has exactly one collector. Databricks' collector is deployed and works (tested on 2 October), but stays paused until such a handover.
 
 ## 6. A change, live
 
@@ -163,7 +163,7 @@ WHERE f.facility_name = 'Forum' AND a.valid_from = TIMESTAMP '2026-09-23 17:16:0
 - **Capacity:** a hand-maintained mapping to a register that can be wrong, as Forum shows.
 - **Collection** depends on cron-job.org, and nothing alerts if its calls stop; gaps are listed afterwards from the sidecars.
 - **The facility name as key:** a rename splits a facility's history.
-- **The platform:** Databricks Free Edition cannot reach the sources, and deploying is manual (#83).
+- **The platform:** Databricks is Free Edition, temporary and with a daily quota; its collector stays paused until a handover, and deploying is manual (#83).
 
 **Then show the change landing:** check that the run from part 6 has ended and its `publish` task succeeded (a refresh before that reads half-replaced tables), then run [the query](#the-reading-for-part-6) again: Forum's capacity is 315 and the same reading has **23** occupied spaces, not −3. Refresh the semantic model in the service (under two minutes): the report has the new capacity. Forum no longer fails the check; the latest run's failed checks are not a promise either way, since Jernbanen can still exceed its 390 at night ([#112](https://github.com/VirtueMe/stavangerparking/issues/112)). The whole change, from merge to report, took about five minutes, and every step was a command anyone on the team can run.
 

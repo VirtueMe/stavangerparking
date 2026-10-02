@@ -246,7 +246,7 @@ Both platforms run the same package, the same entry point and the same Power BI 
 | Orchestration and alerts | Lakeflow Jobs, e-mail on failure; schedules paused | Data pipeline `StavangerParkingPipeline`, e-mail on failure (Office 365 Outlook, activated once by hand); no schedule |
 | Deployment | Asset Bundle, `tools/deploy -p databricks [--prod]` | fabric-cicd (`fab deploy`), `tools/deploy -p fabric [--prod]` |
 | Reporting | Power BI, Databricks connector through a SQL warehouse, `tools/report` | Power BI, SQL analytics endpoint (or Direct Lake) |
-| Collection | Deployed, paused; outbound internet blocked on Free Edition | Notebook `Collect`, run by nothing until the handover |
+| Collection | Deployed and working (tested 2026-10-02), paused until the handover | Notebook `Collect`, run by nothing until the handover |
 
 ## Related documents
 
