@@ -16,7 +16,7 @@ def m(minutes: float) -> datetime:
     return T0 + timedelta(minutes=minutes)
 
 
-def reading(start, end, fetched, spaces=100, status="numeric", key=2) -> dict:
+def reading(start, end, fetched, spaces=100, status="numeric", key=2, glitch=False) -> dict:
     return {
         "facility_key": key,
         "valid_from": start,
@@ -24,6 +24,7 @@ def reading(start, end, fetched, spaces=100, status="numeric", key=2) -> dict:
         "last_fetched_at": fetched,
         "available_spaces": spaces,
         "status": status,
+        "is_source_glitch": glitch,
     }
 
 
@@ -112,6 +113,22 @@ def test_an_hour_with_only_open_time_has_no_average():
 
     assert row["avg_available_spaces"] is None
     assert (row["covered_minutes"], row["counted_minutes"]) == (60.0, 0.0)
+
+
+def test_a_glitch_is_covered_but_not_counted():
+    # 01.10.2026 22:40: "Fullt" (0) for 5 minutes between two readings of ~395
+    row = only(
+        run(
+            reading(m(0), m(40), m(38), 395),
+            reading(m(40), m(45), m(43), 0, glitch=True),
+            reading(m(45), m(60), m(58), 396),
+        )
+    )
+
+    assert row["avg_available_spaces"] == pytest.approx((395 * 40 + 396 * 15) / 55)
+    assert (row["min_available_spaces"], row["max_available_spaces"]) == (395, 396)
+    assert (row["covered_minutes"], row["counted_minutes"]) == (60.0, 55.0)
+    assert row["observation_count"] == 3
 
 
 def test_stale_minutes_are_the_covered_minutes_inside_a_stale_period():

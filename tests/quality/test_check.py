@@ -82,9 +82,13 @@ def test_healthy_data_passes_and_the_results_are_stored(tables, capsys):
     stored = results(root)
     assert failed(root).is_empty()
     assert stored["snapshot"].unique().to_list() == ["bronze/parking/2026/09/29/120300.json"]
-    assert {"schema_drift", "facility_count", "free_exceeds_capacity", "low_coverage"} <= set(
-        stored["check"]
-    )
+    assert {
+        "schema_drift",
+        "facility_count",
+        "free_exceeds_capacity",
+        "low_coverage",
+        "source_glitches",
+    } <= set(stored["check"])
     # The first snapshot has no history before it: the last day is uncovered, a warning only
     coverage = stored.filter(pl.col("check") == "low_coverage").row(0, named=True)
     assert (coverage["passed"], coverage["detail"]) == (

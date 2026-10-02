@@ -21,6 +21,7 @@ Warnings, to be looked at:
 - `register_missing_areas`: mapped areas are missing from the latest register snapshot
 - `source_stale`: the latest snapshot's data is older than the staleness threshold
 - `low_coverage`: hours in the last day that the readings cover for less than half
+- `source_glitches`: readings in the last day that were glitches in the source (`gold.availability`)
 """
 
 from dataclasses import dataclass
@@ -208,3 +209,25 @@ def low_coverage(hourly: pl.DataFrame, facility_keys: list[int], until) -> Resul
         f"{low.height} of {covered.height} facility-hour(s) under {LOW_COVERAGE_MINUTES} minutes"
     )
     return _result("low_coverage", WARNING, low.is_empty(), detail)
+
+
+def source_glitches(availability: pl.DataFrame, facilities: pl.DataFrame, until) -> Result:
+    """Glitches among the readings of the last 24 hours before `until`, per facility.
+
+    A reading is judged when the facility's next one arrives, so a glitch in the latest snapshot is
+    reported by the next run.
+    """
+    names = facilities.select("facility_key", "facility_name")
+    glitches = (
+        availability.filter(
+            pl.col("is_source_glitch") & (pl.col("valid_from") > until - timedelta(hours=24))
+        )
+        .join(names, on="facility_key", how="left")
+        .group_by("facility_name")
+        .len()
+        .sort("facility_name")
+    )
+    detail = f"{glitches['len'].sum()} glitch(es) in the last 24 hours"
+    if glitches.height:
+        detail += ": " + ", ".join(f"{name} {n}" for name, n in glitches.rows())
+    return _result("source_glitches", WARNING, glitches.is_empty(), detail)

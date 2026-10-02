@@ -10,8 +10,9 @@ irregular, so every measure is weighted by time):
   last value stretched across it.
 - A reading's covered time is split across the hours it overlaps. Per facility and hour:
   `covered_minutes`; `counted_minutes`, the covered minutes with a count (`open` and `unknown` time
-  is covered but has none); the time-weighted `avg_available_spaces` over the counted minutes;
-  `min_available_spaces` and `max_available_spaces` of those readings; `observation_count`, the
+  is covered but has none, and a source glitch's count is not counted); the time-weighted
+  `avg_available_spaces` over the counted minutes; `min_available_spaces` and
+  `max_available_spaces` of those readings; `observation_count`, the
   readings overlapping the hour; and `stale_minutes`, the covered minutes inside a stale period.
 
 The grain is one row per facility per **UTC hour** (`hour_start`), with the local Oslo `date_key`
@@ -92,7 +93,8 @@ def hourly(
         )
         .alias("stale"),
     )
-    counted = pl.col("available_spaces").is_not_null()
+    # A glitch is a failure in the source, not a count: its time is covered, not counted
+    counted = pl.col("available_spaces").is_not_null() & ~pl.col("is_source_glitch")
     local = pl.col("hour_start").dt.convert_time_zone(OSLO)
     return (
         segments.group_by("facility_key", "hour_start")
@@ -104,8 +106,8 @@ def hourly(
                 / pl.col("minutes").filter(counted).sum()
             )
             .alias("avg_available_spaces"),
-            pl.col("available_spaces").min().alias("min_available_spaces"),
-            pl.col("available_spaces").max().alias("max_available_spaces"),
+            pl.col("available_spaces").filter(counted).min().alias("min_available_spaces"),
+            pl.col("available_spaces").filter(counted).max().alias("max_available_spaces"),
             pl.len().alias("observation_count"),
             pl.col("minutes").sum().alias("covered_minutes"),
             # The weight of the average: covered minutes with a count, so hours combine correctly
