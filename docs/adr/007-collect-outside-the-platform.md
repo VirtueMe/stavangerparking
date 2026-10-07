@@ -52,6 +52,8 @@ This narrows one rule of the decision; the decision itself still holds. It recor
 
 **What is kept.** Every mapped area, every hour, with its complete record, version history included. Bronze, silver and gold treat a filtered file like any other raw file; the facility dimension gets the same capacities as from the full response.
 
+**One incident an hour.** The source is still tried on every run, because the next run is the retry. A record is written only when the newest one is at least an hour old, so an outage costs at most 24 files a day, not one per run (288). An hour is a constant (`OUTAGE_RECORD_EVERY`), not configuration.
+
 **What is lost.** The records of areas that are not mapped. The register's history of a facility from before it is added to the mapping cannot be recovered from the raw files, and neither can the other areas of the operator. Neither is used: a facility has no capacity until it is mapped ([ADR 005](005-capacity-as-reference-data.md)).
 
 **How a filtered file stays traceable.** Its sidecar's `filter` records what the source returned and what was kept:
@@ -71,3 +73,13 @@ This narrows one rule of the decision; the decision itself still holds. It recor
 ## Addendum 2026-09-30: handover to either platform
 
 This refines the handover in the decision; collecting outside the platform until then is unchanged. The repository now deploys to Fabric and to Databricks ([ADR 011](011-one-repository-two-platforms.md)), so "the platform" is whichever one takes over collection, and only one does. Deploying a platform does not start its collection. The handover is a deliberate switch: backfill, then an overlap of at least 24 hours in which the platform collects into a separate comparison root, then a comparison by `values_fingerprint`. Only then are the GitHub workflow, the cron-job.org job and its token retired, and the platform continues the history from the `data` branch's last snapshot. The overlap's snapshots never become part of the history. The steps are in [ADR 011](011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover).
+
+## Addendum 2026-10-07: a source's server error is an outage, not a failed run
+
+This refines how a run reports failure; the decision itself still holds (#124). From about 06:42 UTC on 2026-10-07 the parking register answered every request with HTTP 500, also without parameters, so no change in the collector could help. Every 5-minute run went red until it recovered, and the red runs hid failures that can be fixed.
+
+**The rule.** A 5xx answer to a source's download is recorded as `bronze/<source>/unavailable/<time>.json` on the `data` branch and does not fail the run. Every other failure (4xx, timeout, connection error, CKAN or mapping errors) still does.
+
+**What is lost.** The run no longer turns red for an outage, so GitHub does not notify about it, and the failed-run table of #119 does not list it. The record, the run summary, a `::warning::` annotation and `collect gaps` are what show it. Loading the records into bronze is not decided yet (#124).
+
+**Why not the alternatives.** Failing the run, as before, is loud but not actionable, so the alarm is ignored (the failures worth seeing are lost among them). Retrying inside the run does not help, because an outage lasts hours, and the next run is already the retry. Not recording anything would leave a gap with no reason.

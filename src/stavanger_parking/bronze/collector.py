@@ -20,6 +20,12 @@ A source with a `filter` keeps only the records it names (the facility mapping's
 register, ADR 010): the stored file is a filtered copy of the response, each record unchanged, and
 the sidecar's `filter` records the full response's hash and record count, so the file stays
 traceable to what the source returned (ADR 007, addendum).
+
+A source that answers with a server error (HTTP 5xx) is down, which a retry on the next run, not
+a red run, is the answer to. The run tries again on every run, as it does after any failure, but
+records the outage as `<source dir>/unavailable/<time>.json` only when the newest record is an hour
+old or there is none, so an outage is one incident an hour, not one per run. The missing snapshots
+show as gaps. Any other failed download still fails the run.
 """
 
 import hashlib
@@ -36,6 +42,7 @@ from stavanger_parking.bronze.ckan import resolve_resource
 from stavanger_parking.config import CkanLocation, HttpLocation, Polling, Source
 
 SIDECAR_SUFFIX = ".meta.json"
+OUTAGE_RECORD_EVERY = timedelta(hours=1)
 FAST = "fast"
 SLOW = "slow"
 ON_DEMAND = "on_demand"
@@ -57,6 +64,19 @@ class Outcome:
     source_id: str
     decision: Decision
     raw_file: str | None = None
+    outage: "Outage | None" = None
+
+
+@dataclass(frozen=True)
+class Outage:
+    """A source that answered a download with a server error.
+
+    `record` is the file written for it; None when an earlier record, less than
+    `OUTAGE_RECORD_EVERY` old, already stands for the incident.
+    """
+
+    status: int
+    record: str | None
 
 
 @dataclass(frozen=True)
@@ -230,6 +250,14 @@ def collect(
     try:
         response = client.get(url)
         response.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code < 500:
+            raise CollectError(f"Download failed for {source.id}: {url}: {e}") from e
+        status = e.response.status_code
+        record = None
+        if _outage_record_due(source, storage, now):
+            record = _write_unavailable(source, storage, now, run_id, url, status)
+        return Outcome(source.id, decision, outage=Outage(status, record))
     except httpx.HTTPError as e:
         raise CollectError(f"Download failed for {source.id}: {url}: {e}") from e
     payload = response.content
@@ -267,6 +295,36 @@ def collect(
         (json.dumps(sidecar, indent=2, ensure_ascii=False) + "\n").encode("utf-8"),
     )
     return Outcome(source.id, decision, raw_file)
+
+
+def unavailable_path(raw_path: str, at: datetime) -> str:
+    """Where an outage record goes: beside the source's raw files, outside their date folders."""
+    return f"{raw_path.split('{')[0]}unavailable/{at:%Y%m%dT%H%M%S}.json"
+
+
+def _outage_record_due(source: Source, storage: Path, now: datetime) -> bool:
+    """Whether an outage seen at `now` needs a record: none yet, or the newest is an hour old."""
+    folder = storage / unavailable_path(source.raw_path, now).rsplit("/", 1)[0]
+    records = sorted(folder.glob("*.json"))
+    if not records:
+        return True
+    latest = json.loads(records[-1].read_text(encoding="utf-8"))
+    return now - datetime.fromisoformat(latest["observed_at"]) >= OUTAGE_RECORD_EVERY
+
+
+def _write_unavailable(
+    source: Source, storage: Path, now: datetime, run_id: str, url: str, status: int
+) -> str:
+    record = {
+        "source_id": source.id,
+        "observed_at": now.isoformat(),
+        "source_url": url,
+        "run_id": run_id,
+        "http_status": status,
+    }
+    path = unavailable_path(source.raw_path, now)
+    _write_new(storage / path, (json.dumps(record, indent=2) + "\n").encode("utf-8"))
+    return path
 
 
 def _write_new(path: Path, content: bytes) -> None:
