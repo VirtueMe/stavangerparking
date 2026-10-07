@@ -15,7 +15,7 @@ The `Collect` workflow ([`.github/workflows/collect.yml`](../.github/workflows/c
    - stores the response unchanged at the source's `raw_path` and writes a sidecar next to it.
 3. Commits and pushes whatever was stored to `data`, retrying a failed push twice on top of the remote branch.
 
-The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept.
+The decision and its reason are printed for every source, including skips, and appear in the run's summary. A source that fails makes the run fail, which GitHub notifies about; snapshots from the other sources are still kept. The exception is a server error from the source, which is recorded as an [outage](#outages) and does not fail the run.
 
 ## Trigger
 
@@ -92,6 +92,8 @@ The sidecar records:
 | `values_fingerprint` | SHA-256 of the values without the ignored fields; `null` if the payload is not a JSON list of objects |
 | `polling_mode`, `next_due` | The mode after this snapshot, and when the next fetch is due |
 
+An outage leaves a record instead of a snapshot ([below](#outages)).
+
 Files are never modified or deleted: the collector refuses to overwrite an existing file, and a ruleset on the `data` branch blocks force pushes and deletion of the branch.
 
 ## Gaps
@@ -109,9 +111,33 @@ uv run python -m stavanger_parking.bronze.collect gaps --storage ../stavangerpar
 
 A snapshot that was never stored leaves no file: the run that failed is the only trace, and its log expires. The workflow's run history is therefore a data source of its own: when the pipeline loads bronze, it reads the Collect workflow's failed runs from the GitHub REST API into `bronze_collect_runs` ([`docs/bronze.md`](bronze.md#the-collectors-failed-runs)), with the step that failed: `Commit and push snapshots` for a lost push, `Fail the run if a source failed` for a source that could not be fetched. The quality warning `collect_failures` counts the last day's ([`docs/quality.md`](quality.md)).
 
-`collect gaps` says *that* a snapshot is missing; the failed run says *why*.
+`collect gaps` says *that* a snapshot is missing; the failed run says *why*. A run that only met an [outage](#outages) is not a failed run, so it is not in this table.
 
 Reading the history is the collector's integration, named in [`config/collector.json`](../src/stavanger_parking/config/collector.json): GitHub Actions today. A platform that takes over collection (ADR 011) needs its own reader for its job history.
+
+## Outages
+
+A source that answers a download with a server error (HTTP 5xx) is down, and nothing here can fix that. Failing the run for it would turn every run red for as long as the outage lasts, and bury the failures that can be fixed (#124). The collector therefore records the outage and carries on:
+
+```
+data branch
+└── bronze/parkeringsregisteret/unavailable/20261007T113235.json
+```
+
+| Field | Meaning |
+|---|---|
+| `source_id`, `source_url` | The source and the URL that answered with the error |
+| `observed_at` | When the error was seen (UTC) |
+| `run_id` | GitHub run id and attempt |
+| `http_status` | The 5xx status |
+
+- **One incident an hour, not one per run.** A source that is down is tried again on every run, because the next run is the retry. A record is written only when the source's newest record is at least an hour old, or there is none. During a long outage that is 24 records a day, not 288, and the data branch does not fill with commits.
+- The record is pushed with the run's other files. It lies outside the date folders of `raw_path`, so bronze loading never reads it as a snapshot, and it is not a sidecar, so it does not affect the polling decision.
+- The run prints `<source>: UNAVAILABLE: HTTP <status>` in its summary, saying whether it recorded the outage or one is already recorded, emits a `::warning::` annotation, and exits 0. A source that recovers simply produces its next snapshot; nothing marks the end of an incident, and the gap ends with it.
+- The missing snapshots show up in `collect gaps`; the records say *why*, with the status.
+- Everything else still fails the run: a 4xx answer, a timeout, a connection error, a CKAN `package_show` that fails, a bad mapping.
+
+The records are not loaded into bronze yet, so an outage is visible only on the `data` branch and as a gap ([weaknesses](weaknesses.md)).
 
 ## Parkeringsregisteret
 

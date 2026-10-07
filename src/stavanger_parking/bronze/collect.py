@@ -8,7 +8,9 @@
 skips and their reason. With `--source`, it collects only that source, which is how sources without
 polling are collected. A source with a `filter` keeps only the records of the facility mapping
 (`--mapping`, ADR 010). `gaps` lists periods where no snapshot of a polled
-source arrived by the time the previous one said the next was due. `run` exits non-zero on failure.
+source arrived by the time the previous one said the next was due. `run` exits non-zero on failure,
+except for a source that answers with a server error: that is recorded as unavailable (see
+`collector`) and does not fail the run.
 """
 
 import argparse
@@ -55,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(sources, storage: Path, run_id: str, mapping_path: Path) -> int:
-    lines, failed = [], False
+    lines, warnings, failed = [], [], False
     with make_client() as client:
         for source in sources:
             try:
@@ -65,11 +67,23 @@ def _run(sources, storage: Path, run_id: str, mapping_path: Path) -> int:
                 failed = True
                 lines.append(f"{source.id}: FAILED: {e}")
                 continue
+            if outcome.outage:
+                line = _unavailable_line(source.id, outcome.outage)
+                lines.append(line)
+                warnings.append(line)
+                continue
             d = outcome.decision
             action = f"fetched -> {outcome.raw_file}" if d.fetch else "skipped"
             lines.append(f"{source.id}: {action} ({d.mode} mode: {d.reason})")
-    _report(lines)
+    _report(lines, warnings)
     return 1 if failed else 0
+
+
+def _unavailable_line(source_id: str, outage) -> str:
+    line = f"{source_id}: UNAVAILABLE: HTTP {outage.status}"
+    if outage.record:
+        return f"{line}, recorded -> {outage.record}"
+    return f"{line}, already recorded; trying again on the next run"
 
 
 def _keep(source, mapping_path: Path) -> frozenset[str] | None:
@@ -94,12 +108,15 @@ def _gaps(sources, storage: Path, tolerance: timedelta) -> int:
     return 0
 
 
-def _report(lines: list[str]) -> None:
+def _report(lines: list[str], warnings: list[str] = ()) -> None:
     text = "\n".join(lines)
     print(text)
-    # On GitHub Actions, the same text goes into the run summary
+    # On GitHub Actions, the same text goes into the run summary, and a warning shows on the run
+    # without failing it
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
+        for warning in warnings:
+            print(f"::warning::{warning}")
         with open(summary, "a", encoding="utf-8") as f:
             f.write("```\n" + text + "\n```\n")
 

@@ -17,6 +17,7 @@ from stavanger_parking.bronze.collector import (
     decide,
     find_gaps,
     mode_after,
+    raw_glob,
     read_sidecars,
     render_raw_path,
     sidecar_path,
@@ -238,11 +239,50 @@ def test_existing_files_are_never_overwritten(source, tmp_path):
 
 
 def test_download_failure_fails_the_run_and_stores_nothing(source, tmp_path):
-    fake = FakeSource(b"", status=502)
+    fake = FakeSource(b"", status=404)
 
     with pytest.raises(CollectError, match="Download failed"):
         run(source, tmp_path, fake, T0)
     assert not any(tmp_path.rglob("*.json"))
+
+
+def test_a_server_error_is_recorded_as_unavailable_and_does_not_fail(source, tmp_path):
+    outcome = run(source, tmp_path, FakeSource(b"", status=500), T0)
+
+    assert outcome.raw_file is None
+    record = json.loads((tmp_path / outcome.outage.record).read_text())
+    assert (record["source_id"], record["http_status"], record["run_id"]) == (
+        source.id,
+        500,
+        "r",
+    )
+    assert read_sidecars(tmp_path, source) == []
+
+
+def test_an_outage_is_retried_every_run_but_recorded_once_an_hour(source, tmp_path):
+    fake = FakeSource(b"", status=500)
+
+    first = run(source, tmp_path, fake, T0)
+    again = run(source, tmp_path, fake, T0 + timedelta(minutes=5))
+    much_later = run(source, tmp_path, fake, T0 + timedelta(minutes=59))
+    next_hour = run(source, tmp_path, fake, T0 + timedelta(minutes=60))
+
+    assert fake.downloads == 4
+    assert [o.outage.record is not None for o in (first, again, much_later, next_hour)] == [
+        True,
+        False,
+        False,
+        True,
+    ]
+    assert len(list((tmp_path / "bronze" / "parking" / "unavailable").glob("*.json"))) == 2
+
+
+def test_an_outage_record_is_not_a_raw_file(source, tmp_path):
+    outcome = run(source, tmp_path, FakeSource(b"", status=503), T0)
+
+    assert outcome.outage.record not in {
+        str(p.relative_to(tmp_path)) for p in tmp_path.glob(raw_glob(source.raw_path))
+    }
 
 
 def test_unexpected_payload_is_still_stored_unchanged(source, tmp_path):
@@ -341,8 +381,33 @@ def test_cli_run_reports_fetches_and_skips(monkeypatch, tmp_path, capsys):
     assert "fast mode" in summary.read_text()
 
 
+def test_cli_run_does_not_fail_on_a_server_error(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(cli, "make_client", FakeSource(b"", status=503).client)
+
+    code = cli.main(
+        ["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"]
+    )
+
+    assert code == 0
+    assert "UNAVAILABLE: HTTP 503, recorded -> bronze/" in capsys.readouterr().out
+
+
+def test_cli_run_warns_of_an_outage_on_github_without_failing(monkeypatch, tmp_path, capsys):
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setattr(cli, "make_client", FakeSource(b"", status=503).client)
+
+    code = cli.main(
+        ["--config", str(REPO_CONFIG), "run", "--storage", str(tmp_path), "--run-id", "1"]
+    )
+
+    assert code == 0
+    assert "::warning::stavanger_parking: UNAVAILABLE: HTTP 503" in capsys.readouterr().out
+    assert "UNAVAILABLE" in summary.read_text()
+
+
 def test_cli_run_fails_when_a_source_fails(monkeypatch, tmp_path, capsys):
-    fake = FakeSource(b"", status=503)
+    fake = FakeSource(b"", status=403)
     monkeypatch.setattr(cli, "make_client", fake.client)
 
     code = cli.main(
@@ -388,7 +453,7 @@ def test_an_unpolled_source_download_failure_fails_the_run(register, tmp_path):
     unpolled = dataclasses.replace(register, polling=None, filter=None)
 
     with pytest.raises(CollectError, match="Download failed for parkeringsregisteret"):
-        run(unpolled, tmp_path, FakeSource(b"", status=500), T0)
+        run(unpolled, tmp_path, FakeSource(b"", status=403), T0)
 
 
 # --- the register: hourly, filtered to the mapped areas (ADR 010) ------------------------------
