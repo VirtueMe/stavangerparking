@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.0] - 2026-10-07
+
+### Features
+
+- **bronze:** Record a source's server errors as outages, so they do not fail the run ([#125](https://github.com/VirtueMe/stavangerparking/pull/125))
+
 ## [0.24.1] - 2026-10-02
 
 ### Documentation
