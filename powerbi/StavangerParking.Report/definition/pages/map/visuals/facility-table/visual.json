@@ -5,7 +5,7 @@
     "x": 852,
     "y": 60,
     "z": 3100,
-    "height": 612,
+    "height": 570,
     "width": 412,
     "tabOrder": 3100
   },
@@ -55,7 +55,8 @@
                 }
               },
               "queryRef": "fact_parking_availability.Free spaces (latest)",
-              "nativeQueryRef": "Free spaces (latest)"
+              "nativeQueryRef": "Free spaces (latest)",
+              "displayName": "Free spaces *"
             },
             {
               "field": {
@@ -69,7 +70,8 @@
                 }
               },
               "queryRef": "fact_parking_availability.Occupancy (latest)",
-              "nativeQueryRef": "Occupancy (latest)"
+              "nativeQueryRef": "Occupancy (latest)",
+              "displayName": "Occupancy *"
             },
             {
               "field": {
@@ -83,7 +85,8 @@
                 }
               },
               "queryRef": "fact_parking_availability.Data age (minutes)",
-              "nativeQueryRef": "Data age (minutes)"
+              "nativeQueryRef": "Data age (minutes)",
+              "displayName": "Data age **"
             }
           ]
         }
