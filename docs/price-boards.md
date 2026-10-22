@@ -4,9 +4,9 @@
 
 ## What we already know
 
-- **The operator already varies prices by time of day and weekday.** Jernbanen and Jorenholmen cost more on Friday and Saturday middays, Kyrre less on weekend afternoons, Valberget more from 11 to 21, and every car park less at night ([tariffs](pricing.md#tariffs-configtariffsjson)). A dynamic price adds occupancy to rules the drivers already know.
+- **The operator already varies prices by time of day and weekday.** Jernbanen and Jorenholmen cost more on Friday and Saturday middays, Kyrre less on weekend afternoons, Valberget more from 11 to 21, and every car park less at night ([tariffs](pricing.md#tariffs-srcstavanger_parkingconfigtariffsjson)). A dynamic price adds occupancy to rules the drivers already know.
 - **The open data feed cannot drive a price.** It can freeze without notice: from 23 September 2026 19:16 to 1 October 2026 13:50 it repeated one reading while the file itself was re-published every 2 minutes ([`docs/weaknesses.md`](weaknesses.md)). A price computed from it would have been days out of date. `fact_suggested_price` therefore prices no stale hour (#25), and an operational system must take occupancy from the car parks' own counting, not from the open data.
-- **Reference data can be wrong.** The register's capacity for Forum (289) is lower than the free spaces the feed reported (292); the quality checks stop the pipeline on it ([`docs/quality.md`](quality.md)). A price board would multiply such an error into every driver's fee.
+- **Reference data can be incomplete.** The register's capacity for Forum (289) was lower than the free spaces the feed reported (292): the register leaves out the 26 spaces reserved for others, which the feed counts. The quality checks stopped the pipeline on it until the mapping added them (#91, [`docs/quality.md`](quality.md)). A price board would multiply such an error into every driver's fee.
 
 ## Architecture
 

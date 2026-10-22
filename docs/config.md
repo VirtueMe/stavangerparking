@@ -53,6 +53,7 @@ Other routes were considered: uploading the files as a Fabric environment resour
 | `register_id` | The parking area's id in Parkeringsregisteret. Unique |
 | `register_name`, `operator_name` | The names the register and the operator's website use, for reference |
 | `note` | Optional: anything a reader should know, such as sources that disagree about the capacity |
+| `reserved_spaces` | Optional, 0 if left out: spaces the register leaves out because they are not public parking, such as spaces reserved for the municipality's services, but which the feed counts. Added to the register's paid spaces to give the capacity; needs a `note` saying where the number comes from ([ADR 005](adr/005-capacity-as-reference-data.md#addendum-2026-09-30-reserved-spaces-the-register-leaves-out)) |
 
 When a facility is added to the feed or renamed, add or change its entry; until then its capacity is unknown. The tests check that the mapping covers every facility seen in the feed and that every `register_id` is an active area with the recorded name.
 

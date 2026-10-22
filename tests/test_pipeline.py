@@ -139,8 +139,8 @@ def test_a_step_that_cannot_run_stops_the_pipeline(tmp_path):
 
 
 def test_a_critical_check_fails_the_run_after_its_results_are_stored(roots):
-    # Forum reports more free spaces than the register's 289
-    raw, tables = roots([record(f, "292" if f == "Forum" else "100") for f in NINE])
+    # Forum reports more free spaces than its 315 (289 public and 26 reserved)
+    raw, tables = roots([record(f, "400" if f == "Forum" else "100") for f in NINE])
 
     result = run(raw, tables)
 
@@ -152,7 +152,7 @@ def test_a_critical_check_fails_the_run_after_its_results_are_stored(roots):
 
 
 def test_cli_exit_codes(roots, tmp_path, capsys):
-    raw, tables = roots([record(f, "292" if f == "Forum" else "100") for f in NINE])
+    raw, tables = roots([record(f, "400" if f == "Forum" else "100") for f in NINE])
 
     assert cli(raw, tables) == 3
     assert cli(tmp_path / "none", str(tmp_path / "empty")) == 1

@@ -53,7 +53,7 @@ One row per facility the feed has ever named, plus the unknown member. Maintaine
 | `facility_name` | The feed's `Sted`, exactly as delivered: the natural key ([ADR 004](adr/004-facility-name-as-natural-key.md)) |
 | `latitude`, `longitude` | From the facility's latest fetch that had them |
 | `register_id` | The facility's area in the national parking register, from the [facility mapping](config.md#facility-mapping) |
-| `capacity` | The area's paid spaces in the latest register snapshot ([ADR 005](adr/005-capacity-as-reference-data.md)); null (unknown) if the facility is not in the mapping, the register has not been collected, or the area is missing or deactivated |
+| `capacity` | The area's paid spaces in the latest register snapshot, plus the facility mapping's `reserved_spaces`: spaces reserved for others, which the register leaves out and the feed counts ([ADR 005](adr/005-capacity-as-reference-data.md#addendum-2026-09-30-reserved-spaces-the-register-leaves-out)); null (unknown) if the facility is not in the mapping, the register has not been collected, or the area is missing, deactivated or without a paid count |
 | `capacity_changed_at` | When the register last changed the area |
 | `first_seen`, `last_seen` | The first and last fetch that included the facility; fetch time, since the source's own timestamp can be frozen for days |
 | `is_active` | The facility is in the latest fetched snapshot |
@@ -110,7 +110,7 @@ In Power BI, the measures should aggregate over time with a time-weighted averag
 
 ### Occupancy
 
-`occupied_spaces` uses the facility's current capacity from the dimension (type 1), for all of history. A **negative** value is shown, not hidden: it means more spaces are free than the register says exist, so the capacity is wrong. It already happens: on 23 September 2026 Forum reported 292 free spaces against the register's 289 (the operator's website says 325), noted in the [facility mapping](config.md#facility-mapping).
+`occupied_spaces` uses the facility's current capacity from the dimension (type 1), for all of history. A **negative** value is shown, not hidden: it means more spaces are free than the register says exist, so the capacity is wrong. It happened: on 23 September 2026 Forum reported 292 free spaces against the register's 289, because the register leaves out its 26 reserved spaces; the [facility mapping](config.md#facility-mapping) now adds them (315, #91).
 
 ## `fact_parking_hourly`
 
