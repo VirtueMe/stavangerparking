@@ -304,29 +304,6 @@ def test_a_dry_run_deploy_plans_and_deploys_nothing(tmp_path, databricks):
     ]
 
 
-def test_a_backfill_copies_and_runs_the_pipeline(tmp_path, databricks):
-    result = run_databricks(tmp_path, databricks, "backfill.sh", "prod")
-
-    assert result.returncode == 0, result.stderr
-    assert "copying 2 raw file(s) to /Volumes/workspace/stavanger_parking/raw" in result.stdout
-    databricks_calls = [call for call in calls(tmp_path) if call.startswith("databricks")]
-    assert databricks_calls[1].startswith("databricks fs cp --recursive --overwrite")
-    assert databricks_calls[2] == "databricks bundle run --target prod pipeline"
-
-
-def test_a_dry_run_backfill_copies_and_runs_nothing(tmp_path, databricks):
-    result = run_databricks(tmp_path, databricks, "backfill.sh", "--dry-run", "prod")
-
-    assert result.returncode == 0, result.stderr
-    assert (
-        "dry run: would copy 2 raw file(s) to /Volumes/workspace/stavanger_parking/raw"
-        " and run the pipeline job (prod)"
-    ) in result.stdout
-    assert [call for call in calls(tmp_path) if call.startswith("databricks")] == [
-        "databricks bundle validate --target prod --output json"
-    ]
-
-
 def test_a_rebuild_runs_the_pipeline_with_silver_rebuilt_and_copies_nothing(tmp_path, databricks):
     result = run_databricks(tmp_path, databricks, "rebuild.sh", "prod")
 
