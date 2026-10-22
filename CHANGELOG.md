@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.1] - 2026-10-22
+
+### Bug Fixes
+
+- **report:** Shorten the map table's headers so every facility fits ([#127](https://github.com/VirtueMe/stavangerparking/pull/127)) ([#128](https://github.com/VirtueMe/stavangerparking/pull/128))
+
 ## [0.25.0] - 2026-10-07
 
 ### Features
