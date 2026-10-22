@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.2] - 2026-10-22
+
+### Bug Fixes
+
+- **fabric:** Commit Delta on the lakehouse mount, and fail the run when the notebook fails ([#130](https://github.com/VirtueMe/stavangerparking/pull/130)) ([#131](https://github.com/VirtueMe/stavangerparking/pull/131))
+
 ## [0.25.1] - 2026-10-22
 
 ### Bug Fixes
