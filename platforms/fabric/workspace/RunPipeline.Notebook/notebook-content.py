@@ -47,7 +47,13 @@
 
 from stavanger_parking.pipeline import run_pipeline
 
-result = run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")
+# The lakehouse mount cannot rename without replacing, which a Delta commit needs (as a Databricks
+# volume); safe with one writer, which this pipeline is
+result = run_pipeline(
+    "/lakehouse/default/Files",
+    "/lakehouse/default/Tables",
+    storage_options={"allow_unsafe_rename": "true"},
+)
 print(result.report())
 # A critical quality check (exit code 3) has still built every table; failing here alerts all the same
 if result.exit_code:

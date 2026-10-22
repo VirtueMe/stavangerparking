@@ -50,6 +50,26 @@
             }
           }
         }
+      },
+      {
+        "name": "Fail the run",
+        "description": "An inactive e-mail activity counts as succeeded, which would end a failed run as Completed",
+        "type": "Fail",
+        "dependsOn": [
+          {
+            "activity": "E-mail on failure",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "message": {
+            "value": "@activity('Run the pipeline').error.message",
+            "type": "Expression"
+          },
+          "errorCode": "PipelineFailed"
+        }
       }
     ]
   }

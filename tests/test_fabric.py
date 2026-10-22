@@ -93,7 +93,9 @@ def test_the_notebooks_install_the_deployed_wheel_and_use_only_the_package(name)
 def test_the_run_notebook_calls_the_pipeline_on_the_lakehouse():
     _, code = code_cells(WORKSPACE / "RunPipeline.Notebook")
 
-    assert 'run_pipeline("/lakehouse/default/Files", "/lakehouse/default/Tables")' in code
+    assert '"/lakehouse/default/Files",\n    "/lakehouse/default/Tables",' in code
+    # The mount cannot rename without replacing, as a Databricks volume (#130)
+    assert 'storage_options={"allow_unsafe_rename": "true"}' in code
     assert "if result.exit_code:" in code
 
 
@@ -115,6 +117,12 @@ def test_the_pipeline_runs_the_notebook_and_alerts_when_it_fails():
         {"activity": "Run the pipeline", "dependencyConditions": ["Failed"]}
     ]
     assert alert["typeProperties"]["inputs"]["body"]["To"] == "{{alert_email}}"
+    # An inactive alert counts as succeeded, so the run must fail by itself or it ends as Completed
+    fail = activities["Fail the run"]
+    assert fail["type"] == "Fail"
+    assert fail["dependsOn"] == [
+        {"activity": "E-mail on failure", "dependencyConditions": ["Completed"]}
+    ]
 
 
 def test_collection_is_never_scheduled():
