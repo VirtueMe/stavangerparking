@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.4] - 2026-10-22
+
+### Performance
+
+- **databricks:** Backfill copies only the raw files the volume lacks ([#126](https://github.com/VirtueMe/stavangerparking/pull/126)) ([#134](https://github.com/VirtueMe/stavangerparking/pull/134))
+
 ## [0.25.3] - 2026-10-22
 
 ### Bug Fixes
