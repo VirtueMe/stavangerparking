@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.3] - 2026-10-22
+
+### Bug Fixes
+
+- **gold:** Forum's capacity includes its 26 reserved spaces ([#97](https://github.com/VirtueMe/stavangerparking/pull/97))
+
 ## [0.25.2] - 2026-10-22
 
 ### Bug Fixes
