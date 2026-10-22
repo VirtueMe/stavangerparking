@@ -47,10 +47,10 @@ None today. The data is open and needs no credentials, the pipeline reads and wr
 
 ```sh
 tools/backfill -p databricks                     # dev
-tools/backfill -p databricks --prod --dry-run    # count the files and name the volume, copy nothing
+tools/backfill -p databricks --prod --dry-run    # count the files the volume lacks, copy nothing
 ```
 
-Copies the raw files from the `data` branch into the raw volume and runs the pipeline job once, which loads every file bronze does not have yet, brings silver up to date and rebuilds gold. Raw files never change, so running it again copies the same files and loads only new ones. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.
+Copies the raw files that the raw volume does not have yet from the `data` branch, and runs the pipeline job once, which loads every file bronze does not have yet, brings silver up to date and rebuilds gold. Raw files never change, so only the missing ones are copied: the script lists the volume folder by folder, compares the names with the branch's, and copies the difference, eight at a time. A run that stopped halfway is finished by running it again, and a run with nothing new takes about the time of the listing (seconds) plus the pipeline. The first load of an empty volume copies every file; this script has not been timed on that, and the earlier recursive copy took about half an hour for ten thousand files. Until Databricks collects, this is how its data stays current: run it when you want the platform's tables up to date.
 
 A refresh of the Power BI model reads the published tables: start it after the run's `publish` task has succeeded, never while it runs ([`docs/report.md`](report.md#on-a-platform)).
 
