@@ -51,7 +51,7 @@ For dev the lock is the checkout's; for prod it is **the release tag's own** `uv
 tools/backfill -p fabric --prod --dry-run   # count the files and name the Lakehouse, copy nothing
 ```
 
-[`backfill.sh`](../platforms/fabric/backfill.sh) copies the raw files from the `data` branch into `Files/`, at the same relative paths, one file at a time with `fab cp`, then runs the pipeline with `fab job run`. Raw files never change, so a second backfill copies the same files and the pipeline loads only the new ones.
+[`backfill.sh`](../platforms/fabric/backfill.sh) copies the raw files from the `data` branch that the Lakehouse does not have yet into `Files/`, at the same relative paths, then runs the pipeline with `fab job run`. Raw files never change, so only the missing ones are copied: it lists the Lakehouse folder by folder (`fab ls` is not recursive), compares the names with the branch's, makes the folders that are missing (`fab mkdir`), and copies the difference, eight files at a time and one `fab cp` each, with a time limit on every call. It then lists the Lakehouse again and stops, before the pipeline, if a file is still missing; a file that failed is tried once more first. A run that stopped halfway is finished by running it again. A run with nothing new takes about the time of the listing (seconds) plus the pipeline. The first load of an empty Lakehouse has not been timed with this script: on 2026-10-22 about 10,000 files took hours, with a sign-in that lapsed along the way.
 
 ## Next to GitHub Actions collection
 
@@ -62,7 +62,7 @@ GitHub Actions stays the collector of record ([`docs/collector.md`](collector.md
 The first deployment and run, on 2026-10-22, found four things that the tests against a fake CLI could not:
 
 - **`deploy.sh` took the alert address with a trailing carriage return** from `fab auth status`, which made the pipeline's JSON invalid. Setting `FABRIC_ALERT_EMAIL` skips the lookup (#129).
-- **`fab cp` into a folder that does not exist fails** with "Source and destination must be of the same type", and it cannot copy a directory from a local path. Folders are made first with `fab mkdir`, and files are copied one call each (#129).
+- **`fab cp` into a folder that does not exist fails** with "Source and destination must be of the same type", and it cannot copy a directory from a local path. Folders are made first with `fab mkdir`, and files are copied one call each, in parallel (#129, #132).
 - **delta-rs cannot commit on the Lakehouse mount.** The notebook failed with `Unable to rename file: Operation not permitted`, as a Databricks volume does. `RunPipeline` now passes `allow_unsafe_rename=true`, which is safe with one writer, and the pipeline is the only writer (#130).
 - **A failed notebook ended the run as Completed**, because the inactive alert activity counts as succeeded. The `Fail the run` activity ends the run as failed (#130).
 
