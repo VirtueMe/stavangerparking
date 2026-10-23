@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.7] - 2026-10-23
+
+### Bug Fixes
+
+- **fabric:** Strip the carriage return from the alert address ([#139](https://github.com/VirtueMe/stavangerparking/pull/139))
+
 ## [0.25.6] - 2026-10-23
 
 ### Documentation
