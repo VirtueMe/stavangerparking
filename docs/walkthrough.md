@@ -89,7 +89,7 @@ About 15 minutes in all, then questions.
 
 - **One repository, one package, thin platform folders** ([ADR 011](adr/011-one-repository-two-platforms.md)). The package imports nothing platform-specific, and a test keeps it that way. `platforms/databricks/` holds the Asset Bundle; `platforms/fabric/` is where Fabric's items go.
 - **On Databricks:** the released wheel runs as a job task on serverless compute, into Unity Catalog volumes; a second task publishes the report's tables to Unity Catalog. The tasks depend on each other, the publish runs even when a critical check fails (so the tables with the failure are still there), and a failed run e-mails the owner.
-- **On Fabric** the same entry point runs from a notebook in a Data pipeline, with the Lakehouse's `Files/` and `Tables/`: the mapping is written, and waits for a capacity (#16).
+- **On Fabric** the same entry point runs from a notebook in a Data pipeline, with the Lakehouse's `Files/` and `Tables/`: the mapping was deployed to a trial capacity and run on 2026-10-22 ([`docs/fabric.md`](fabric.md)).
 - `tools/deploy`, `tools/backfill` and `tools/report` do the same thing on either platform, with a dry run first.
 - **Collection stays in one place** until a platform takes over with a handover, so every period of history has exactly one collector. Databricks' collector is deployed and works (tested on 2 October), but stays paused until such a handover.
 

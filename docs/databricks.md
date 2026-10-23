@@ -65,7 +65,7 @@ Silver parses only the bronze rows it has not seen ([`docs/silver.md`](silver.md
 
 The parameter defaults to `false`, so the scheduled runs, and `tools/backfill`, stay incremental. After a release that changes the parsing: `tools/deploy --prod`, then `tools/rebuild --prod`. The first time was #113, when the source's `"Fullt"` became 0 free spaces.
 
-Fabric has no rebuild yet: `tools/rebuild -p fabric` says so, until the Fabric deployment has run (#16).
+Fabric has no rebuild yet: `tools/rebuild -p fabric` says so: the `RunPipeline` notebook takes no `rebuild_silver` parameter yet.
 
 ## Next to GitHub Actions collection
 

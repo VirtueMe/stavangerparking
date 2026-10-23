@@ -6,7 +6,7 @@
 #
 # The model reads the Lakehouse through its SQL analytics endpoint, in import mode
 # (report/expressions.tmdl). The workspace comes from FABRIC_WORKSPACE (prod) or FABRIC_DEV_WORKSPACE
-# (dev); POWERBI_WORKSPACE publishes somewhere else. Not yet run against a real workspace (#16).
+# (dev); POWERBI_WORKSPACE publishes somewhere else. Run against a real workspace on 2026-10-22/23.
 set -euo pipefail
 cd "$(dirname "$0")"
 # The Fabric CLI is in the dependency group "powerbi"; use it from there unless it is installed

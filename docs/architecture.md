@@ -36,7 +36,7 @@ flowchart LR
 
 Both tasks belong to one job, `stavanger_parking_pipeline`, which allows one run at a time. The pipeline writes Delta tables with delta-rs into a volume, because on this workspace volumes are the only writable paths; `publish` copies the tables the report reads into Unity Catalog, which is what Power BI's Databricks connector reads. The collection job is deployed but paused: GitHub Actions stays the collector of record ([`docs/databricks.md`](databricks.md)). `tools/report` generates the Power BI model with the Databricks data source and publishes it ([`docs/report.md`](report.md#on-a-platform)).
 
-## Data flow on Microsoft Fabric (ready, not yet run)
+## Data flow on Microsoft Fabric (deployed and run on 2026-10-22)
 
 The items below are in [`platforms/fabric/workspace/`](../platforms/fabric/workspace/), deployed with `tools/deploy -p fabric` ([`docs/fabric.md`](fabric.md)). The notebooks are pure Python, and one notebook runs the whole pipeline, so the steps below are its stages rather than separate notebooks.
 
@@ -238,7 +238,7 @@ erDiagram
 
 Both platforms run the same package, the same entry point and the same Power BI model; only the items around them differ ([ADR 011](adr/011-one-repository-two-platforms.md)). Polars stays the engine on Databricks too: a job task installs the wheel on serverless compute, and Spark is used only by the small `publish` task.
 
-| Concern | Databricks (deployed) | Microsoft Fabric (ready, not yet run) |
+| Concern | Databricks (deployed) | Microsoft Fabric (deployed and run on 2026-10-22) |
 |---|---|---|
 | Raw files | Unity Catalog volume `raw` | Lakehouse `Files/` |
 | Tables | Volume `tables` (Delta, written by delta-rs), the report's tables published to the Unity Catalog schema | Lakehouse `Tables/` (Delta) |
