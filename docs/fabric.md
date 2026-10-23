@@ -31,7 +31,7 @@ tools/report -p fabric --prod                    # the Power BI model on the Lak
 
 - **dev and prod are two workspaces**, `FABRIC_DEV_WORKSPACE` and `FABRIC_WORKSPACE`, the way fabric-cicd separates environments.
 - **The failure e-mail** goes to `FABRIC_ALERT_EMAIL`, by default the signed-in account. The activity is deployed **inactive**: an Office 365 Outlook activity needs a connection, which is signed in by a person and cannot be kept in Git. Open the pipeline once, choose the connection, and activate the activity. A **`Fail the run`** activity follows it, whatever the e-mail did: an inactive activity counts as succeeded, and without it a failed notebook ended the run as *Completed*.
-- **No `tools/rebuild` yet.** Rebuilding silver after a parsing change ([`docs/databricks.md`](databricks.md#rebuilding-silver)) needs the `RunPipeline` notebook to take a `rebuild_silver` parameter from the pipeline; that waits until the deployment has run (#16). `tools/rebuild -p fabric` says so.
+- **No `tools/rebuild` yet.** Rebuilding silver after a parsing change ([`docs/databricks.md`](databricks.md#rebuilding-silver)) needs the `RunPipeline` notebook to take a `rebuild_silver` parameter from the pipeline; that is not written yet. `tools/rebuild -p fabric` says so.
 - **Not Git integration.** #16 planned the workspace's Git integration on a `fabric` branch. Deploying with fabric-cicd from the tools is the same as on Databricks: a release is deployed, not a branch, and dev and prod differ only in the workspace. The folder is in Git format, so Git integration can still sync it if that is wanted.
 
 ### Dependencies from `uv.lock`
@@ -70,7 +70,8 @@ The Fabric CLI's sign-in also lapses when the account's password changes; the ca
 
 ## Not tried yet
 
-- **The SQL endpoint's connection string** from `fab get`, and the **report on the SQL endpoint**, and whether Direct Lake should replace import mode.
+- **The report's measures and pages in the service.** The model refreshed from the SQL endpoint and its row counts matched the Lakehouse tables (2026-10-22/23); not every measure and page was checked. Whether Direct Lake should replace import mode.
+- **A first load into an empty Lakehouse** with the backfill script (#135), and **the gold tables compared with a local build** from the same raw files (#17).
 - **How long the install of the locked requirements takes** in a Fabric Python kernel: the whole notebook run took 215 seconds, with the install not timed on its own.
 - **The failure e-mail**, which needs the Outlook connection set once in the workspace.
 - **`tools/rebuild -p fabric`**: the `RunPipeline` notebook takes no `rebuild_silver` parameter yet.

@@ -11,7 +11,7 @@ As of 1 October 2026:
 - **Collection** runs every 5 minutes on GitHub Actions, started by cron-job.org, onto the [`data` branch](https://github.com/VirtueMe/stavangerparking/tree/data): the parking feed adaptively, the national parking register hourly ([collector](docs/collector.md), [ADR 007](docs/adr/007-collect-outside-the-platform.md), [ADR 008](docs/adr/008-trigger-collection-externally.md)).
 - **Databricks** (Free Edition) runs the pipeline from this repository as an Asset Bundle, with the released wheel: bronze, silver, gold and the quality checks, then the report's tables published to Unity Catalog ([`docs/databricks.md`](docs/databricks.md)). Its data comes from the `data` branch by backfill; its own collector is deployed but paused.
 - **Power BI**: the semantic model and report are published from the repository to a Pro workspace and refresh from Databricks through a SQL warehouse ([`docs/report.md`](docs/report.md#on-a-platform)). Its five pages (availability, patterns, map, data freshness and quality, about) have their visuals (#87, #89); a [screenshot of the freshness page from 1 October 2026](docs/report.md#pages) shows it to readers without access.
-- **Fabric** is ready to deploy but not deployed: the Lakehouse, notebooks and pipeline are in [`platforms/fabric/`](platforms/fabric/), and the same tools deploy them, but it needs a capacity, which the own tenant cannot get (#16, [`docs/fabric.md`](docs/fabric.md)).
+- **Fabric**: the Lakehouse, notebooks and pipeline are in [`platforms/fabric/`](platforms/fabric/), and the same tools deploy them. On 2026-10-22 they were deployed to a trial capacity and the pipeline built every table, with the report published to the Fabric workspace; what has not been tried is in [`docs/fabric.md`](docs/fabric.md).
 - **The source feed can freeze without notice.** From 23 September 2026, 19:16 to 1 October 2026, 13:50 it repeated one reading while the file was re-published every 2 minutes, and it recovered without anyone reporting it. Everything downstream shows stale data as stale rather than hiding it ([known weaknesses](#known-weaknesses)).
 
 ## Architecture
@@ -49,7 +49,7 @@ flowchart LR
 
 - **The raw files are the source of truth.** Every snapshot is stored as fetched, next to a sidecar that says when and how it was fetched. Every table can be rebuilt from them, on any platform.
 - **Collection stays outside the platform** until one takes over, with a handover that keeps a single collector of record, so every period of history has exactly one ([ADR 011](docs/adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover)).
-- **One package, thin platforms.** The logic is the `stavanger_parking` package ([`src/`](src/stavanger_parking/)), on Polars and delta-rs rather than Spark ([ADR 001](docs/adr/001-polars-over-pyspark.md)), tested locally and in CI; it imports nothing platform-specific. `platforms/<platform>/` holds only what differs: where storage is, how runs are scheduled, how Power BI connects. `tools/deploy`, `tools/backfill` and `tools/report` run the same operations on either platform; `tools/rebuild` is Databricks only until Fabric has run (#16).
+- **One package, thin platforms.** The logic is the `stavanger_parking` package ([`src/`](src/stavanger_parking/)), on Polars and delta-rs rather than Spark ([ADR 001](docs/adr/001-polars-over-pyspark.md)), tested locally and in CI; it imports nothing platform-specific. `platforms/<platform>/` holds only what differs: where storage is, how runs are scheduled, how Power BI connects. `tools/deploy`, `tools/backfill` and `tools/report` run the same operations on either platform; `tools/rebuild` is Databricks only: the Fabric notebook takes no rebuild parameter yet.
 
 [`docs/architecture.md`](docs/architecture.md) has the full design: each layer's tables and grain, the star schema's columns, and the platform mapping.
 
@@ -119,7 +119,7 @@ The full log is [`docs/weaknesses.md`](docs/weaknesses.md), kept as trade-offs a
 | **Polars on one node** holds all fetches in memory during the derivation | Fine for decades of this feed; derive by date window or switch to Spark near 20 million fetch rows; the Delta tables are engine-neutral ([ADR 001](docs/adr/001-polars-over-pyspark.md), [ADR 006](docs/adr/006-scalability-assessment.md)) |
 | **On Databricks, delta-rs cannot commit to a volume safely** and uses a plain rename | Safe with one writer: the pipeline job allows one run at a time, and anything else that writes the tables must be a task of that job ([`docs/databricks.md`](docs/databricks.md)) |
 | **Databricks does not collect yet.** Its collection job works on Free Edition (tested on 2026-10-02, after the outbound restriction was lifted), but stays paused: collection has one collector of record until a handover | Databricks gets its data by backfill from the `data` branch; GitHub Actions stays the collector of record until the handover in [ADR 011](docs/adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) |
-| **The report's Fabric data source has not been tried** | The model and its five pages refresh on Databricks and every measure evaluates in the service; the Fabric source is checked when Fabric is deployed ([`docs/report.md`](docs/report.md), #16) |
+| **The report's Fabric data source is only partly checked** | On 2026-10-22/23 the model refreshed from the Lakehouse's SQL endpoint and its row counts matched the Lakehouse tables. Every measure and page was evaluated in the service on Databricks, not on Fabric ([`docs/report.md`](docs/report.md)) |
 
 ## Getting started
 
@@ -159,7 +159,7 @@ Without `--prod`, `tools/deploy` builds the wheel from your checkout and deploys
 
 ### Fabric
 
-The same commands with `-p fabric`. The items and scripts are ready, but not yet run: they need a Fabric capacity, which is pending (#16). Needs the Fabric CLI, signed in (above), and the workspace names:
+The same commands with `-p fabric`. The items and scripts were deployed and run on a trial capacity on 2026-10-22. Needs the Fabric CLI, signed in (above), and the workspace names:
 
 ```sh
 export FABRIC_WORKSPACE="<prod workspace>"   # and FABRIC_DEV_WORKSPACE for dev
@@ -183,7 +183,7 @@ The details, and what has not been tried: [`docs/fabric.md`](docs/fabric.md).
 | `src/stavanger_parking/config/facility_mapping.json` | [Facility mapping](docs/config.md#facility-mapping): feed names to their areas in the national parking register |
 | `docs/pipeline.md` | [Pipeline](docs/pipeline.md): the one entry point that runs every layer, its parameters and exit codes |
 | `platforms/databricks/` | [Databricks deployment](docs/databricks.md): the Asset Bundle, its jobs, deploying and backfilling |
-| `platforms/fabric/` | [Fabric deployment](docs/fabric.md): the Lakehouse, notebooks and pipeline as files, deployed with fabric-cicd; ready, not yet run |
+| `platforms/fabric/` | [Fabric deployment](docs/fabric.md): the Lakehouse, notebooks and pipeline as files, deployed with fabric-cicd; deployed and run on 2026-10-22 |
 | `tools/` | `deploy`, `backfill` and `report` for any platform: `tools/deploy -p databricks [--prod] [--dry-run]`, or with `PLATFORM` in `.env` ([deploying](docs/databricks.md#deploying), [the report per platform](docs/report.md#on-a-platform)) |
 | `docs/bronze.md` | [Bronze loading](docs/bronze.md): raw files into the bronze Delta table |
 | `docs/silver.md` | [Silver](docs/silver.md): typed readings and quarantined values |

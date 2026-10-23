@@ -11,7 +11,7 @@
 # uv.lock (the checkout's for dev, the release tag's for prod; tools/requirements.sh, ADR 012), as CI
 # tests them. The workspace is not in the repository: FABRIC_WORKSPACE names the prod workspace,
 # FABRIC_DEV_WORKSPACE the dev one. FABRIC_ALERT_EMAIL is where a failed pipeline e-mails (default:
-# the signed-in account). Not yet run against a real workspace (#16).
+# the signed-in account). Run against a real workspace on 2026-10-22 (#129, #130).
 set -euo pipefail
 cd "$(dirname "$0")"
 # The Fabric CLI is in the dependency group "powerbi"; use it from there unless it is installed
