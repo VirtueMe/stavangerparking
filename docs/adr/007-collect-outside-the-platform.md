@@ -80,6 +80,16 @@ This refines how a run reports failure; the decision itself still holds (#124). 
 
 **The rule.** A 5xx answer to a source's download is recorded as `bronze/<source>/unavailable/<time>.json` on the `data` branch and does not fail the run. Every other failure (4xx, timeout, connection error, CKAN or mapping errors) still does.
 
-**What is lost.** The run no longer turns red for an outage, so GitHub does not notify about it, and the failed-run table of #119 does not list it. The record, the run summary, a `::warning::` annotation and `collect gaps` are what show it. Loading the records into bronze is not decided yet (#124).
+**What is lost.** The run no longer turns red for an outage, so GitHub does not notify about it, and the failed-run table of #119 does not list it. The record, the run summary, a `::warning::` annotation and `collect gaps` are what show it. Loading the records into bronze was decided afterwards, below.
 
 **Why not the alternatives.** Failing the run, as before, is loud but not actionable, so the alarm is ignored (the failures worth seeing are lost among them). Retrying inside the run does not help, because an outage lasts hours, and the next run is already the retry. Not recording anything would leave a gap with no reason.
+
+## Addendum 2026-10-23: outage records are loaded into bronze, for every source
+
+The 2026-10-07 addendum left two questions open (#124); both are decided.
+
+**The records go into bronze.** The pipeline loads `bronze/<source>/unavailable/*.json` into `bronze_source_outages`, one row per record, append-only. The records are immutable files like the snapshots, and the `data` branch stays their source, so a backfill brings the records of the past. They are not in the source's own bronze table: an outage is not a snapshot, and a row without readings would break every query on the snapshot table. They are not folded into `bronze_collect_runs` either: that table is the current list of a run history that expires, and an outage is not a failed run.
+
+**A quality warning follows.** `source_outages` is a warning for any outage record in the 24 hours before the latest fetch, with the count and the span per source. A record already means an outage that was seen, and the collector writes one an hour at most, so a longer outage shows as a longer span rather than behind a threshold. It is a warning, not critical: the source being down is not something the pipeline can stop or fix, and the data it has is still correct.
+
+**The rule is for every source.** The 5xx rule applies to the parking feed and the register alike. A source answering with a server error is down whichever it is, and a second rule for one source would need a reason that does not exist. A 5xx from CKAN's `package_show`, which only names the feed's file, is not a download and still fails the run.
