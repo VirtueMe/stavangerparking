@@ -46,6 +46,10 @@ if $dry_run; then
 fi
 echo "copying $todo of $count raw file(s) to $raw"
 if [ "$todo" -gt 0 ]; then
+  # fs cp does not make folders (a new day has none yet); fs mkdir makes the parents too, and is
+  # harmless on a folder that exists
+  sed 's|/[^/]*$||' "$missing" | sort -u |
+    xargs -P 8 -I{} databricks fs mkdir "dbfs:$raw/{}" >/dev/null
   xargs -P 8 -I{} databricks fs cp --overwrite "$files/{}" "dbfs:$raw/{}" <"$missing" >/dev/null
 fi
 

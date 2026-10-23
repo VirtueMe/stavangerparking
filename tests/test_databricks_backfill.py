@@ -26,9 +26,15 @@ case "$(basename "$0") $1 $2" in
     echo '{"resources": {"schemas": {"stavanger_parking":
       {"catalog_name": "workspace", "name": "stavanger_parking"}}}}' ;;
   "databricks fs ls") ls "$VOLUME_DIR/${3#$RAW_PREFIX}" 2>/dev/null || exit 1 ;;
+  "databricks fs mkdir") mkdir -p "$VOLUME_DIR/${3#$RAW_PREFIX}" ;;
   "databricks fs cp")
+    # Like the real CLI, a copy into a folder that is not there fails
     dest="$VOLUME_DIR/${5#$RAW_PREFIX}"
-    mkdir -p "$(dirname "$dest")" && cp "$4" "$dest" ;;
+    if [ ! -d "$(dirname "$dest")" ]; then
+      echo "Error: no such directory: /${5#dbfs:/}" >&2
+      exit 1
+    fi
+    cp "$4" "$dest" ;;
 esac
 # git archive: the raw files of the data branch
 if [ "$(basename "$0")" = git ] && [[ " $* " == *" archive "* ]]; then
@@ -107,6 +113,22 @@ def test_a_backfill_copies_only_the_files_the_volume_lacks(repo):
     assert "copying 1 of 3 raw file(s)" in result.stdout
     assert [c.split()[-1] for c in cp_calls(repo)] == [f"dbfs:{VOLUME}/{RAW_FILES[2]}"]
     assert volume(repo) == sorted(RAW_FILES)
+
+
+def test_a_backfill_makes_the_folder_of_a_day_the_volume_lacks(repo):
+    """The first backfill of a new day: the volume has the older days' folders, not this one's."""
+    for name in RAW_FILES[:2]:
+        (repo / "volume" / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / "volume" / name).write_text("{}")
+    assert not (repo / "volume" / RAW_FILES[2]).parent.exists()
+
+    result = run(repo, "prod")
+
+    assert result.returncode == 0, result.stderr
+    assert volume(repo) == sorted(RAW_FILES)
+    assert (repo / "calls.log").read_text().splitlines()[
+        -1
+    ] == "databricks bundle run --target prod pipeline"
 
 
 def test_a_second_backfill_copies_nothing_but_still_runs_the_pipeline(repo):
