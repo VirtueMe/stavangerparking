@@ -28,7 +28,12 @@ case "$target" in
   prod) workspace=${FABRIC_WORKSPACE:?set FABRIC_WORKSPACE to the prod workspace} ;;
   *) echo "unknown target: $target (dev or prod)" >&2; exit 2 ;;
 esac
-alert=${FABRIC_ALERT_EMAIL:-$(fab auth status 2>/dev/null | sed -n 's/^Account: *//p')}
+# The CLI ends its lines with a carriage return, which would break the pipeline's JSON
+alert=${FABRIC_ALERT_EMAIL:-$(fab auth status 2>/dev/null | tr -d '\r' | sed -n 's/^Account: *//p')}
+if [[ "$alert" =~ [[:space:][:cntrl:]] ]]; then
+  echo "the alert address has whitespace or control characters; set FABRIC_ALERT_EMAIL" >&2
+  exit 2
+fi
 
 out=$(cd ../.. && pwd)/dist/fabric-$target
 rm -rf "$out"

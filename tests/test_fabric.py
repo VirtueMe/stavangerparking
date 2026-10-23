@@ -148,7 +148,8 @@ def test_the_parameters_point_at_the_lakehouse_that_is_deployed():
 FAKE = """#!/usr/bin/env bash
 echo "$(basename "$0") $*" >> "$CALLS"
 case "$(basename "$0") $1 $2" in
-  "fab auth status") echo "Account: owner@example.com" ;;
+  # The real CLI ends its lines with a carriage return
+  "fab auth status") printf 'Account: owner@example.com\r\n' ;;
   "fab exists"*) echo "* true" ;;
   "fab ls "*)
     # The real CLI ends its lines with a carriage return, and fails on a folder that is not there
@@ -294,6 +295,29 @@ def test_a_dev_deploy_builds_the_wheel_and_uses_the_dev_workspace(repo):
     assert "--no-hashes" not in export  # two pip runs: the requirements are checked by hash
     assert any(c.startswith("fab deploy") and "--target_env dev" in c for c in fab_calls(repo))
     assert any("Parking dev.Workspace/StavangerParking.Lakehouse" in c for c in fab_calls(repo))
+
+
+def test_the_alert_address_from_the_cli_has_no_carriage_return(repo):
+    result = run(repo, "deploy.sh", "dev")
+
+    assert result.returncode == 0, result.stderr
+    pipeline = (
+        repo
+        / "dist/fabric-dev/workspace/StavangerParkingPipeline.DataPipeline/pipeline-content.json"
+    )
+    assert '"To": "owner@example.com"' in pipeline.read_text()
+    json.loads(pipeline.read_text())  # a raw control character makes the JSON invalid
+
+
+@pytest.mark.parametrize(
+    "address", ["team@example.com\r", "two words@example.com", "a\tb@example.com"]
+)
+def test_an_alert_address_with_whitespace_or_control_characters_stops_the_deploy(repo, address):
+    result = run(repo, "deploy.sh", "dev", FABRIC_ALERT_EMAIL=address)
+
+    assert result.returncode == 2
+    assert "alert address" in result.stderr
+    assert not any(c.startswith("fab deploy") for c in fab_calls(repo))
 
 
 def test_a_dry_run_deploy_changes_nothing_in_the_workspace(repo):
