@@ -17,6 +17,9 @@ PARKING_SOURCE_ID = "stavanger_parking"
 # Bronze: the collector's failed runs, read from its run history (#119)
 COLLECT_RUNS_TABLE = "bronze_collect_runs"
 
+# Bronze: the outage records the collector leaves when a source answers with a server error (#124)
+OUTAGES_TABLE = "bronze_source_outages"
+
 # Silver
 FETCH_TABLE = "silver_parking_fetch"
 READING_TABLE = "silver_parking_reading"
@@ -41,6 +44,7 @@ QUALITY_TABLE = "quality_check_results"
 # configuration). Maintenance works through this list; a test checks it against a full run.
 PIPELINE_TABLES = (
     COLLECT_RUNS_TABLE,
+    OUTAGES_TABLE,
     FETCH_TABLE,
     READING_TABLE,
     QUARANTINE_TABLE,

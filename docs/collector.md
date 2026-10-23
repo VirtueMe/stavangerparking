@@ -137,7 +137,7 @@ data branch
 - The missing snapshots show up in `collect gaps`; the records say *why*, with the status.
 - Everything else still fails the run: a 4xx answer, a timeout, a connection error, a CKAN `package_show` that fails, a bad mapping.
 
-The records are not loaded into bronze yet, so an outage is visible only on the `data` branch and as a gap ([weaknesses](weaknesses.md)).
+The pipeline loads the records into `bronze_source_outages`, one row per record and for every source, and the `source_outages` quality warning reports the records of the last 24 hours ([bronze](bronze.md#the-collectors-outage-records), [quality](quality.md)). The rule is the same for every source: the parking feed and the register both leave a record on a 5xx. A 5xx from CKAN's `package_show`, which only names the feed's file, still fails the run.
 
 ## Parkeringsregisteret
 

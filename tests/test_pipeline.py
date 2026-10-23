@@ -21,6 +21,7 @@ from stavanger_parking.tables import (
     FACILITY_TABLE,
     FETCH_TABLE,
     HOURLY_TABLE,
+    OUTAGES_TABLE,
     QUALITY_TABLE,
     table_path,
 )
@@ -103,8 +104,9 @@ def test_a_second_run_adds_nothing_but_new_quality_results(roots):
     again = run(raw, tables)
 
     assert again.exit_code == 0
-    *sources, runs = again.steps[0].report
+    *sources, outages, runs = again.steps[0].report
     assert all("loaded 0 file(s)" in line for line in sources)
+    assert outages == "outages: loaded 0 record(s), skipped 0 already loaded"
     assert runs == "collect runs: 0 failed run(s) of VirtueMe/stavangerparking collect.yml"
     assert pl.read_delta(table_path(tables, FETCH_TABLE)).height == 9
     assert pl.read_delta(table_path(tables, QUALITY_TABLE)).height == 2 * results
@@ -287,3 +289,32 @@ def test_the_installed_wheel_runs_the_pipeline_with_its_own_configuration(roots,
         check=True,
     )
     assert Path(installed.stdout.strip()).is_relative_to(venv)
+
+
+def test_an_outage_record_is_loaded_and_warned_about(roots):
+    raw, tables = roots([record(f) for f in NINE])
+    outage = raw / "bronze/parkeringsregisteret/unavailable/20260929T104500.json"
+    outage.parent.mkdir(parents=True)
+    outage.write_text(
+        json.dumps(
+            {
+                "source_id": "parkeringsregisteret",
+                "observed_at": (T0 - timedelta(hours=1)).isoformat(),
+                "source_url": "https://example.com",
+                "run_id": "1",
+                "http_status": 500,
+            }
+        )
+    )
+
+    result = run(raw, tables)
+
+    assert result.exit_code == 0  # a warning never stops the run
+    assert "outages: loaded 1 record(s), skipped 0 already loaded" in result.steps[0].report
+    assert pl.read_delta(table_path(tables, OUTAGES_TABLE)).height == 1
+    warned = pl.read_delta(table_path(tables, QUALITY_TABLE)).filter(
+        (pl.col("check") == "source_outages") & ~pl.col("passed")
+    )
+    assert warned["detail"].to_list() == [
+        "1 outage record(s) in the last 24 hours: parkeringsregisteret 1 record(s) over 0 h"
+    ]

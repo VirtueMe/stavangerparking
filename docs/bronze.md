@@ -51,3 +51,19 @@ Rows are written before issues; if a load stops in between, the issues are simpl
 - **Few calls.** One for the list (per 100 failed runs), plus one per run not yet in the table, for its failed step; the others keep theirs. Without a token GitHub allows 60 calls an hour; `GITHUB_TOKEN` raises that.
 - **Never stops the pipeline.** If the history cannot be read (no network, a rate limit), the bronze report says so and the previous table is kept.
 - **The collector is configuration**, [`config/collector.json`](../src/stavanger_parking/config/collector.json): the repository and the workflow. The pipeline on Databricks Free Edition reaches the GitHub API.
+
+## The collector's outage records
+
+A source that answers with a server error is down, so the collector records it as `bronze/<source>/unavailable/<time>.json` and does not fail the run ([`docs/collector.md`](collector.md#outages), #124). `bronze_source_outages` holds those records, one row per record and for every source, loaded by [`bronze/outages.py`](../src/stavanger_parking/bronze/outages.py) with the raw files (#124). The records never change, so the table is append-only and a record is loaded once; the `data` branch is its source, so a backfill brings the records of the past. It is not a snapshot table: `bronze.load` does not read these files, and they are not in the source's `bronze_table`.
+
+| Column | Meaning |
+|---|---|
+| `source_id` | The source that answered with the error |
+| `observed_at` | When the error was seen (UTC) |
+| `source_url` | The URL that failed |
+| `run_id` | The GitHub run that saw it |
+| `http_status` | The 5xx status |
+| `raw_file` | The record's path under the raw root; a record is loaded once |
+| `ingested_at` | When the record was loaded |
+
+A file that is not an outage record is named in the bronze report and not loaded. The `source_outages` quality warning reads this table ([`docs/quality.md`](quality.md)).

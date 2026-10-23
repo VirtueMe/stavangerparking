@@ -24,6 +24,7 @@ from deltalake import DeltaTable
 
 from stavanger_parking.bronze.collect_runs import RUNS_SCHEMA
 from stavanger_parking.bronze.load import ISSUE_SCHEMA, bronze_path, issues_path
+from stavanger_parking.bronze.outages import OUTAGES_SCHEMA
 from stavanger_parking.config import DEFAULT_CONFIG, load_sources
 from stavanger_parking.facilities import DEFAULT_MAPPING, load_facility_mapping
 from stavanger_parking.gold.availability import AVAILABILITY_SCHEMA
@@ -37,6 +38,7 @@ from stavanger_parking.tables import (
     FETCH_TABLE,
     FRESHNESS_TABLE,
     HOURLY_TABLE,
+    OUTAGES_TABLE,
     PARKING_SOURCE_ID,
     QUALITY_TABLE,
     QUARANTINE_TABLE,
@@ -112,6 +114,8 @@ def run_checks(tables_root: str, mapping_path, config_path, storage_options=None
         results.append(checks.source_glitches(availability, facilities, latest_fetch))
         runs = read(table_path(tables_root, COLLECT_RUNS_TABLE), RUNS_SCHEMA)
         results.append(checks.collect_failures(runs, latest_fetch))
+        outages = read(table_path(tables_root, OUTAGES_TABLE), OUTAGES_SCHEMA)
+        results.append(checks.source_outages(outages, latest_fetch))
     return snapshot, results
 
 

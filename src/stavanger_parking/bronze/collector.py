@@ -297,9 +297,13 @@ def collect(
     return Outcome(source.id, decision, raw_file)
 
 
+def unavailable_dir(raw_path: str) -> str:
+    """The folder of a source's outage records: beside its raw files, outside their date folders."""
+    return f"{raw_path.split('{')[0]}unavailable"
+
+
 def unavailable_path(raw_path: str, at: datetime) -> str:
-    """Where an outage record goes: beside the source's raw files, outside their date folders."""
-    return f"{raw_path.split('{')[0]}unavailable/{at:%Y%m%dT%H%M%S}.json"
+    return f"{unavailable_dir(raw_path)}/{at:%Y%m%dT%H%M%S}.json"
 
 
 def _outage_record_due(source: Source, storage: Path, now: datetime) -> bool:

@@ -23,6 +23,8 @@ Warnings, to be looked at:
 - `low_coverage`: hours in the last day that the readings cover for less than half
 - `source_glitches`: readings in the last day that were glitches in the source (`gold.availability`)
 - `collect_failures`: collector runs in the last day that failed (`bronze.collect_runs`)
+- `source_outages`: outage records in the last day, a source that answered with a server error
+  (`bronze.outages`)
 """
 
 from dataclasses import dataclass
@@ -251,3 +253,28 @@ def collect_failures(runs: pl.DataFrame, until) -> Result:
     if recent.height:
         detail += ": " + ", ".join(f"{step} {n}" for step, n in recent.rows())
     return _result("collect_failures", WARNING, recent.is_empty(), detail)
+
+
+def source_outages(outages: pl.DataFrame, until) -> Result:
+    """Outage records observed in the 24 hours before `until`, by source, with their span.
+
+    Records after `until`, the latest fetch, count too: a source that is down stops the latest
+    fetch from moving while the records go on. The collector writes at most one record an hour,
+    so the span is how long the outage has lasted between its first and last record.
+    """
+    recent = (
+        outages.filter(pl.col("observed_at") > until - timedelta(hours=24))
+        .group_by("source_id")
+        .agg(
+            pl.len().alias("records"),
+            (pl.col("observed_at").max() - pl.col("observed_at").min()).alias("span"),
+        )
+        .sort("source_id")
+    )
+    detail = f"{recent['records'].sum()} outage record(s) in the last 24 hours"
+    if recent.height:
+        detail += ": " + ", ".join(
+            f"{source} {n} record(s) over {span.total_seconds() / 3600:g} h"
+            for source, n, span in recent.rows()
+        )
+    return _result("source_outages", WARNING, recent.is_empty(), detail)

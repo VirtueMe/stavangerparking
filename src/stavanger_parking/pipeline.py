@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from stavanger_parking.bronze import collect_runs, load
+from stavanger_parking.bronze import collect_runs, load, outages
 from stavanger_parking.config import DEFAULT_CONFIG
 from stavanger_parking.facilities import DEFAULT_MAPPING
 from stavanger_parking.gold import build as gold_build
@@ -102,6 +102,10 @@ def run_pipeline(
     # Each step is named after its function
     def bronze() -> Step:
         lines = load.run(config_path, raw_root, tables_root, now, storage_options)
+        # The outage records the collector left
+        lines += outages.run(
+            config_path, raw_root, tables_root, storage_options=storage_options, now=now
+        )
         # The collector's failed runs; an unreadable history is reported, never a failed step
         lines += collect_runs.run(collector_path, tables_root, now, storage_options)
         return Step("bronze", lines)

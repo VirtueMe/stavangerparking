@@ -310,3 +310,36 @@ def test_no_failed_collector_runs_pass():
         True,
         "0 failed collector run(s) in the last 24 hours",
     )
+
+
+def outage_rows(*rows: tuple[str, datetime]) -> pl.DataFrame:
+    """bronze_source_outages rows: (source id, observed at)."""
+    return pl.DataFrame(
+        rows,
+        schema={"source_id": pl.String, "observed_at": pl.Datetime("us", "UTC")},
+        orient="row",
+    )
+
+
+def test_outage_records_in_the_last_day_are_a_warning_with_their_span_per_source():
+    outages = outage_rows(
+        ("parkeringsregisteret", T0 - timedelta(hours=5)),
+        ("parkeringsregisteret", T0 - timedelta(hours=3)),
+        ("parkeringsregisteret", T0 + timedelta(hours=1)),  # after the latest fetch
+        ("stavanger_parking", T0 - timedelta(hours=1)),
+        ("parkeringsregisteret", T0 - timedelta(hours=30)),  # older than a day
+    )
+
+    result = checks.source_outages(outages, T0)
+
+    assert (result.severity, result.passed) == (WARNING, False)
+    assert result.detail == (
+        "4 outage record(s) in the last 24 hours: "
+        "parkeringsregisteret 3 record(s) over 6 h, stavanger_parking 1 record(s) over 0 h"
+    )
+
+
+def test_no_outage_records_pass():
+    result = checks.source_outages(outage_rows(), T0)
+
+    assert (result.passed, result.detail) == (True, "0 outage record(s) in the last 24 hours")
