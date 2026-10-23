@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.5] - 2026-10-23
+
+### Bug Fixes
+
+- **fabric:** Backfill copies only the raw files the Lakehouse lacks, and checks them ([#132](https://github.com/VirtueMe/stavangerparking/pull/132)) ([#136](https://github.com/VirtueMe/stavangerparking/pull/136))
+
 ## [0.25.4] - 2026-10-22
 
 ### Performance
