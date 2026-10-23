@@ -150,6 +150,20 @@ echo "$(basename "$0") $*" >> "$CALLS"
 case "$(basename "$0") $1 $2" in
   "fab auth status") echo "Account: owner@example.com" ;;
   "fab exists"*) echo "* true" ;;
+  "fab ls "*)
+    # The real CLI ends its lines with a carriage return, and fails on a folder that is not there
+    dir="$LAKE_DIR/${2#*/Files/}"
+    [ -d "$dir" ] || exit 1
+    ls "$dir" | sed 's/$/\r/' ;;
+  "fab mkdir "*) mkdir -p "$LAKE_DIR/${2#*/Files/}" ;;
+  "fab cp "*)
+    # Like the real CLI, a copy into a folder that is not there fails
+    if [[ "$3" == */Files/bronze/* ]]; then
+      dest="$LAKE_DIR/${3#*/Files/}"
+      [ -d "$(dirname "$dest")" ] || exit 1
+      [ "$(basename "$dest")" != "$FAIL_CP" ] || exit 1
+      cp "$2" "$dest"
+    fi ;;
   "fab get"*) echo "$SQL_ENDPOINT" ;;
   "gh release view") echo v0.20.0 ;;
   "gh release download") touch "${@: -1}/stavanger_parking-0.20.0-py3-none-any.whl" ;;
@@ -191,6 +205,7 @@ def repo(tmp_path):
     lock.mkdir()
     (lock / "pyproject.toml").write_text("[project]\n")
     (lock / "uv.lock").write_text("version = 1\n")
+    (tmp_path / "lakehouse").mkdir()
     raw = tmp_path / "data"
     for name in ["bronze/parking/2026/09/30/1.json", "bronze/parking/2026/09/30/1.meta.json"]:
         (raw / name).parent.mkdir(parents=True, exist_ok=True)
@@ -207,6 +222,7 @@ def run(repo: Path, script: str, *args: str, **env: str) -> subprocess.Completed
             "PATH": f"{repo / 'bin'}{os.pathsep}{os.environ['PATH']}",
             "CALLS": str(repo / "calls.log"),
             "RAW": str(repo / "data"),
+            "LAKE_DIR": str(repo / "lakehouse"),
             "LOCK": str(repo / "lock"),
             "REPO_ROOT": str(repo),
             "SQL_ENDPOINT": "abc.datawarehouse.fabric.microsoft.com",
@@ -295,18 +311,66 @@ def test_a_deploy_needs_its_workspace(repo):
     assert "set FABRIC_WORKSPACE" in result.stderr
 
 
-def test_a_backfill_copies_every_raw_file_and_runs_the_pipeline(repo):
+RAW_FILES = ["bronze/parking/2026/09/30/1.json", "bronze/parking/2026/09/30/1.meta.json"]
+JOB = "fab job run Parking.Workspace/StavangerParkingPipeline.DataPipeline"
+
+
+def lakehouse_files(repo: Path) -> list[str]:
+    return sorted(
+        str(p.relative_to(repo / "lakehouse")) for p in (repo / "lakehouse").rglob("*.json")
+    )
+
+
+def cp_calls(repo: Path) -> list[str]:
+    return [c for c in fab_calls(repo) if c.startswith("fab cp")]
+
+
+def test_a_first_backfill_makes_the_folders_copies_every_file_and_runs_the_pipeline(repo):
     result = run(repo, "backfill.sh", "prod")
 
     assert result.returncode == 0, result.stderr
-    lakehouse = "Parking.Workspace/StavangerParking.Lakehouse/Files"
-    assert sorted(c.split()[-2] for c in fab_calls(repo) if c.startswith("fab cp")) == [
-        f"{lakehouse}/bronze/parking/2026/09/30/1.json",
-        f"{lakehouse}/bronze/parking/2026/09/30/1.meta.json",
+    assert "copying 2 of 2 raw file(s)" in result.stdout
+    assert "all 2 raw file(s) are in" in result.stdout
+    assert lakehouse_files(repo) == RAW_FILES
+    assert fab_calls(repo)[-1] == JOB
+
+
+def test_a_backfill_copies_only_the_files_the_lakehouse_lacks(repo):
+    done = repo / "lakehouse" / RAW_FILES[0]
+    done.parent.mkdir(parents=True)
+    done.write_text("{}")
+
+    result = run(repo, "backfill.sh", "prod")
+
+    assert result.returncode == 0, result.stderr
+    assert "copying 1 of 2 raw file(s)" in result.stdout
+    assert [c.split()[-2] for c in cp_calls(repo)] == [
+        f"Parking.Workspace/StavangerParking.Lakehouse/Files/{RAW_FILES[1]}"
     ]
-    assert (
-        fab_calls(repo)[-1] == "fab job run Parking.Workspace/StavangerParkingPipeline.DataPipeline"
-    )
+    assert lakehouse_files(repo) == RAW_FILES
+
+
+def test_a_second_backfill_copies_nothing_but_still_runs_the_pipeline(repo):
+    run(repo, "backfill.sh", "prod")
+    (repo / "calls.log").unlink()
+
+    result = run(repo, "backfill.sh", "prod")
+
+    assert result.returncode == 0, result.stderr
+    assert "copying 0 of 2 raw file(s)" in result.stdout
+    assert cp_calls(repo) == []
+    assert fab_calls(repo)[-1] == JOB
+
+
+def test_a_backfill_fails_before_the_pipeline_when_a_file_never_arrives(repo):
+    result = run(repo, "backfill.sh", "prod", FAIL_CP="1.meta.json")
+
+    assert result.returncode == 1
+    assert "1 of 2 raw file(s) are still missing" in result.stderr
+    assert RAW_FILES[1] in result.stderr
+    assert JOB not in fab_calls(repo)
+    # The failed file was tried twice
+    assert len([c for c in cp_calls(repo) if c.split()[-2].endswith("1.meta.json")]) == 2
 
 
 def test_a_dry_run_backfill_copies_and_runs_nothing(repo):
@@ -314,10 +378,11 @@ def test_a_dry_run_backfill_copies_and_runs_nothing(repo):
 
     assert result.returncode == 0, result.stderr
     assert (
-        "would copy 2 raw file(s) to Parking.Workspace/StavangerParking.Lakehouse/Files"
+        "would copy 2 of 2 raw file(s) to Parking.Workspace/StavangerParking.Lakehouse/Files"
         in result.stdout
     )
-    assert fab_calls(repo) == []
+    assert {c.split()[1] for c in fab_calls(repo)} == {"ls"}
+    assert lakehouse_files(repo) == []
 
 
 def test_the_report_reads_the_lakehouse_through_its_sql_endpoint(repo):
