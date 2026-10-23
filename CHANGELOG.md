@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.26.1] - 2026-10-23
+
+### Bug Fixes
+
+- **databricks:** Backfill makes the folders of the files it copies ([#142](https://github.com/VirtueMe/stavangerparking/pull/142))
+
 ## [0.26.0] - 2026-10-23
 
 ### Features
