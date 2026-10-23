@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.25.6] - 2026-10-23
+
+### Documentation
+
+- **fabric:** Replace "not deployed / not run" with what was tried ([#138](https://github.com/VirtueMe/stavangerparking/pull/138))
+
 ## [0.25.5] - 2026-10-23
 
 ### Bug Fixes
