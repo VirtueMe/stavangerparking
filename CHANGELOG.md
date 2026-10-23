@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.26.0] - 2026-10-23
+
+### Features
+
+- **bronze:** Load the collector's outage records into bronze ([#140](https://github.com/VirtueMe/stavangerparking/pull/140))
+
 ## [0.25.7] - 2026-10-23
 
 ### Bug Fixes
