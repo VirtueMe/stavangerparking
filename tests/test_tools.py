@@ -335,7 +335,7 @@ def test_the_pipeline_job_rebuilds_silver_only_when_asked():
 
 
 def test_fabric_has_no_rebuild_yet():
-    """Until Fabric runs (#16): tools/rebuild -p fabric says so instead of doing something else."""
+    """RunPipeline has no rebuild_silver parameter yet: tools/rebuild -p fabric says so instead."""
     result = subprocess.run(
         [REPO / "tools" / "rebuild", "-p", "fabric", "--dry-run"],
         env=environment(REPO),
