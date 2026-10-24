@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.26.2] - 2026-10-24
+
+### Documentation
+
+- **fabric:** Record the gold comparison with a local build ([#143](https://github.com/VirtueMe/stavangerparking/pull/143))
+
 ## [0.26.1] - 2026-10-23
 
 ### Bug Fixes
