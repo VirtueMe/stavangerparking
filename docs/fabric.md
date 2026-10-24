@@ -57,6 +57,44 @@ tools/backfill -p fabric --prod --dry-run   # count the files and name the Lakeh
 
 GitHub Actions stays the collector of record ([`docs/collector.md`](collector.md)). `Collect` is deployed but runs only if someone starts it, so Fabric never becomes a second collector by being deployed. When Fabric takes over collection, the handover in [ADR 011](adr/011-one-repository-two-platforms.md#collection-one-collector-of-record-and-a-handover) applies: backfill, an overlap of at least 24 hours with `Collect` writing to a separate comparison folder (its `--storage` argument), a comparison, and the switch. The overlap and the switch add a schedule to a pipeline that runs `Collect` every 5 minutes, with `_inlineInstallationEnabled` like `StavangerParkingPipeline`; that schedule is not in the repository until then.
 
+### Taking over collection: what is missing, and how to finish it
+
+This was not done (#18), on purpose, and none of it has been run on Fabric. The handover steps are those of ADR 011; this section says what stands in the way of each on Fabric as it was deployed on 2026-10-22, and how to get past it.
+
+1. **A comparison root for `Collect`.** The notebook always collects into `/lakehouse/default/Files`, the raw root. The overlap must write somewhere else. Make the storage a parameter of the notebook (a parameter cell, passed by the pipeline's notebook activity), and use `/lakehouse/default/Files/comparison` for the overlap: the collector writes `bronze/<source>/…` under it, and the pipeline loads only `Files/bronze/…`, so nothing in it reaches the tables. For the switch the parameter is `/lakehouse/default/Files`.
+2. **A schedule.** No item runs `Collect`; Databricks has a collection job that is deployed paused, and Fabric has nothing yet. Add a Data pipeline that runs the `Collect` notebook with `_inlineInstallationEnabled = True` (as `StavangerParkingPipeline` does, so the install of the wheel works) and give it a schedule every 5 minutes in the portal. Whether fabric-cicd deploys a pipeline's schedule has not been checked, so do not count on it: the schedule is the thing that makes Fabric a second collector, and turning it on by hand is the intended handover step.
+3. **The comparison.** ADR 011 says every snapshot the collector of record stored during the overlap has one in the comparison root within one polling interval, with the same `values_fingerprint`, and that `collect gaps` is clean on the comparison root. Nothing runs this. The check below does the first part; it was tried on made-up sidecars (an identical copy, a dropped snapshot, and one with different content) and not on Fabric. Run it in a notebook with the package installed, after running `tools/backfill -p fabric --prod` again so that `Files/bronze` holds the `data` branch's snapshots of the overlap:
+
+   ```python
+   from datetime import datetime, timedelta
+   from pathlib import Path
+
+   from stavanger_parking.bronze.collector import read_sidecars
+   from stavanger_parking.config import DEFAULT_CONFIG, load_sources
+
+   reference = Path("/lakehouse/default/Files")  # the collector of record, as backfilled
+   comparison = Path("/lakehouse/default/Files/comparison")
+   start = datetime.fromisoformat("2026-11-01T12:00:00+00:00")  # when the overlap began
+   end = start + timedelta(hours=24)
+
+   for source in (s for s in load_sources(DEFAULT_CONFIG) if s.polling):
+       interval = timedelta(minutes=source.polling.slow_interval_minutes)
+       ours = read_sidecars(comparison, source)
+       missing = 0
+       for ref in read_sidecars(reference, source):
+           at = datetime.fromisoformat(ref["ingested_at"])
+           if not start <= at <= end:
+               continue
+           near = (c for c in ours if abs(datetime.fromisoformat(c["ingested_at"]) - at) <= interval)
+           if not any(c["values_fingerprint"] == ref["values_fingerprint"] for c in near):
+               missing += 1
+               print(f"{source.id}: no match for the snapshot of {ref['ingested_at']}")
+       print(f"{source.id}: {missing} snapshot(s) without a match")
+   ```
+
+   For the second part, `python -m stavanger_parking.bronze.collect gaps --storage /lakehouse/default/Files/comparison` in the same notebook. Both must be clean before the switch.
+4. **The switch.** As in ADR 011: turn off the cron-job.org job, run `tools/backfill -p fabric --prod` again to copy the `data` branch's files since the last backfill into `Files/bronze`, set the notebook's storage parameter to `/lakehouse/default/Files` and let the schedule run, then delete `Files/comparison` (`fab rm`). The first run continues adaptive polling from the last sidecar GitHub wrote. Then remove `collect.yml`, revoke the token (ADR 008), and name Fabric as the collector of record in [`docs/collector.md`](collector.md).
+
 ## What the first run found
 
 The first deployment and run, on 2026-10-22, found four things that the tests against a fake CLI could not:
