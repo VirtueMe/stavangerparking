@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.26.4] - 2026-10-24
+
+### Documentation
+
+- **fabric:** A runbook for taking over collection ([#146](https://github.com/VirtueMe/stavangerparking/pull/146))
+
 ## [0.26.3] - 2026-10-24
 
 ### Documentation
