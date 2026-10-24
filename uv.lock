@@ -1087,7 +1087,7 @@ wheels = [
 
 [[package]]
 name = "stavanger-parking"
-version = "0.26.2"
+version = "0.26.3"
 source = { editable = "." }
 dependencies = [
     { name = "deltalake" },
