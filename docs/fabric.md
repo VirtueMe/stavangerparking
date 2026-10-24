@@ -68,10 +68,18 @@ The first deployment and run, on 2026-10-22, found four things that the tests ag
 
 The Fabric CLI's sign-in also lapses when the account's password changes; the calls then hang without an error until `fab auth login` is run again.
 
+## Compared with a local build
+
+On 2026-10-24 the Lakehouse's tables were compared with a local build from the same raw files (#17). Bronze says which raw files the Lakehouse loaded: 4,791 parking and 540 register files, up to 2026-10-23 05:52. Those files were taken from the `data` branch and run through the same entry point locally, with the code of the wheel in the Lakehouse (0.25.1; the gold code changed after it, so a newer checkout would not be the same build).
+
+The comparison read every table in a temporary notebook with the locked dependencies, and locally with the same function. Per table it takes the row count, the column types, the minimum, maximum and sum of every numeric column, and a hash of all rows that does not depend on their order. **All seven gold tables, the six silver tables and the two bronze tables match** on all of them: for example `fact_parking_availability` 37,008 rows, `fact_parking_hourly` 6,381 and `dim_date` 5,844. A check that one changed value changes the hash and the sum, and that a reordering does not, was run alongside. Both builds end with exit code 3, the Forum capacity check ([`docs/pipeline.md`](pipeline.md#exit-codes)).
+
+What this shows is that Delta on the Lakehouse mount, the Python 3.11 kernel and the locked dependencies give the same values as a local run. It does not show that the values are right, only that they are the same ones. The notebook and its result file were removed from the workspace afterwards; the script is not kept in the repository.
+
 ## Not tried yet
 
 - **The report's measures and pages in the service.** The model refreshed from the SQL endpoint and its row counts matched the Lakehouse tables (2026-10-22/23); not every measure and page was checked. Whether Direct Lake should replace import mode.
-- **A first load into an empty Lakehouse** with the backfill script (#135), and **the gold tables compared with a local build** from the same raw files (#17).
+- **A first load into an empty Lakehouse** with the backfill script (#135).
 - **How long the install of the locked requirements takes** in a Fabric Python kernel: the whole notebook run took 215 seconds, with the install not timed on its own.
 - **The failure e-mail**, which needs the Outlook connection set once in the workspace.
 - **`tools/rebuild -p fabric`**: the `RunPipeline` notebook takes no `rebuild_silver` parameter yet.
