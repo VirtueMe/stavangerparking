@@ -8,7 +8,7 @@ How open parking data from Stavanger flows from the source to a star schema, fol
 - **Collection:** adaptive polling, every 5 minutes while the values change and every 20 minutes while they don't ([ADR 003](adr/003-polling-interval.md)). The download URL is resolved through the CKAN API on every run.
 - **Storage:** raw responses are kept unchanged and are the source of truth; every table can be rebuilt from them.
 - **Engine:** Polars and delta-rs, not Spark ([ADR 001](adr/001-polars-over-pyspark.md)). The logic lives in the `stavanger_parking` package, installed as a wheel; the platform only calls its entry point (a Databricks job task, a Fabric notebook), so the same code runs and is tested locally ([ADR 011](adr/011-one-repository-two-platforms.md)).
-- **Platforms:** one repository deploys to Databricks (running) and Microsoft Fabric (ready to deploy, pending a capacity: [`docs/fabric.md`](fabric.md)).
+- **Platforms:** one repository deploys to Databricks (running) and Microsoft Fabric (deployed and run on a trial capacity on 2026-10-22: [`docs/fabric.md`](fabric.md)).
 - **Model:** a periodic snapshot fact of availability per facility and reading, an hourly aggregate fact, and date, time and facility dimensions.
 
 ## Data flow on Databricks (deployed)

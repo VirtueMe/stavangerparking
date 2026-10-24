@@ -1,10 +1,10 @@
 """The Fabric deployment (#98): the items in platforms/fabric/workspace, and the scripts.
 
-There is no Fabric capacity to run them on yet (#16), so these tests check what can be checked
-without one: every item is valid against Microsoft's published `.platform` schema and refers only to
-items that exist, the notebooks call nothing but the package's entry points, collection is never
-scheduled, and the scripts make the right `fab` calls (against a fake), changing nothing in a
-dry run.
+These tests need no Fabric workspace, so they run in CI: every item is valid against Microsoft's
+published `.platform` schema and refers only to items that exist, the notebooks call nothing but the
+package's entry points, collection is never scheduled, and the scripts make the right `fab` calls
+(against a fake that behaves like the CLI did on the first deployment, 2026-10-22), changing nothing
+in a dry run.
 """
 
 import json
