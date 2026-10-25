@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated from
 Conventional Commit messages on `main`.
 
+## [0.26.5] - 2026-10-25
+
+### Documentation
+
+- **review:** How the case was solved, and a checklist for the next ([#147](https://github.com/VirtueMe/stavangerparking/pull/147))
+
 ## [0.26.4] - 2026-10-24
 
 ### Documentation
