@@ -197,6 +197,7 @@ The details, and what has not been tried: [`docs/fabric.md`](docs/fabric.md).
 | `docs/walkthrough.md` | [Walkthrough](docs/walkthrough.md) for the 22 October meeting: what to show and say for each case requirement, and likely questions |
 | `docs/adr/` | [Architecture decision records](docs/adr/README.md) |
 | `docs/weaknesses.md` | [Known weaknesses](docs/weaknesses.md), recorded as they appear |
+| `docs/review.md` | [How the case was solved](docs/review.md): what went well, what was caught late, what went wrong, with the evidence; and [a checklist for the next case](docs/case-checklist.md) |
 | `templates/DATA-LICENCE.md` | Data attribution placed at the root of the `data` branch |
 
 ## Data sources and licence

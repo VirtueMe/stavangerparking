@@ -1,5 +1,7 @@
 # Walkthrough: 22 October 2026
 
+_After the meeting: [how the case was solved](review.md), and [a checklist for the next case](case-checklist.md)._
+
 A 10–15 minute walkthrough of the case, following its requirements: the architecture and data model, fetching the data, the platform, a change made live, the report, a new facility, scalability, PySpark or Polars, and the weaknesses. Each part says **what to show** and **what to say**; the links go to the detail, for questions.
 
 About 15 minutes in all, then questions.
