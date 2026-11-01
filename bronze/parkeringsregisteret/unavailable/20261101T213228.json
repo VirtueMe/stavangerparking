@@ -1,0 +1,7 @@
+{
+  "source_id": "parkeringsregisteret",
+  "observed_at": "2026-11-01T21:32:28.461342+00:00",
+  "source_url": "https://parkreg-open.atlas.vegvesen.no/ws/no/vegvesen/veg/parkeringsomraade/parkeringsregisteret/v1/parkeringsomraade?orgnr=974782766&datafelter=alle",
+  "run_id": "41352508791-1",
+  "http_status": 500
+}
