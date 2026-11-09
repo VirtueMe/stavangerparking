@@ -1,0 +1,11 @@
+{
+  "source_id": "stavanger_parking",
+  "ingested_at": "2026-11-09T10:57:21.345084+00:00",
+  "source_url": "https://opencom.no/dataset/36ceda99-bbc3-4909-bc52-b05a6d634b3f/resource/d1bdc6eb-9b49-4f24-89c2-ab9f5ce2acce/download/parking.json",
+  "resource_id": "d1bdc6eb-9b49-4f24-89c2-ab9f5ce2acce",
+  "run_id": "42605048616-1",
+  "content_hash": "sha256:1c44cf9c776dcaa6cbb760bac6b8d92477f3cf75343c77ffa0a81bbdb7ad146a",
+  "values_fingerprint": "sha256:f40a184f1601eb7d0dbf2b506eb81a463278dc2123fbb6cce0045abded164903",
+  "polling_mode": "fast",
+  "next_due": "2026-11-09T11:02:21.345084+00:00"
+}
